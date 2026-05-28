@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePatients } from "../ui/hooks/usePatients";
 import { useCalendar } from "../ui/hooks/useCalendar";
+import { useGoogleDrive } from "../ui/hooks/useGoogleDrive";
 import { PatientModal } from "../ui/components/PatientModal";
 import { SessionModal } from "../ui/components/SessionModal";
 import { PatientManager } from "../ui/components/PatientManager";
@@ -23,6 +24,18 @@ export default function Home() {
     removeRecurrenceRule,
     holidays,
   } = useCalendar();
+
+  // Integración de Sincronización Google Drive
+  const {
+    googleToken,
+    loading: loadingDrive,
+    syncStatus,
+    lastSynced,
+    errorMessage,
+    connectGoogle,
+    disconnectGoogle,
+    performSync,
+  } = useGoogleDrive();
 
   // Vista activa: 'calendar' o 'patients'
   const [activeTab, setActiveTab] = useState<"calendar" | "patients">("calendar");
@@ -74,6 +87,46 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Google Drive Sincronización */}
+            {googleToken ? (
+              <div className="flex items-center gap-2 bg-bg-base border border-brand-sand px-3 py-1 rounded-xl text-xs shadow-sm">
+                <span className="flex h-2 w-2 rounded-full bg-status-confirmed-dark animate-pulse" />
+                <div className="text-left leading-tight hidden sm:block">
+                  <span className="font-bold text-[9px] text-text-main block">Nube Activa</span>
+                  <span className="text-[9px] text-text-sub block font-mono">
+                    {syncStatus === "syncing"
+                      ? "Sincronizando..."
+                      : lastSynced
+                      ? `Sync: ${lastSynced}`
+                      : "Pendiente"}
+                  </span>
+                </div>
+                <button
+                  onClick={performSync}
+                  disabled={loadingDrive}
+                  title="Sincronizar ahora"
+                  className="bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo p-1 rounded cursor-pointer transition-colors text-[10px] ml-1 font-bold"
+                >
+                  🔄
+                </button>
+                <button
+                  onClick={disconnectGoogle}
+                  title="Desconectar Google Drive"
+                  className="text-text-sub hover:text-status-cancelled-dark p-1 cursor-pointer transition-colors text-[10px]"
+                >
+                  🚪
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={connectGoogle}
+                disabled={loadingDrive}
+                className="bg-bg-base hover:bg-brand-sand/40 border border-brand-sand text-text-main font-title font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                ▲ {loadingDrive ? "Conectando..." : "Conectar Drive"}
+              </button>
+            )}
+
             {/* Botón de pánico/privacidad */}
             <button
               onClick={() => setIsBlurred(!isBlurred)}
@@ -104,6 +157,13 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Banner de advertencia de error */}
+      {errorMessage && (
+        <div className="bg-status-cancelled-light border-b border-status-cancelled-dark/20 text-status-cancelled-dark text-xs py-2 px-4 text-center font-title font-bold flex items-center justify-center gap-2 animate-in slide-in-from-top duration-300 shadow-inner">
+          ⚠️ {errorMessage}
+        </div>
+      )}
 
       {/* Contenido Principal */}
       <main

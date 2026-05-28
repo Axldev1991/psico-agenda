@@ -15,6 +15,11 @@ export class DexiePatientRepository implements IPatientRepository {
     await db.patients.put(patient);
   }
 
+  async saveAll(patients: Patient[]): Promise<void> {
+    if (patients.length === 0) return;
+    await db.patients.bulkPut(patients);
+  }
+
   async delete(uuid: string): Promise<void> {
     await db.patients.delete(uuid);
   }

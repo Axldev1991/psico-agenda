@@ -16,6 +16,11 @@ export class DexieSessionRepository implements ISessionRepository {
     await db.sessions.put(session);
   }
 
+  async saveAll(sessions: Session[]): Promise<void> {
+    if (sessions.length === 0) return;
+    await db.sessions.bulkPut(sessions);
+  }
+
   async delete(uuid: string): Promise<void> {
     await db.sessions.delete(uuid);
   }
@@ -31,6 +36,11 @@ export class DexieSessionRepository implements ISessionRepository {
 
   async saveRecurrenceRule(rule: RecurrenceRule): Promise<void> {
     await db.recurrenceRules.put(rule);
+  }
+
+  async saveAllRecurrenceRules(rules: RecurrenceRule[]): Promise<void> {
+    if (rules.length === 0) return;
+    await db.recurrenceRules.bulkPut(rules);
   }
 
   async deleteRecurrenceRule(patientUuid: string): Promise<void> {

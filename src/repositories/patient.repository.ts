@@ -4,5 +4,6 @@ export interface IPatientRepository {
   getAll(): Promise<Patient[]>;
   getByUuid(uuid: string): Promise<Patient | undefined>;
   save(patient: Patient): Promise<void>;
+  saveAll(patients: Patient[]): Promise<void>;
   delete(uuid: string): Promise<void>;
 }
