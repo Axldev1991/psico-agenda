@@ -33,40 +33,40 @@ export default function Home() {
   const [isBlurred, setIsBlurred] = useState(false); // Botón de privacidad
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans antialiased">
-      {/* Navbar Premium */}
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+    <div className="min-h-screen bg-bg-base text-text-main font-sans antialiased selection:bg-brand-indigo/20">
+      {/* Navbar Premium Calmo */}
+      <header className="border-b border-brand-sand bg-bg-card/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-violet-900/30">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-blue flex items-center justify-center font-bold text-white shadow-sm shadow-brand-indigo/20 font-title text-lg">
               Ψ
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-violet-400 to-indigo-200 bg-clip-text text-transparent">
+              <span className="font-title font-bold text-lg tracking-tight text-text-main">
                 PSICO-AGENDA
               </span>
-              <span className="text-xs block text-slate-500 font-medium">Soberanía de Datos Clínicos</span>
+              <span className="text-[11px] block text-text-sub font-medium leading-none">Soberanía de Datos Clínicos</span>
             </div>
           </div>
 
           {/* Toggle de vistas */}
-          <div className="bg-slate-900 p-1 rounded-xl border border-slate-800 flex">
+          <div className="bg-bg-base p-1 rounded-xl border border-brand-sand flex">
             <button
               onClick={() => setActiveTab("calendar")}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-title font-bold transition-all cursor-pointer ${
                 activeTab === "calendar"
-                  ? "bg-violet-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-brand-indigo text-white shadow-sm"
+                  : "text-text-sub hover:text-text-main"
               }`}
             >
               📅 Agenda
             </button>
             <button
               onClick={() => setActiveTab("patients")}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-title font-bold transition-all cursor-pointer ${
                 activeTab === "patients"
-                  ? "bg-violet-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-brand-indigo text-white shadow-sm"
+                  : "text-text-sub hover:text-text-main"
               }`}
             >
               📂 Fichero
@@ -74,13 +74,13 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Botón de pánico */}
+            {/* Botón de pánico/privacidad */}
             <button
               onClick={() => setIsBlurred(!isBlurred)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-350 cursor-pointer ${
                 isBlurred
-                  ? "bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400"
-                  : "bg-rose-950/40 text-rose-300 border border-rose-800/50 hover:bg-rose-900/30"
+                  ? "bg-status-confirmed-dark text-white shadow-md shadow-status-confirmed-dark/20"
+                  : "bg-status-cancelled-light text-status-cancelled-dark border border-status-cancelled-dark/20 hover:bg-status-cancelled-light/80"
               }`}
             >
               🔒 {isBlurred ? "Revelar" : "Ocultar Datos"}
@@ -89,14 +89,14 @@ export default function Home() {
             {activeTab === "patients" ? (
               <button
                 onClick={() => setShowPatientModal(true)}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all shadow-md active:scale-95 cursor-pointer"
+                className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 + Nuevo Paciente
               </button>
             ) : (
               <button
                 onClick={() => setShowSessionModal(true)}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all shadow-md active:scale-95 cursor-pointer"
+                className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer"
               >
                 + Programar Turno
               </button>

@@ -23,11 +23,11 @@ export function PatientManager({
   );
 
   return (
-    <section className="bg-slate-950/40 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-sm">
-      <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <section className="bg-bg-card border border-brand-sand rounded-2xl overflow-hidden shadow-sm">
+      <div className="p-6 border-b border-brand-sand flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="font-bold text-lg text-slate-100">Fichero de Pacientes</h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Reactivo en tiempo real</p>
+          <h2 className="font-title font-bold text-lg text-text-main">Fichero de Pacientes</h2>
+          <p className="text-xs text-text-sub font-medium mt-0.5">Reactivo en tiempo real</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -36,11 +36,11 @@ export function PatientManager({
             placeholder="🔍 Buscar paciente..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 text-xs w-full sm:w-48 transition-all"
+            className="bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/50 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs w-full sm:w-48 transition-all cursor-pointer"
           />
           <button
             onClick={onOpenPatientModal}
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
+            className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shadow-sm"
           >
             + Nuevo Paciente
           </button>
@@ -48,18 +48,18 @@ export function PatientManager({
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-slate-500 font-medium">
+        <div className="p-12 text-center text-text-sub font-medium">
           Cargando base de datos IndexedDB...
         </div>
       ) : filteredPatients.length === 0 ? (
         <div className="p-16 text-center">
-          <div className="h-16 w-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-800 text-2xl">
+          <div className="h-16 w-16 bg-bg-base rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-sand text-2xl">
             📂
           </div>
-          <h3 className="font-bold text-slate-300 mb-1">
+          <h3 className="font-title font-bold text-text-main mb-1">
             {searchTerm ? "No se encontraron coincidencias" : "No hay pacientes registrados"}
           </h3>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+          <p className="text-sm text-text-sub max-w-sm mx-auto mb-6">
             {searchTerm
               ? "Probá ingresando otro nombre en la barra de búsqueda."
               : "Los datos se guardan exclusivamente en el almacenamiento local seguro de tu navegador."}
@@ -67,7 +67,7 @@ export function PatientManager({
           {!searchTerm && (
             <button
               onClick={onOpenPatientModal}
-              className="bg-slate-900 hover:bg-slate-800 text-violet-400 border border-slate-700/60 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+              className="bg-bg-base hover:bg-brand-sand/30 text-brand-indigo border border-brand-sand font-title font-bold text-sm px-4 py-2 rounded-xl transition-all cursor-pointer"
             >
               Crear tu primer paciente
             </button>
@@ -77,7 +77,7 @@ export function PatientManager({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <tr className="bg-brand-sand/10 border-b border-brand-sand text-text-sub text-[11px] font-title font-bold uppercase tracking-wider">
                 <th className="py-4 px-6">Paciente</th>
                 <th className="py-4 px-6">Contacto</th>
                 <th className="py-4 px-6">Obra Social / Prepaga</th>
@@ -85,48 +85,59 @@ export function PatientManager({
                 <th className="py-4 px-6 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-brand-sand/40">
               {filteredPatients.map((patient) => (
                 <tr
                   key={patient.uuid}
-                  className="hover:bg-slate-900/30 transition-colors group"
+                  className="hover:bg-brand-sand/10 transition-colors group"
                 >
+                  {/* Paciente (DM Sans + IBM Plex Mono) */}
                   <td className="py-4 px-6">
-                    <span className="font-semibold text-slate-200 block">
+                    <span className="font-title font-bold text-text-main block">
                       {patient.fullName}
                     </span>
-                    <span className="text-xs text-slate-500 font-mono block">
+                    <span className="font-mono text-[10px] text-text-sub block mt-0.5">
                       ID: {patient.uuid.substring(0, 8)}...
                     </span>
                   </td>
+
+                  {/* Contacto (Inter + Arena) */}
                   <td className="py-4 px-6">
-                    <span className="text-sm text-slate-300 block">{patient.phone || "—"}</span>
-                    <span className="text-xs text-slate-500 block">{patient.email || "Sin email"}</span>
+                    <span className="text-sm text-text-main block font-semibold">{patient.phone || "—"}</span>
+                    <span className="text-xs text-text-sub block">{patient.email || "Sin email"}</span>
                     {patient.address && (
-                      <span className="text-xs text-slate-400 block mt-1">
+                      <span className="font-sans text-[10px] text-text-main font-semibold bg-brand-sand/40 px-1.5 py-0.5 rounded inline-block mt-1">
                         📍 {patient.address}
                       </span>
                     )}
                   </td>
+
+                  {/* Obra Social */}
                   <td className="py-4 px-6">
                     {patient.healthInsurance ? (
                       <div>
-                        <span className="text-sm text-slate-300 block">{patient.healthInsurance}</span>
-                        <span className="text-xs text-slate-500 block">
+                        <span className="text-sm text-text-main font-bold block">{patient.healthInsurance}</span>
+                        <span className="text-xs text-text-sub block mt-0.5">
                           Cred: {patient.affiliateNumber || "Sin N°"}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-sm text-slate-500">—</span>
+                      <span className="text-sm text-text-sub">—</span>
                     )}
                   </td>
-                  <td className="py-4 px-6 font-semibold text-violet-400">
-                    ${patient.sessionPrice.toLocaleString("es-AR")} ARS
+
+                  {/* Costo (Lavanda suave + IBM Plex Mono!) */}
+                  <td className="py-4 px-6">
+                    <span className="font-mono text-xs font-bold bg-brand-lavender/30 text-text-main border border-brand-lavender/40 px-2.5 py-1 rounded-lg inline-block">
+                      ${patient.sessionPrice.toLocaleString("es-AR")} ARS
+                    </span>
                   </td>
+
+                  {/* Acciones */}
                   <td className="py-4 px-6 text-right">
                     <button
                       onClick={() => onRemovePatient(patient.uuid)}
-                      className="opacity-0 group-hover:opacity-100 text-rose-500 hover:text-rose-400 text-xs font-bold px-3 py-1 rounded border border-rose-950/20 hover:bg-rose-950/30 transition-all cursor-pointer"
+                      className="opacity-0 group-hover:opacity-100 bg-status-cancelled-light text-status-cancelled-dark hover:bg-status-cancelled-light/85 border border-status-cancelled-dark/20 text-[10px] font-title font-bold px-3 py-1 rounded-xl transition-all cursor-pointer"
                     >
                       Eliminar
                     </button>

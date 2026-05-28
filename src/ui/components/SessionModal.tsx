@@ -70,13 +70,13 @@ export function SessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-black/80 animate-in fade-in zoom-in duration-200">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-          <h3 className="font-bold text-lg text-slate-100">Programar Turno / Sesión</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-bg-card border border-brand-sand rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-text-main/10 animate-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-brand-sand flex items-center justify-between">
+          <h3 className="font-title font-bold text-lg text-text-main">Programar Turno / Sesión</h3>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 text-xl font-bold"
+            className="text-text-sub hover:text-text-main text-xl font-bold cursor-pointer"
           >
             ×
           </button>
@@ -84,12 +84,12 @@ export function SessionModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="text-xs text-slate-400 font-semibold block mb-1">Seleccionar Paciente *</label>
+            <label className="text-xs text-text-sub font-semibold block mb-1">Seleccionar Paciente *</label>
             <select
               required
               value={selectedPatientUuid}
               onChange={(e) => setSelectedPatientUuid(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-violet-600 transition-all text-sm cursor-pointer"
+              className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2.5 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
             >
               <option value="">-- Seleccionar Paciente --</option>
               {patients.map((p) => (
@@ -101,24 +101,24 @@ export function SessionModal({
           </div>
 
           {/* Toggle de Recurrencia */}
-          <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <div className="bg-bg-base p-4 rounded-2xl border border-brand-sand space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm text-slate-300 font-bold">¿Es un turno recurrente?</label>
+              <label className="text-sm text-text-main font-bold">¿Es un turno recurrente?</label>
               <input
                 type="checkbox"
                 checked={isRecurrent}
                 onChange={(e) => setIsRecurrent(e.target.checked)}
-                className="h-5 w-5 accent-violet-600 rounded cursor-pointer"
+                className="h-5 w-5 accent-brand-indigo rounded cursor-pointer"
               />
             </div>
-            <span className="text-[10px] text-slate-500 block leading-normal">
+            <span className="text-[10px] text-text-sub block leading-normal font-medium">
               Los turnos recurrentes se cargarán automáticamente todas las semanas en el día y horario especificados durante todo el año.
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-400 font-semibold block mb-1">
+              <label className="text-xs text-text-sub font-semibold block mb-1">
                 {isRecurrent ? "Fecha de Inicio *" : "Fecha del Turno *"}
               </label>
               <input
@@ -126,17 +126,17 @@ export function SessionModal({
                 required
                 value={sessionDate}
                 onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-slate-100 focus:outline-none focus:border-violet-600 transition-all text-sm cursor-pointer"
+                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 font-semibold block mb-1">Hora *</label>
+              <label className="text-xs text-text-sub font-semibold block mb-1">Hora *</label>
               <input
                 type="time"
                 required
                 value={sessionTime}
                 onChange={(e) => setSessionTime(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-slate-100 focus:outline-none focus:border-violet-600 transition-all text-sm cursor-pointer"
+                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
               />
             </div>
           </div>
@@ -144,11 +144,11 @@ export function SessionModal({
           {/* Selector de día para recurrencia */}
           {isRecurrent && (
             <div>
-              <label className="text-xs text-slate-400 font-semibold block mb-1">Día de la semana de atención *</label>
+              <label className="text-xs text-text-sub font-semibold block mb-1">Día de la semana de atención *</label>
               <select
                 value={recurrenceDay}
                 onChange={(e) => setRecurrenceDay(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-violet-600 transition-all text-sm cursor-pointer"
+                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2.5 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
               >
                 <option value="0">Lunes</option>
                 <option value="1">Martes</option>
@@ -161,17 +161,17 @@ export function SessionModal({
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-brand-sand flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 text-sm font-semibold px-4 py-2 transition-all"
+              className="text-text-sub hover:text-text-main text-xs font-title font-bold px-4 py-2 transition-all cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+              className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
             >
               Programar Turno
             </button>

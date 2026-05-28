@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@theme {
+  /* Vincular fuentes cargadas por Next.js */
+  --font-sans: var(--font-inter), sans-serif;
+  --font-title: var(--font-dm-sans), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
+
+  /* Colores Principales del Sistema */
+  --color-brand-indigo: #6B7FBF;
+  --color-brand-blue: #8FA8D0;
+  --color-brand-sage: #7CB8A8;
+  --color-brand-mint: #A8C5B0;
+  --color-brand-lavender: #C4B5D4;
+  --color-brand-sand: #E8E0D8;
+  
+  /* Fondos Neutros */
+  --color-bg-base: #F5F3F0;
+  --color-bg-card: #FDFCFB;
+  
+  /* Textos Neutros */
+  --color-text-main: #4A4A5A;
+  --color-text-sub: #7A7A8A;
+
+  /* Estados Funcionales Desaturados */
+  --color-status-confirmed-dark: #5A9E7A;
+  --color-status-confirmed-light: #EAF6EF;
+  --color-status-pending-dark: #D4924A;
+  --color-status-pending-light: #FAF0E0;
+  --color-status-cancelled-dark: #C06060;
+  --color-status-cancelled-light: #FAEAEA;
+  --color-status-rescheduled-dark: #8FA8D0;
+  --color-status-rescheduled-light: #EDF2F9;
+}
