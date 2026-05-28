@@ -5,7 +5,7 @@ export interface Holiday {
   name: string;
 }
 
-// Feriados Nacionales de Argentina para el año 2026
+// Feriados Nacionales de Argentina para el año 2026 (Respaldo Estático)
 export const ARGENTINA_HOLIDAYS_2026: Holiday[] = [
   { date: '2026-01-01', name: 'Año Nuevo' },
   { date: '2026-02-16', name: 'Carnaval' },
@@ -25,7 +25,61 @@ export const ARGENTINA_HOLIDAYS_2026: Holiday[] = [
   { date: '2026-12-25', name: 'Navidad' },
 ];
 
-export function getHoliday(date: Date): Holiday | undefined {
+interface ApiHoliday {
+  motivo: string;
+  dia: number;
+  mes: number;
+  tipo: string;
+}
+
+// Carga los feriados desde la API y los cachea en localStorage para garantizar offline
+export async function fetchArgentinaHolidays(year: number): Promise<Holiday[]> {
+  const cacheKey = `ar-holidays-${year}`;
+  
+  // 1. Intentar leer de la caché local (offline-first)
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error('Error leyendo caché de feriados:', e);
+      }
+    }
+  }
+
+  // 2. Si no hay caché, ir a buscar a la API oficial
+  try {
+    const response = await fetch(`https://nolaborables.com.ar/api/v1/feriados/${year}?incluir=opcional`);
+    if (!response.ok) throw new Error('API no disponible');
+
+    const data: ApiHoliday[] = await response.json();
+    
+    // Traducir formato de la API al nuestro
+    const formatted: Holiday[] = data.map(h => {
+      const monthStr = String(h.mes).padStart(2, '0');
+      const dayStr = String(h.dia).padStart(2, '0');
+      return {
+        date: `${year}-${monthStr}-${dayStr}`,
+        name: h.motivo
+      };
+    });
+
+    // Guardar en caché para futuras visitas offline
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(cacheKey, JSON.stringify(formatted));
+    }
+
+    return formatted;
+  } catch (err) {
+    console.warn(`Error cargando feriados dinámicos para ${year}. Usando respaldo estático.`, err);
+    // Si la API falla y es 2026, usamos nuestro respaldo físico
+    return year === 2026 ? ARGENTINA_HOLIDAYS_2026 : [];
+  }
+}
+
+export function getHoliday(date: Date, loadedHolidays?: Holiday[]): Holiday | undefined {
   const dateStr = format(date, 'yyyy-MM-dd');
-  return ARGENTINA_HOLIDAYS_2026.find(h => h.date === dateStr);
+  const list = loadedHolidays || ARGENTINA_HOLIDAYS_2026;
+  return list.find(h => h.date === dateStr);
 }

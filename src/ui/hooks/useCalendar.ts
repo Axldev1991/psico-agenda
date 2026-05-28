@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { RRule } from 'rrule';
 import { 
@@ -15,7 +15,7 @@ import {
 import { DexieSessionRepository } from '../../infrastructure/db/dexie-session.repository';
 import { DexiePatientRepository } from '../../infrastructure/db/dexie-patient.repository';
 import { Session, RecurrenceRule } from '../../domain/session.types';
-import { getHoliday, Holiday } from '../../domain/holidays';
+import { getHoliday, Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 
 const sessionRepo = new DexieSessionRepository();
 const patientRepo = new DexiePatientRepository();
@@ -36,6 +36,9 @@ export interface CalendarSlot {
 export function useCalendar() {
   // Estado para la fecha base del calendario (por defecto, hoy)
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Estado local para los feriados de este año
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
 
   // Calcular intervalo de la semana (Lunes a Domingo)
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -51,6 +54,16 @@ export function useCalendar() {
 
   // 3. Cargar reglas de recurrencia activas
   const recurrenceRules = useLiveQuery(() => sessionRepo.getRecurrenceRules()) || [];
+
+  // 4. Cargar feriados dinámicamente desde la API/Caché local cuando cambie el año de vista
+  useEffect(() => {
+    const loadHolidays = async () => {
+      const year = currentDate.getFullYear();
+      const list = await fetchArgentinaHolidays(year);
+      setHolidays(list);
+    };
+    loadHolidays();
+  }, [currentDate]);
 
   // Función principal: Calcular la agenda de la semana mezclando recurrencias y excepciones
   const getWeeklyAgenda = (): CalendarSlot[] => {
@@ -92,7 +105,7 @@ export function useCalendar() {
               price: dbOverride.priceAtSession,
               notes: dbOverride.notes,
               isRecurrent: true,
-              holiday: getHoliday(slotDateTime)
+              holiday: getHoliday(slotDateTime, holidays)
             });
           } else {
             // Si no hay excepción, agregamos el slot recurrente por defecto
@@ -104,7 +117,7 @@ export function useCalendar() {
               status: 'scheduled',
               price: patient.sessionPrice,
               isRecurrent: true,
-              holiday: getHoliday(slotDateTime)
+              holiday: getHoliday(slotDateTime, holidays)
             });
           }
         });
@@ -136,7 +149,7 @@ export function useCalendar() {
             price: session.priceAtSession,
             notes: session.notes,
             isRecurrent: false,
-            holiday: getHoliday(sessionDate)
+            holiday: getHoliday(sessionDate, holidays)
           });
         }
       }
@@ -228,6 +241,7 @@ export function useCalendar() {
     addRecurrence,
     updateSessionStatus,
     removeRecurrenceRule,
-    patients
+    patients,
+    holidays
   };
 }
