@@ -181,47 +181,7 @@ export function exportSessionToWord(patient: Patient, session: Session) {
   URL.revokeObjectURL(url);
 }
 
-export function exportFullHistoryToWord(patient: Patient, sessions: Session[]) {
-  const sortedSessions = [...sessions].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // Cronológico (antiguos primero para lectura continua)
-
-  const sessionsHtml = sortedSessions.map((session, index) => {
-    const dateFormatted = new Date(session.dateTime).toLocaleDateString('es-AR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    const notesHtml = parseNotesToHtml(session.notes);
-
-    return `
-      <div style="margin-bottom: 30pt; page-break-inside: avoid;">
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-family: Arial, sans-serif; font-size: 9.5pt; background-color: #f8fafc;">
-          <tr>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 20%;">Sesión N°</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a; font-weight: bold;">${index + 1}</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 20%;">Fecha y Hora</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">${dateFormatted}</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Estado</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">
-              ${session.status === 'completed' ? 'Atendido / Cerrado' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente' : 'Programado'}
-            </td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Arancel Cobrado</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">$${session.priceAtSession.toLocaleString('es-AR')} ARS</td>
-          </tr>
-        </table>
-        <div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155; padding-left: 10px; border-left: 2px solid #e2e8f0;">
-          ${notesHtml}
-        </div>
-        <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-top: 25pt; margin-bottom: 25pt;" />
-      </div>
-    `;
-  }).join('');
-
+export function exportFullHistoryToWord(patient: Patient) {
   const htmlContent = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
           xmlns:w="urn:schemas-microsoft-com:office:word" 
@@ -283,15 +243,15 @@ export function exportFullHistoryToWord(patient: Patient, sessions: Session[]) {
         </tr>
       </table>
 
-      <!-- Contenido Clínico de Todas las Sesiones -->
+      <!-- Contenido Clínico del Historial -->
       <div style="margin-top: 10px;">
-        ${sessionsHtml}
+        ${patient.clinicalHistory || '<span style="color: #94a3b8; font-style: italic;">Sin anotaciones registradas aún.</span>'}
       </div>
 
       <!-- Pie de Página -->
       <div style="margin-top: 50px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 8.5pt; color: #94a3b8; text-align: center; font-family: Arial, sans-serif;">
         Documento clínico oficial exportado bajo estándares de soberanía y privacidad de PSICO-AGENDA.<br/>
-        Fecha del reporte: ${new Date().toLocaleString('es-AR')} | Páginas totales estimadas según paginación nativa de Word.
+        Fecha del reporte: ${new Date().toLocaleString('es-AR')}
       </div>
     </body>
     </html>
