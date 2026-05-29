@@ -45,7 +45,7 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
     if (patient) {
       setClinicalHistoryHtml(patient.clinicalHistory || "");
     }
-  }, [patient.uuid]);
+  }, [patient.uuid, patient.clinicalHistory]);
 
   // AUTO-PREPEND LOGIC: Si hay nuevas sesiones físicas registradas en IndexedDB que no figuren con su anclaje en el historial clínico, las prependemos al inicio con formato premium.
   useEffect(() => {

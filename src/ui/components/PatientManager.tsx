@@ -20,10 +20,24 @@ export function PatientManager({
   onSelectPatient,
 }: PatientManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [seedStatus, setSeedStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const filteredPatients = patients.filter((p) =>
     p.fullName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleSeed = async () => {
+    setSeedStatus("loading");
+    try {
+      await seedDemoData();
+      setSeedStatus("success");
+      setTimeout(() => setSeedStatus("idle"), 2500);
+    } catch (err) {
+      console.error(err);
+      setSeedStatus("error");
+      setTimeout(() => setSeedStatus("idle"), 2500);
+    }
+  };
 
   return (
     <section className="bg-bg-card border border-brand-sand rounded-2xl overflow-hidden shadow-sm">
@@ -42,20 +56,22 @@ export function PatientManager({
             className="bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/50 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs w-full sm:w-48 transition-all cursor-pointer"
           />
           <button
-            onClick={async () => {
-              if (confirm("¿Querés cargar pacientes e historial clínico de prueba en tu base de datos local?")) {
-                try {
-                  await seedDemoData();
-                  alert("¡Base de datos sembrada con éxito! Ya podés explorar las fichas y evoluciones.");
-                } catch (err) {
-                  alert("Error al cargar la semilla de demostración.");
-                  console.error(err);
-                }
-              }
-            }}
-            className="bg-bg-base hover:bg-brand-sand/30 border border-brand-sand text-brand-indigo font-title font-bold text-xs px-3 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shadow-sm"
+            onClick={handleSeed}
+            disabled={seedStatus === "loading"}
+            className={`font-title font-bold text-xs px-3 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shadow-sm border ${
+              seedStatus === "loading"
+                ? "bg-brand-sand/30 text-text-sub border-brand-sand/55 cursor-wait"
+                : seedStatus === "success"
+                ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/25 animate-pulse"
+                : seedStatus === "error"
+                ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/25"
+                : "bg-bg-base hover:bg-brand-sand/30 border-brand-sand text-brand-indigo"
+            }`}
           >
-            🌱 Cargar Demo
+            {seedStatus === "loading" && "⏳ Sembrando..."}
+            {seedStatus === "success" && "✅ ¡Sembrado!"}
+            {seedStatus === "error" && "❌ Error"}
+            {seedStatus === "idle" && "🌱 Cargar Demo"}
           </button>
           <button
             onClick={onOpenPatientModal}
