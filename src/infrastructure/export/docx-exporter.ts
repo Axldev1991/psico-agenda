@@ -1,6 +1,21 @@
 import { Patient } from '../../domain/patient.types';
 import { Session } from '../../domain/session.types';
 
+function parseNotesToHtml(notes?: string): string {
+  if (!notes) return 'Sin anotaciones clínicas.';
+  // Si ya es HTML enriquecido, lo dejamos pasar tal cual
+  if (notes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(notes)) {
+    return notes;
+  }
+  // Fallback para texto plano y Markdown
+  return notes
+    .replace(/\n/g, '<br/>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/## (.*?)(<br\/>|$)/g, '<h2 style="color: #4f46e5; font-family: Arial, sans-serif; font-size: 14pt; margin-top: 14pt; margin-bottom: 4pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt;">$1</h2>')
+    .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 8pt;">$1</h1>');
+}
+
 export function exportSessionToWord(patient: Patient, session: Session) {
   const dateFormatted = new Date(session.dateTime).toLocaleDateString('es-AR', {
     weekday: 'long',
@@ -11,12 +26,7 @@ export function exportSessionToWord(patient: Patient, session: Session) {
     minute: '2-digit',
   });
 
-  const notesHtml = (session.notes || 'Sin anotaciones clínicas.')
-    .replace(/\n/g, '<br/>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/## (.*?)(<br\/>|$)/g, '<h2 style="color: #4f46e5; font-family: \'Outfit\', \'DejaVu Sans\', Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 6pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3pt;">$1</h2>')
-    .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: \'Outfit\', \'DejaVu Sans\', Arial, sans-serif; font-size: 20pt; margin-top: 24pt; margin-bottom: 12pt;">$1</h1>');
+  const notesHtml = parseNotesToHtml(session.notes);
 
   const htmlContent = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
@@ -184,12 +194,7 @@ export function exportFullHistoryToWord(patient: Patient, sessions: Session[]) {
       minute: '2-digit',
     });
 
-    const notesHtml = (session.notes || 'Sin anotaciones clínicas.')
-      .replace(/\n/g, '<br/>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/## (.*?)(<br\/>|$)/g, '<h2 style="color: #4f46e5; font-family: Arial, sans-serif; font-size: 14pt; margin-top: 14pt; margin-bottom: 4pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt;">$1</h2>')
-      .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 8pt;">$1</h1>');
+    const notesHtml = parseNotesToHtml(session.notes);
 
     return `
       <div style="margin-bottom: 30pt; page-break-inside: avoid;">

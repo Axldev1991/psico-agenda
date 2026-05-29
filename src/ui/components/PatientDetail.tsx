@@ -5,6 +5,7 @@ import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
 import { usePatientHistory } from "../hooks/usePatientHistory";
 import { exportSessionToWord, exportFullHistoryToWord } from "../../infrastructure/export/docx-exporter";
+import { RichTextEditor } from "./RichTextEditor";
 
 interface PatientDetailProps {
   patient: Patient;
@@ -44,7 +45,7 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
       minute: "2-digit",
     });
 
-    const headerTemplate = `## EVOLUCIÓN CLÍNICA\n**Fecha:** ${sessionDate}\n**Paciente:** ${patient.fullName}\n\n**Motivo de consulta / Evolución:**\n- `;
+    const headerTemplate = `<h3 style="color: #4f46e5; margin-top: 0; margin-bottom: 8px; font-family: sans-serif;">EVOLUCIÓN CLÍNICA</h3><strong>Fecha:</strong> ${sessionDate}<br/><strong>Paciente:</strong> ${patient.fullName}<br/><br/><strong>Motivo de consulta / Evolución:</strong><br/>- &nbsp;`;
     setTempNotes(headerTemplate);
   };
 
@@ -213,11 +214,11 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
             </p>
           </div>
         ) : viewMode === "unified" ? (
-          /* VISTA UNIFICADA / DOSSIER CLÍNICO CONTINUO */
+          /* VISTA UNIFICADA / DOSSIER CLÍNICO CONTINUO EDITABLE */
           <div className="bg-bg-base border border-brand-sand rounded-3xl p-6 md:p-8 space-y-8 max-h-[70vh] overflow-y-auto shadow-inner animate-in zoom-in-95 duration-300">
             <div className="border-b-2 border-brand-indigo/35 pb-4 mb-4 text-center">
-              <h4 className="font-title font-bold text-base text-text-main">FICHA DE EVOLUCIÓN HISTÓRICA CONSOLIDADA</h4>
-              <p className="text-[10px] text-text-sub uppercase font-bold tracking-wider mt-1">Lectura fluida y continua • Soberanía local</p>
+              <h4 className="font-title font-bold text-base text-text-main">FICHA DE EVOLUCIÓN HISTÓRICA CONSOLIDADA (EDITABLE)</h4>
+              <p className="text-[10px] text-text-sub uppercase font-bold tracking-wider mt-1">Hacé clic en cualquier sesión para redactar en tiempo real</p>
             </div>
             
             {[...sessions].reverse().map((session, index) => {
@@ -237,19 +238,44 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                     <span className="text-[11px] font-title font-bold text-text-main capitalize">
                       Sesión N° {index + 1} — {formattedDate}
                     </span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                      session.status === 'completed' 
-                        ? 'bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20' 
-                        : session.status === 'cancelled'
-                        ? 'bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20'
-                        : 'bg-brand-sand/30 text-text-sub border-brand-sand/50'
-                    }`}>
-                      {session.status === 'completed' ? 'Atendido' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente' : 'Programado'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {/* Indicador de guardado exitoso */}
+                      {saveFeedback === session.uuid && (
+                        <span className="text-[9px] text-status-confirmed-dark bg-status-confirmed-light border border-status-confirmed-dark/25 px-2 py-0.5 rounded-md font-bold animate-pulse">
+                          Autoguardado
+                        </span>
+                      )}
+                      <select
+                        value={session.status}
+                        onChange={(e) => handleStatusChange(session, e.target.value as any)}
+                        className="bg-bg-card border border-brand-sand rounded-xl px-2 py-0.5 text-[9px] font-title font-bold text-text-main focus:outline-none cursor-pointer"
+                      >
+                        <option value="scheduled">Programado</option>
+                        <option value="completed">Atendido</option>
+                        <option value="cancelled">Cancelado</option>
+                        <option value="missed">Ausente</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="pl-4 border-l-2 border-brand-sand/60 text-xs text-text-main whitespace-pre-wrap leading-relaxed font-sans">
-                    {session.notes || <span className="text-text-sub italic">Sin anotaciones registradas en esta sesión.</span>}
+                  <div className="pl-4 border-l-2 border-brand-sand/60">
+                    <RichTextEditor
+                      initialValue={session.notes || ""}
+                      onChange={async (newHtml) => {
+                        await saveNotes(
+                          {
+                            uuid: session.uuid,
+                            dateTime: session.dateTime,
+                            status: session.status,
+                            priceAtSession: session.priceAtSession,
+                          },
+                          newHtml
+                        );
+                        setSaveFeedback(session.uuid);
+                        setTimeout(() => setSaveFeedback(null), 1500);
+                      }}
+                      placeholder="Redactá la evolución aquí..."
+                    />
                   </div>
                 </div>
               );
@@ -326,7 +352,7 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                       <div className="space-y-3 animate-in fade-in duration-200">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] text-brand-indigo font-bold uppercase tracking-wider block">
-                            Editor Clínico (Formato Markdown)
+                            Editor Clínico Enriquecido
                           </label>
                           <button
                             type="button"
@@ -336,12 +362,9 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                             ⚡ Autocompletar Cabecera
                           </button>
                         </div>
-                        <textarea
-                          rows={8}
-                          value={tempNotes}
-                          onChange={(e) => setTempNotes(e.target.value)}
-                          placeholder="Comenzá a redactar la evolución clínica del paciente..."
-                          className="w-full bg-bg-card border border-brand-sand rounded-xl p-4 text-xs font-mono text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo resize-y"
+                        <RichTextEditor
+                          initialValue={tempNotes}
+                          onChange={setTempNotes}
                         />
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -363,9 +386,10 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                     ) : (
                       <div className="space-y-2">
                         {hasNotes ? (
-                          <div className="bg-bg-card border border-brand-sand/55 rounded-xl p-4 text-xs space-y-2 text-text-main max-h-96 overflow-y-auto font-sans leading-relaxed whitespace-pre-wrap">
-                            {session.notes}
-                          </div>
+                          <div 
+                            className="bg-bg-card border border-brand-sand/55 rounded-xl p-4 text-xs text-text-main max-h-96 overflow-y-auto font-sans leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: session.notes || "" }}
+                          />
                         ) : (
                           <div className="text-center py-6 border-2 border-dashed border-brand-sand rounded-xl bg-bg-card/40">
                             <span className="text-text-sub text-[11px] font-medium block">
