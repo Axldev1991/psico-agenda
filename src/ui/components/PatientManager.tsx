@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Patient } from "../../domain/patient.types";
+import { seedDemoData } from "../../infrastructure/db/seed";
 
 interface PatientManagerProps {
   patients: Patient[];
@@ -40,6 +41,22 @@ export function PatientManager({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/50 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs w-full sm:w-48 transition-all cursor-pointer"
           />
+          <button
+            onClick={async () => {
+              if (confirm("¿Querés cargar pacientes e historial clínico de prueba en tu base de datos local?")) {
+                try {
+                  await seedDemoData();
+                  alert("¡Base de datos sembrada con éxito! Ya podés explorar las fichas y evoluciones.");
+                } catch (err) {
+                  alert("Error al cargar la semilla de demostración.");
+                  console.error(err);
+                }
+              }
+            }}
+            className="bg-bg-base hover:bg-brand-sand/30 border border-brand-sand text-brand-indigo font-title font-bold text-xs px-3 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shadow-sm"
+          >
+            🌱 Cargar Demo
+          </button>
           <button
             onClick={onOpenPatientModal}
             className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shadow-sm"
