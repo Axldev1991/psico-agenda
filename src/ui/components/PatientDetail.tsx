@@ -39,6 +39,16 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
   const [clinicalHistoryHtml, setClinicalHistoryHtml] = useState<string>("");
   const [saveFeedback, setSaveFeedback] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<any>(null);
+
+  // Limpiar el timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Cargar el historial clínico inicial del paciente
   useEffect(() => {
@@ -102,21 +112,31 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
     }
   }, [sessions, patient.uuid]);
 
-  // Guardar cambios del gran editor unificado
-  const handleHistoryChange = async (newHtml: string) => {
+  // Guardar cambios del gran editor unificado (Debounce de 1000ms para evitar cuellos de botella en IndexedDB y loops de render)
+  const handleHistoryChange = (newHtml: string) => {
+    // 1. Actualizar el estado local de React al instante de forma síncrona
     setClinicalHistoryHtml(newHtml);
-    try {
-      const updatedPatient = {
-        ...patient,
-        clinicalHistory: newHtml,
-        updatedAt: new Date().toISOString(),
-      };
-      await patientRepo.save(updatedPatient);
-      setSaveFeedback(true);
-      setTimeout(() => setSaveFeedback(false), 1500);
-    } catch (err) {
-      console.error("Error guardando el historial clínico unificado:", err);
+
+    // 2. Cancelar el guardado programado anterior
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // 3. Programar el guardado asíncrono
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const updatedPatient = {
+          ...patient,
+          clinicalHistory: newHtml,
+          updatedAt: new Date().toISOString(),
+        };
+        await patientRepo.save(updatedPatient);
+        setSaveFeedback(true);
+        setTimeout(() => setSaveFeedback(false), 1500);
+      } catch (err) {
+        console.error("Error guardando el historial clínico unificado:", err);
+      }
+    }, 1000);
   };
 
   // Desplazar editor al anclaje de la sesión
