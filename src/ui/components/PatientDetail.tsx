@@ -233,22 +233,22 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
               });
 
               return (
-                <div key={session.uuid} className="space-y-3 pb-6 border-b border-brand-sand/50 last:border-0 last:pb-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-brand-sand/15 px-4 py-2 rounded-xl border border-brand-sand/30">
-                    <span className="text-[11px] font-title font-bold text-text-main capitalize">
-                      Sesión N° {index + 1} — {formattedDate}
+                <div key={session.uuid} className="space-y-2 pb-6 border-b border-brand-sand/40 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between text-[11px] font-title font-bold text-text-sub select-none pb-1">
+                    <span className="capitalize">
+                      📅 Sesión N° {index + 1} — {formattedDate}
                     </span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {/* Indicador de guardado exitoso */}
                       {saveFeedback === session.uuid && (
-                        <span className="text-[9px] text-status-confirmed-dark bg-status-confirmed-light border border-status-confirmed-dark/25 px-2 py-0.5 rounded-md font-bold animate-pulse">
-                          Autoguardado
+                        <span className="text-[9px] text-status-confirmed-dark font-bold animate-pulse">
+                          Autoguardado...
                         </span>
                       )}
                       <select
                         value={session.status}
                         onChange={(e) => handleStatusChange(session, e.target.value as any)}
-                        className="bg-bg-card border border-brand-sand rounded-xl px-2 py-0.5 text-[9px] font-title font-bold text-text-main focus:outline-none cursor-pointer"
+                        className="bg-transparent border-0 text-[10px] font-bold text-brand-indigo hover:text-brand-indigo/90 focus:outline-none cursor-pointer p-0"
                       >
                         <option value="scheduled">Programado</option>
                         <option value="completed">Atendido</option>
@@ -258,8 +258,9 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                     </div>
                   </div>
 
-                  <div className="pl-4 border-l-2 border-brand-sand/60">
+                  <div className="pl-4 border-l border-brand-sand/65">
                     <RichTextEditor
+                      variant="continuous"
                       initialValue={session.notes || ""}
                       onChange={async (newHtml) => {
                         await saveNotes(
@@ -274,7 +275,7 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                         setSaveFeedback(session.uuid);
                         setTimeout(() => setSaveFeedback(null), 1500);
                       }}
-                      placeholder="Redactá la evolución aquí..."
+                      placeholder="Escribí la evolución para esta sesión..."
                     />
                   </div>
                 </div>
