@@ -3,6 +3,7 @@ import { Session, RecurrenceRule } from '../domain/session.types';
 export interface ISessionRepository {
   getAll(): Promise<Session[]>;
   getByUuid(uuid: string): Promise<Session | undefined>;
+  getByPatient(patientUuid: string): Promise<Session[]>;
   save(session: Session): Promise<void>;
   saveAll(sessions: Session[]): Promise<void>;
   delete(uuid: string): Promise<void>;

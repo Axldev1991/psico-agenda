@@ -8,6 +8,8 @@ import { PatientModal } from "../ui/components/PatientModal";
 import { SessionModal } from "../ui/components/SessionModal";
 import { PatientManager } from "../ui/components/PatientManager";
 import { CalendarGrid } from "../ui/components/CalendarGrid";
+import { PatientDetail } from "../ui/components/PatientDetail";
+import { Patient } from "../domain/patient.types";
 
 export default function Home() {
   const { patients, loading: loadingPatients, addPatient, removePatient } = usePatients();
@@ -39,6 +41,7 @@ export default function Home() {
 
   // Vista activa: 'calendar' o 'patients'
   const [activeTab, setActiveTab] = useState<"calendar" | "patients">("calendar");
+  const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
 
   // Estados comunes de UI para modales y pánico
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -65,7 +68,10 @@ export default function Home() {
           {/* Toggle de vistas */}
           <div className="bg-bg-base p-1 rounded-xl border border-brand-sand flex">
             <button
-              onClick={() => setActiveTab("calendar")}
+              onClick={() => {
+                setActiveTab("calendar");
+                setSelectedPatientForDetail(null);
+              }}
               className={`px-4 py-1.5 rounded-lg text-xs font-title font-bold transition-all cursor-pointer ${
                 activeTab === "calendar"
                   ? "bg-brand-indigo text-white shadow-sm"
@@ -75,7 +81,10 @@ export default function Home() {
               📅 Agenda
             </button>
             <button
-              onClick={() => setActiveTab("patients")}
+              onClick={() => {
+                setActiveTab("patients");
+                setSelectedPatientForDetail(null);
+              }}
               className={`px-4 py-1.5 rounded-lg text-xs font-title font-bold transition-all cursor-pointer ${
                 activeTab === "patients"
                   ? "bg-brand-indigo text-white shadow-sm"
@@ -184,12 +193,18 @@ export default function Home() {
             onRemoveRecurrenceRule={removeRecurrenceRule}
             onOpenSessionModal={() => setShowSessionModal(true)}
           />
+        ) : selectedPatientForDetail ? (
+          <PatientDetail
+            patient={selectedPatientForDetail}
+            onBack={() => setSelectedPatientForDetail(null)}
+          />
         ) : (
           <PatientManager
             patients={patients}
             loading={loadingPatients}
             onRemovePatient={removePatient}
             onOpenPatientModal={() => setShowPatientModal(true)}
+            onSelectPatient={setSelectedPatientForDetail}
           />
         )}
       </main>

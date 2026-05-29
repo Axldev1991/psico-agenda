@@ -8,6 +8,7 @@ interface PatientManagerProps {
   loading: boolean;
   onRemovePatient: (uuid: string) => Promise<void>;
   onOpenPatientModal: () => void;
+  onSelectPatient: (patient: Patient) => void;
 }
 
 export function PatientManager({
@@ -15,6 +16,7 @@ export function PatientManager({
   loading,
   onRemovePatient,
   onOpenPatientModal,
+  onSelectPatient,
 }: PatientManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -134,10 +136,20 @@ export function PatientManager({
                   </td>
 
                   {/* Acciones */}
-                  <td className="py-4 px-6 text-right">
+                  <td className="py-4 px-6 text-right space-x-2">
                     <button
-                      onClick={() => onRemovePatient(patient.uuid)}
-                      className="opacity-0 group-hover:opacity-100 bg-status-cancelled-light text-status-cancelled-dark hover:bg-status-cancelled-light/85 border border-status-cancelled-dark/20 text-[10px] font-title font-bold px-3 py-1 rounded-xl transition-all cursor-pointer"
+                      onClick={() => onSelectPatient(patient)}
+                      className="bg-brand-indigo/10 hover:bg-brand-indigo/25 text-brand-indigo text-[11px] font-title font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      📝 Ver Ficha
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`¿Estás seguro de que deseas eliminar a ${patient.fullName}? Esta acción borrará todas sus sesiones e historial clínico de forma irreversible.`)) {
+                          onRemovePatient(patient.uuid);
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 bg-status-cancelled-light text-status-cancelled-dark hover:bg-status-cancelled-light/85 border border-status-cancelled-dark/20 text-[10px] font-title font-bold px-3 py-1.5 rounded-xl transition-all cursor-pointer"
                     >
                       Eliminar
                     </button>

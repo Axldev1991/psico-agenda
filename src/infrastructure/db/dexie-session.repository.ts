@@ -12,6 +12,10 @@ export class DexieSessionRepository implements ISessionRepository {
     return db.sessions.get(uuid);
   }
 
+  async getByPatient(patientUuid: string): Promise<Session[]> {
+    return db.sessions.where('patientUuid').equals(patientUuid).sortBy('dateTime');
+  }
+
   async save(session: Session): Promise<void> {
     await db.sessions.put(session);
   }
