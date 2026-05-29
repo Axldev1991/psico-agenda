@@ -170,3 +170,141 @@ export function exportSessionToWord(patient: Patient, session: Session) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export function exportFullHistoryToWord(patient: Patient, sessions: Session[]) {
+  const sortedSessions = [...sessions].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()); // Cronológico (antiguos primero para lectura continua)
+
+  const sessionsHtml = sortedSessions.map((session, index) => {
+    const dateFormatted = new Date(session.dateTime).toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const notesHtml = (session.notes || 'Sin anotaciones clínicas.')
+      .replace(/\n/g, '<br/>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/## (.*?)(<br\/>|$)/g, '<h2 style="color: #4f46e5; font-family: Arial, sans-serif; font-size: 14pt; margin-top: 14pt; margin-bottom: 4pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt;">$1</h2>')
+      .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 8pt;">$1</h1>');
+
+    return `
+      <div style="margin-bottom: 30pt; page-break-inside: avoid;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10pt; font-family: Arial, sans-serif; font-size: 9.5pt; background-color: #f8fafc;">
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 20%;">Sesión N°</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a; font-weight: bold;">${index + 1}</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 20%;">Fecha y Hora</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">${dateFormatted}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Estado</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">
+              ${session.status === 'completed' ? 'Atendido / Cerrado' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente' : 'Programado'}
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Arancel Cobrado</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; color: #0f172a;">$${session.priceAtSession.toLocaleString('es-AR')} ARS</td>
+          </tr>
+        </table>
+        <div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155; padding-left: 10px; border-left: 2px solid #e2e8f0;">
+          ${notesHtml}
+        </div>
+        <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin-top: 25pt; margin-bottom: 25pt;" />
+      </div>
+    `;
+  }).join('');
+
+  const htmlContent = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+          xmlns:w="urn:schemas-microsoft-com:office:word" 
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8">
+      <title>Historial Clínico Completo - ${patient.fullName}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
+      <style>
+        @page {
+          size: 8.5in 11in;
+          margin: 1.0in 1.0in 1.0in 1.0in;
+          mso-header-margin: .5in;
+          mso-footer-margin: .5in;
+        }
+        body {
+          font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+          font-size: 11pt;
+          line-height: 1.6;
+          color: #334155;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- Cabecera Profesional -->
+      <table style="width: 100%; border-bottom: 3px double #4f46e5; margin-bottom: 30px; font-family: Arial, sans-serif;">
+        <tr>
+          <td style="padding-bottom: 15px;">
+            <div style="font-size: 22pt; font-weight: bold; color: #1e1b4b; letter-spacing: 0.5px;">PSICO-AGENDA</div>
+            <div style="font-size: 10pt; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; margin-top: 2px;">HISTORIAL CLÍNICO CONSOLIDADO</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Datos de Ficha del Paciente -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-family: Arial, sans-serif; font-size: 10pt;">
+        <tr style="background-color: #f1f5f9;">
+          <td colspan="4" style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #1e1b4b; font-size: 11pt; text-transform: uppercase;">Datos Generales del Paciente</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc; width: 25%;">Nombre Completo</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a; width: 25%; font-weight: bold;">${patient.fullName}</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc; width: 25%;">ID Único (UUID)</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #64748b; font-family: monospace; font-size: 9pt;">${patient.uuid}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc;">Cobertura Médica</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${patient.healthInsurance ? `${patient.healthInsurance} (N° ${patient.affiliateNumber || "Particular"})` : "Particular"}</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc;">Teléfono / Email</td>
+          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${patient.phone || "—"} / ${patient.email || "—"}</td>
+        </tr>
+      </table>
+
+      <!-- Contenido Clínico de Todas las Sesiones -->
+      <div style="margin-top: 10px;">
+        ${sessionsHtml}
+      </div>
+
+      <!-- Pie de Página -->
+      <div style="margin-top: 50px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 8.5pt; color: #94a3b8; text-align: center; font-family: Arial, sans-serif;">
+        Documento clínico oficial exportado bajo estándares de soberanía y privacidad de PSICO-AGENDA.<br/>
+        Fecha del reporte: ${new Date().toLocaleString('es-AR')} | Páginas totales estimadas según paginación nativa de Word.
+      </div>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff' + htmlContent], {
+    type: 'application/msword;charset=utf-8',
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  
+  const safeName = patient.fullName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  
+  a.href = url;
+  a.download = `historial_completo_${safeName}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
 import { usePatientHistory } from "../hooks/usePatientHistory";
-import { exportSessionToWord } from "../../infrastructure/export/docx-exporter";
+import { exportSessionToWord, exportFullHistoryToWord } from "../../infrastructure/export/docx-exporter";
 
 interface PatientDetailProps {
   patient: Patient;
@@ -20,6 +20,9 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
     setSearchTerm,
     saveNotes,
   } = usePatientHistory(patient.uuid);
+
+  // Vista activa: 'timeline' (sesiones individuales) o 'unified' (historial continuado tipo hoja única)
+  const [viewMode, setViewMode] = useState<"timeline" | "unified">("timeline");
 
   // Estado para controlar qué sesión se está editando activamente y sus textos locales temporales
   const [editingSessionUuid, setEditingSessionUuid] = useState<string | null>(null);
@@ -138,21 +141,59 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-brand-sand/30 pb-4">
           <div>
             <h3 className="font-title font-bold text-lg text-text-main">Diario de Sesiones y Notas Clínicas</h3>
-            <p className="text-xs text-text-sub font-medium mt-0.5">Ordenado cronológicamente desde la más reciente</p>
+            <p className="text-xs text-text-sub font-medium mt-0.5">Gestión de evoluciones del paciente</p>
           </div>
 
-          <div className="w-full sm:w-64">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Buscador */}
             <input
               type="text"
-              placeholder="🔍 Buscar en notas clínicas..."
+              placeholder="🔍 Buscar en notas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/50 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs transition-all cursor-pointer"
+              className="bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/50 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs w-full sm:w-44 transition-all cursor-pointer"
             />
+
+            {/* Selector de Vista */}
+            <div className="bg-bg-base p-1 rounded-xl border border-brand-sand flex text-[10px]">
+              <button
+                type="button"
+                onClick={() => setViewMode("timeline")}
+                className={`px-3 py-1 rounded-lg font-title font-bold transition-all cursor-pointer ${
+                  viewMode === "timeline"
+                    ? "bg-brand-indigo text-white shadow-sm"
+                    : "text-text-sub hover:text-text-main"
+                }`}
+              >
+                📅 Sesiones
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("unified")}
+                className={`px-3 py-1 rounded-lg font-title font-bold transition-all cursor-pointer ${
+                  viewMode === "unified"
+                    ? "bg-brand-indigo text-white shadow-sm"
+                    : "text-text-sub hover:text-text-main"
+                }`}
+              >
+                📖 Continuo
+              </button>
+            </div>
+
+            {/* Exportación Completa */}
+            {sessions.length > 0 && (
+              <button
+                onClick={() => exportFullHistoryToWord(patient, sessions)}
+                className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                title="Exportar todo el historial clínico consolidado en un solo archivo de Word"
+              >
+                📥 Exportar Todo
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Timeline de sesiones */}
+        {/* Timeline o Vista Unificada de sesiones */}
         {loading ? (
           <div className="py-16 text-center text-text-sub font-semibold">
             Cargando evoluciones de IndexedDB...
@@ -171,7 +212,51 @@ export function PatientDetail({ patient, onBack }: PatientDetailProps) {
                 : "Las sesiones aparecerán aquí una vez que programes un turno en la Agenda y modifiques su estado o inicies su evolución clínica."}
             </p>
           </div>
+        ) : viewMode === "unified" ? (
+          /* VISTA UNIFICADA / DOSSIER CLÍNICO CONTINUO */
+          <div className="bg-bg-base border border-brand-sand rounded-3xl p-6 md:p-8 space-y-8 max-h-[70vh] overflow-y-auto shadow-inner animate-in zoom-in-95 duration-300">
+            <div className="border-b-2 border-brand-indigo/35 pb-4 mb-4 text-center">
+              <h4 className="font-title font-bold text-base text-text-main">FICHA DE EVOLUCIÓN HISTÓRICA CONSOLIDADA</h4>
+              <p className="text-[10px] text-text-sub uppercase font-bold tracking-wider mt-1">Lectura fluida y continua • Soberanía local</p>
+            </div>
+            
+            {[...sessions].reverse().map((session, index) => {
+              const sessionDate = new Date(session.dateTime);
+              const formattedDate = sessionDate.toLocaleDateString("es-AR", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+
+              return (
+                <div key={session.uuid} className="space-y-3 pb-6 border-b border-brand-sand/50 last:border-0 last:pb-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-brand-sand/15 px-4 py-2 rounded-xl border border-brand-sand/30">
+                    <span className="text-[11px] font-title font-bold text-text-main capitalize">
+                      Sesión N° {index + 1} — {formattedDate}
+                    </span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                      session.status === 'completed' 
+                        ? 'bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20' 
+                        : session.status === 'cancelled'
+                        ? 'bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20'
+                        : 'bg-brand-sand/30 text-text-sub border-brand-sand/50'
+                    }`}>
+                      {session.status === 'completed' ? 'Atendido' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente' : 'Programado'}
+                    </span>
+                  </div>
+
+                  <div className="pl-4 border-l-2 border-brand-sand/60 text-xs text-text-main whitespace-pre-wrap leading-relaxed font-sans">
+                    {session.notes || <span className="text-text-sub italic">Sin anotaciones registradas en esta sesión.</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          /* VISTA POR TARJETAS INDIVIDUALES (LÍNEA DE TIEMPO) */
           <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-6 before:w-0.5 before:bg-brand-sand/40">
             {sessions.map((session) => {
               const sessionDate = new Date(session.dateTime);
