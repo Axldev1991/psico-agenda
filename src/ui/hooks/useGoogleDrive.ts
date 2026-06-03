@@ -2,21 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { GoogleDriveRepository } from "../../infrastructure/drive/google-drive.repository";
-import { DexiePatientRepository } from "../../infrastructure/db/dexie-patient.repository";
-import { DexieSessionRepository } from "../../infrastructure/db/dexie-session.repository";
-import { Patient } from "../../domain/patient.types";
-import { Session, RecurrenceRule } from "../../domain/session.types";
+import { DriveSyncService } from "../../infrastructure/drive/drive-sync.service";
 
 const driveRepo = new GoogleDriveRepository();
-const patientRepo = new DexiePatientRepository();
-const sessionRepo = new DexieSessionRepository();
-
-interface BackupData {
-  patients: Patient[];
-  sessions: Session[];
-  recurrenceRules: RecurrenceRule[];
-  exportedAt: string;
-}
+const syncService = new DriveSyncService();
 
 export function useGoogleDrive() {
   const [googleToken, setGoogleToken] = useState<string | null>(null);
@@ -25,7 +14,7 @@ export function useGoogleDrive() {
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Leer estado de la sesión local inicial al montar el hook
+  // Leer estado de la sesión local inicial al montar el hook e iniciar evicción
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedSync = localStorage.getItem("gd-last-synced");
@@ -34,9 +23,11 @@ export function useGoogleDrive() {
       const cachedToken = sessionStorage.getItem("gd-access-token");
       if (cachedToken) {
         setGoogleToken(cachedToken);
-        // Inyectar el token en la instancia del repositorio
-        (driveRepo as any).accessToken = cachedToken;
+        driveRepo.setAccessToken(cachedToken);
       }
+
+      // Ejecutar evicción silenciosa delegada en el servicio
+      syncService.evictOldCache();
     }
   }, []);
 
@@ -65,7 +56,35 @@ export function useGoogleDrive() {
   };
 
   /**
-   * Algoritmo de Fusión Local de Dos Vías (Two-Way Last-Write-Wins Merge)
+   * Descarga el historial clínico y sesiones de un paciente específico de manera diferida.
+   */
+  const downloadPatientHistory = async (uuid: string): Promise<void> => {
+    if (!googleToken) throw new Error("No hay una sesión activa de Google.");
+    await syncService.downloadPatientHistory(uuid, googleToken);
+  };
+
+  /**
+   * Descarga en bucle todos los expedientes pendientes para habilitar el uso 100% offline.
+   */
+  const preloadAllForOffline = async () => {
+    if (!googleToken) throw new Error("No hay una sesión activa de Google.");
+    setLoading(true);
+    setSyncStatus("syncing");
+    setErrorMessage(null);
+    try {
+      await syncService.preloadAllForOffline(googleToken);
+      setSyncStatus("synced");
+    } catch (err: any) {
+      console.error("Error en pre-carga completa offline:", err);
+      setErrorMessage("La pre-carga offline falló: " + err.message);
+      setSyncStatus("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Sincronización selectiva delegada.
    */
   const performSync = async () => {
     if (!googleToken) return;
@@ -74,98 +93,26 @@ export function useGoogleDrive() {
     setErrorMessage(null);
 
     try {
-      // 1. Obtener Datos Locales
-      const localPatients = await patientRepo.getAll();
-      const localSessions = await sessionRepo.getAll();
-      const localRecurrence = await sessionRepo.getRecurrenceRules();
-
-      // 2. Descargar Datos de la Nube (si existen)
-      const remoteBackupStr = await driveRepo.downloadBackup();
+      const result = await syncService.performSync(googleToken);
       
-      let mergedPatients: Patient[] = [...localPatients];
-      let mergedSessions: Session[] = [...localSessions];
-      let mergedRecurrence: RecurrenceRule[] = [...localRecurrence];
-
-      if (remoteBackupStr) {
-        const remoteData: BackupData = JSON.parse(remoteBackupStr);
-
-        // A. Fusión de Pacientes (Comparando por UUID y updatedAt)
-        const patientMap = new Map<string, Patient>();
-        // Primero indexamos los remotos
-        remoteData.patients.forEach(p => patientMap.set(p.uuid, p));
-        // Luego iteramos los locales y resolvemos colisiones por Last-Write-Wins
-        localPatients.forEach(localP => {
-          const remoteP = patientMap.get(localP.uuid);
-          if (remoteP) {
-            const localTime = new Date(localP.updatedAt).getTime();
-            const remoteTime = new Date(remoteP.updatedAt).getTime();
-            if (localTime > remoteTime) {
-              patientMap.set(localP.uuid, localP); // Ganó el local por ser más nuevo
-            }
-          } else {
-            patientMap.set(localP.uuid, localP); // No existía remoto, conservamos local
-          }
-        });
-        mergedPatients = Array.from(patientMap.values());
-
-        // B. Fusión de Sesiones (Comparando por UUID y updatedAt)
-        const sessionMap = new Map<string, Session>();
-        remoteData.sessions.forEach(s => sessionMap.set(s.uuid, s));
-        localSessions.forEach(localS => {
-          const remoteS = sessionMap.get(localS.uuid);
-          if (remoteS) {
-            const localTime = new Date(localS.updatedAt).getTime();
-            const remoteTime = new Date(remoteS.updatedAt).getTime();
-            if (localTime > remoteTime) {
-              sessionMap.set(localS.uuid, localS); // Ganó el local
-            }
-          } else {
-            sessionMap.set(localS.uuid, localS); // Conservamos local
-          }
-        });
-        mergedSessions = Array.from(sessionMap.values());
-
-        // C. Fusión de Reglas de Recurrencia (Comparando por patientUuid)
-        const recurrenceMap = new Map<string, RecurrenceRule>();
-        remoteData.recurrenceRules.forEach(r => recurrenceMap.set(r.patientUuid, r));
-        localRecurrence.forEach(localR => {
-          if (!recurrenceMap.has(localR.patientUuid)) {
-            recurrenceMap.set(localR.patientUuid, localR);
-          }
-        });
-        mergedRecurrence = Array.from(recurrenceMap.values());
-      }
-
-      // 3. Escribir Datos Fusionados en IndexedDB Local de forma masiva
-      // Usaremos bulkPut para pisar/actualizar registros en IndexedDB de forma atómica y reactiva
-      await patientRepo.saveAll(mergedPatients);
-      await sessionRepo.saveAll(mergedSessions);
-      await sessionRepo.saveAllRecurrenceRules(mergedRecurrence);
-
-      // 4. Crear nuevo Backup JSON y subirlo a Google Drive
-      const newBackup: BackupData = {
-        patients: mergedPatients,
-        sessions: mergedSessions,
-        recurrenceRules: mergedRecurrence,
-        exportedAt: new Date().toISOString(),
-      };
-
-      await driveRepo.uploadBackup(JSON.stringify(newBackup));
-
-      // 5. Actualizar estados de Sincronización
-      const timestamp = new Date().toLocaleString("es-AR", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      setLastSynced(timestamp);
-      localStorage.setItem("gd-last-synced", timestamp);
+      setLastSynced(result.lastSynced);
+      localStorage.setItem("gd-last-synced", result.lastSynced);
       setSyncStatus("synced");
     } catch (err: any) {
-      console.error("Error en sincronización:", err);
-      setErrorMessage("Sincronización fallida: " + err.message);
+      console.error("Error en sincronización selectiva:", err);
+      const errMessage = err.message || "";
+      if (
+        errMessage.includes("401") ||
+        errMessage.includes("unauthorized") ||
+        errMessage.includes("invalid_credentials") ||
+        errMessage.includes("auth") ||
+        errMessage.includes("sesión activa")
+      ) {
+        disconnectGoogle();
+        setErrorMessage("La sesión de Google Drive expiró. Por favor, conectate de nuevo.");
+      } else {
+        setErrorMessage("Sincronización fallida: " + errMessage);
+      }
       setSyncStatus("error");
     } finally {
       setLoading(false);
@@ -181,5 +128,7 @@ export function useGoogleDrive() {
     connectGoogle,
     disconnectGoogle,
     performSync,
+    downloadPatientHistory,
+    preloadAllForOffline,
   };
 }

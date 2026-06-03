@@ -37,6 +37,7 @@ export default function Home() {
     connectGoogle,
     disconnectGoogle,
     performSync,
+    preloadAllForOffline,
   } = useGoogleDrive();
 
   // Vista activa: 'calendar' o 'patients'
@@ -114,14 +115,22 @@ export default function Home() {
                   onClick={performSync}
                   disabled={loadingDrive}
                   title="Sincronizar ahora"
-                  className="bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo p-1 rounded cursor-pointer transition-colors text-[10px] ml-1 font-bold"
+                  className="bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo p-1.5 rounded-lg cursor-pointer transition-colors text-[10px] ml-1 font-bold border border-brand-indigo/20"
                 >
-                  🔄
+                  🔄 Sync
+                </button>
+                <button
+                  onClick={preloadAllForOffline}
+                  disabled={loadingDrive}
+                  title="Pre-cargar todo para uso Offline (Descarga masiva)"
+                  className="bg-status-confirmed-light hover:bg-status-confirmed-light/80 text-status-confirmed-dark p-1.5 rounded-lg cursor-pointer transition-colors text-[10px] ml-1 font-bold border border-status-confirmed-dark/20"
+                >
+                  📥 Pre-cargar Offline
                 </button>
                 <button
                   onClick={disconnectGoogle}
                   title="Desconectar Google Drive"
-                  className="text-text-sub hover:text-status-cancelled-dark p-1 cursor-pointer transition-colors text-[10px]"
+                  className="text-text-sub hover:text-status-cancelled-dark p-1 cursor-pointer transition-colors text-[10px] ml-1"
                 >
                   🚪
                 </button>
