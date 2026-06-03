@@ -7,6 +7,7 @@ export interface ISessionRepository {
   save(session: Session): Promise<void>;
   saveAll(sessions: Session[]): Promise<void>;
   delete(uuid: string): Promise<void>;
+  deleteByPatient(patientUuid: string): Promise<void>;
   
   // Métodos específicos para reglas de recurrencia
   getRecurrenceRules(): Promise<RecurrenceRule[]>;

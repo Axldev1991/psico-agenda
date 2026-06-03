@@ -29,6 +29,10 @@ export class DexieSessionRepository implements ISessionRepository {
     await db.sessions.delete(uuid);
   }
 
+  async deleteByPatient(patientUuid: string): Promise<void> {
+    await db.sessions.where('patientUuid').equals(patientUuid).delete();
+  }
+
   // --- Métodos de Reglas de Recurrencia ---
   async getRecurrenceRules(): Promise<RecurrenceRule[]> {
     return db.recurrenceRules.toArray();

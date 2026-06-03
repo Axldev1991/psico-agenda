@@ -10,4 +10,6 @@ export interface Patient {
   clinicalHistory?: string;  // Historial clínico unificado en HTML enriquecido
   createdAt: string;
   updatedAt: string;
+  status?: 'active' | 'inactive';
+  isHistoryLoaded?: boolean;
 }

@@ -21,6 +21,13 @@ export class PsicoAgendaDatabase extends Dexie {
       sessions: 'uuid, patientUuid, dateTime, status',
       recurrenceRules: 'patientUuid' // patientUuid es la clave primaria aquí
     });
+
+    // Versión 3 (Caché Inteligente e Historiales Archivados)
+    this.version(3).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid'
+    });
   }
 }
 
