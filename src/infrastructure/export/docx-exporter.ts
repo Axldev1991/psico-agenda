@@ -16,7 +16,7 @@ function parseNotesToHtml(notes?: string): string {
     .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 8pt;">$1</h1>');
 }
 
-export function exportSessionToWord(patient: Patient, session: Session) {
+export function generateSessionWordHtml(patient: Patient, session: Session): string {
   const dateFormatted = new Date(session.dateTime).toLocaleDateString('es-AR', {
     weekday: 'long',
     year: 'numeric',
@@ -28,7 +28,7 @@ export function exportSessionToWord(patient: Patient, session: Session) {
 
   const notesHtml = parseNotesToHtml(session.notes);
 
-  const htmlContent = `
+  return `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
           xmlns:w="urn:schemas-microsoft-com:office:word" 
           xmlns="http://www.w3.org/TR/REC-html40">
@@ -160,6 +160,10 @@ export function exportSessionToWord(patient: Patient, session: Session) {
     </body>
     </html>
   `;
+}
+
+export function exportSessionToWord(patient: Patient, session: Session) {
+  const htmlContent = generateSessionWordHtml(patient, session);
 
   // Crear y disparar la descarga en el cliente
   const blob = new Blob(['\ufeff' + htmlContent], {
@@ -181,8 +185,8 @@ export function exportSessionToWord(patient: Patient, session: Session) {
   URL.revokeObjectURL(url);
 }
 
-export function exportFullHistoryToWord(patient: Patient) {
-  const htmlContent = `
+export function generateFullHistoryWordHtml(patient: Patient): string {
+  return `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
           xmlns:w="urn:schemas-microsoft-com:office:word" 
           xmlns="http://www.w3.org/TR/REC-html40">
@@ -256,6 +260,10 @@ export function exportFullHistoryToWord(patient: Patient) {
     </body>
     </html>
   `;
+}
+
+export function exportFullHistoryToWord(patient: Patient) {
+  const htmlContent = generateFullHistoryWordHtml(patient);
 
   const blob = new Blob(['\ufeff' + htmlContent], {
     type: 'application/msword;charset=utf-8',

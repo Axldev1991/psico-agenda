@@ -2,6 +2,13 @@
   "name": "psico-agenda",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "src",
+    "public",
+    "package.json",
+    "next.config.ts",
+    "tsconfig.json"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -24,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "lockfile-lint": "^5.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

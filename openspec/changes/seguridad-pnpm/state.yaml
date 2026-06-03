@@ -1,0 +1,11 @@
+change-name: seguridad-pnpm
+active-phase: archived
+completed-phases:
+  - explore
+  - propose
+  - specs
+  - design
+  - tasks
+  - apply
+  - verify
+  - archive
