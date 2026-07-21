@@ -20,7 +20,7 @@ export function useGoogleDrive() {
       const savedSync = localStorage.getItem("gd-last-synced");
       if (savedSync) setLastSynced(savedSync);
 
-      const cachedToken = sessionStorage.getItem("gd-access-token");
+      const cachedToken = localStorage.getItem("gd-access-token");
       if (cachedToken) {
         setGoogleToken(cachedToken);
         driveRepo.setAccessToken(cachedToken);
@@ -37,7 +37,7 @@ export function useGoogleDrive() {
     try {
       const token = await driveRepo.login();
       setGoogleToken(token);
-      sessionStorage.setItem("gd-access-token", token);
+      localStorage.setItem("gd-access-token", token);
       setSyncStatus("idle");
     } catch (err: any) {
       console.error(err);
@@ -51,8 +51,28 @@ export function useGoogleDrive() {
   const disconnectGoogle = () => {
     driveRepo.logout();
     setGoogleToken(null);
-    sessionStorage.removeItem("gd-access-token");
+    localStorage.removeItem("gd-access-token");
     setSyncStatus("idle");
+  };
+
+  // Helper local para simular estados de red a través de la CLI
+  const checkSimulatedNetwork = async () => {
+    try {
+      const res = await fetch("/net-config.json");
+      if (res.ok) {
+        const config = await res.json();
+        if (config.status === "fail") {
+          throw new Error("Google Drive synchronization simulated failure");
+        }
+        if (config.status === "slow") {
+          console.log("⏳ Simulación de red lenta: esperando 4 segundos...");
+          await new Promise((resolve) => setTimeout(resolve, 4000));
+        }
+      }
+    } catch (e: any) {
+      if (e.message.includes("simulated")) throw e;
+      // Si no existe el archivo o da error de parsing, simplemente continuar normal
+    }
   };
 
   /**
@@ -60,6 +80,7 @@ export function useGoogleDrive() {
    */
   const downloadPatientHistory = async (uuid: string): Promise<void> => {
     if (!googleToken) throw new Error("No hay una sesión activa de Google.");
+    await checkSimulatedNetwork();
     await syncService.downloadPatientHistory(uuid, googleToken);
   };
 
@@ -72,6 +93,7 @@ export function useGoogleDrive() {
     setSyncStatus("syncing");
     setErrorMessage(null);
     try {
+      await checkSimulatedNetwork();
       await syncService.preloadAllForOffline(googleToken);
       setSyncStatus("synced");
     } catch (err: any) {
@@ -93,6 +115,7 @@ export function useGoogleDrive() {
     setErrorMessage(null);
 
     try {
+      await checkSimulatedNetwork();
       const result = await syncService.performSync(googleToken);
       
       setLastSynced(result.lastSynced);

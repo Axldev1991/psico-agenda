@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Patient } from "../../domain/patient.types";
 import { seedDemoData } from "../../infrastructure/db/seed";
+import { calculateAge, sortPatientsAlphabetically } from "../../domain/patient.utils";
 
 interface PatientManagerProps {
   patients: Patient[];
@@ -20,10 +21,16 @@ export function PatientManager({
   onSelectPatient,
 }: PatientManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>("active");
   const [seedStatus, setSeedStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
-  const filteredPatients = patients.filter((p) =>
-    p.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPatients = sortPatientsAlphabetically(
+    patients.filter((p) => {
+      const matchesSearch = p.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+      const patientStatus = p.status || 'active'; // Default to active if undefined
+      const matchesStatus = statusFilter === 'all' || patientStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
   );
 
   const handleSeed = async () => {
@@ -41,6 +48,38 @@ export function PatientManager({
 
   return (
     <section className="bg-bg-card border border-brand-sand rounded-2xl overflow-hidden shadow-sm">
+      <div className="flex border-b border-brand-sand bg-bg-base/40 px-6 pt-3 gap-6">
+        <button
+          onClick={() => setStatusFilter("active")}
+          className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+            statusFilter === "active"
+              ? "border-brand-indigo text-brand-indigo"
+              : "border-transparent text-text-sub hover:text-text-main"
+          }`}
+        >
+          En Tratamiento
+        </button>
+        <button
+          onClick={() => setStatusFilter("inactive")}
+          className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+            statusFilter === "inactive"
+              ? "border-brand-indigo text-brand-indigo"
+              : "border-transparent text-text-sub hover:text-text-main"
+          }`}
+        >
+          No en Tratamiento / De Alta
+        </button>
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+            statusFilter === "all"
+              ? "border-brand-indigo text-brand-indigo"
+              : "border-transparent text-text-sub hover:text-text-main"
+          }`}
+        >
+          Todos
+        </button>
+      </div>
       <div className="p-6 border-b border-brand-sand flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="font-title font-bold text-lg text-text-main">Fichero de Pacientes</h2>
@@ -128,9 +167,25 @@ export function PatientManager({
                 >
                   {/* Paciente (DM Sans + IBM Plex Mono) */}
                   <td className="py-4 px-6">
-                    <span className="font-title font-bold text-text-main block">
-                      {patient.fullName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-title font-bold text-text-main block">
+                        {patient.fullName}
+                      </span>
+                      {patient.type && (
+                        <span className={`text-[10px] font-title font-bold px-2 py-0.5 rounded-full ${
+                          patient.type === 'adult'
+                            ? 'bg-brand-indigo/10 text-brand-indigo border border-brand-indigo/20'
+                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        }`}>
+                          {patient.type === 'adult' ? 'Adulto' : 'Infanto-Juv.'}
+                        </span>
+                      )}
+                      {patient.birthDate && (
+                        <span className="text-xs text-text-sub font-semibold">
+                          ({calculateAge(patient.birthDate)} años)
+                        </span>
+                      )}
+                    </div>
                     <span className="font-mono text-[10px] text-text-sub block mt-0.5">
                       ID: {patient.uuid.substring(0, 8)}...
                     </span>

@@ -5,6 +5,8 @@ export interface Session {
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   priceAtSession: number;   // Precio histórico cobrado (para no romper la contabilidad retroactiva si suben las tarifas)
   notes?: string;           // Notas breves clínicas
+  description?: string;     // Descripción rápida para el índice
+  colorTag?: string;        // Marca de color visual (ej: "indigo", "rose", "emerald")
   createdAt: string;
   updatedAt: string;
 }

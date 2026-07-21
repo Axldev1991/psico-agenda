@@ -1,17 +1,19 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Patient } from "../../domain/patient.types";
 import { exportFullHistoryToWord } from "../../infrastructure/export/docx-exporter";
 import { RichTextEditor } from "./RichTextEditor";
 import { usePatientDetail } from "../hooks/usePatientDetail";
+import { calculateAge } from "../../domain/patient.utils";
 
 interface PatientDetailProps {
   patient: Patient;
   onBack: () => void;
+  onEdit: (patient: Patient) => void;
 }
 
-export function PatientDetail({ patient: initialPatient, onBack }: PatientDetailProps) {
+export function PatientDetail({ patient: initialPatient, onBack, onEdit }: PatientDetailProps) {
   const {
     patient,
     sortedSessions,
@@ -22,8 +24,10 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
     handleHistoryChange,
     handleRetryDownload,
     handleScrollToSession,
+    handleCeciChange,
   } = usePatientDetail(initialPatient);
 
+  const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const onScrollToSession = (sessionUuid: string) => {
@@ -45,7 +49,23 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
             </button>
             <div>
               <span className="text-[10px] text-text-sub font-bold uppercase tracking-wider block">Historial Clínico</span>
-              <h2 className="font-title font-bold text-2xl text-text-main mt-0.5">{patient.fullName}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <h2 className="font-title font-bold text-2xl text-text-main">{patient.fullName}</h2>
+                {patient.type && (
+                  <span className={`text-[10px] font-title font-bold px-2.5 py-0.5 rounded-full ${
+                    patient.type === 'adult'
+                      ? 'bg-brand-indigo/10 text-brand-indigo border border-brand-indigo/20'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  }`}>
+                    {patient.type === 'adult' ? 'Adulto' : 'Infanto-Juvenil'}
+                  </span>
+                )}
+                {patient.birthDate && (
+                  <span className="text-sm text-text-sub font-semibold">
+                    ({calculateAge(patient.birthDate)} años)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -57,6 +77,13 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
             <span className="font-mono text-xs font-bold bg-brand-lavender/30 text-text-main border border-brand-lavender/40 px-3 py-1.5 rounded-xl shadow-sm">
               Arancel: ${patient.sessionPrice.toLocaleString("es-AR")} ARS
             </span>
+            <button
+              onClick={() => onEdit(patient)}
+              className="bg-bg-base hover:bg-brand-sand/20 border border-brand-sand text-brand-indigo font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+              title="Editar datos personales de la ficha del paciente"
+            >
+              ✏️ Editar Ficha
+            </button>
             <button
               disabled={patient.isHistoryLoaded === false}
               onClick={() => exportFullHistoryToWord(patient)}
@@ -153,29 +180,57 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
                   });
                   const sessionNumber = sortedSessions.length - index;
 
+                  // Resolving tag colors
+                  const colorClasses: Record<string, string> = {
+                    indigo: "bg-brand-indigo/20 text-brand-indigo border-brand-indigo/35",
+                    rose: "bg-rose-100 text-rose-800 border-rose-200",
+                    emerald: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                    amber: "bg-amber-100 text-amber-800 border-amber-200",
+                  };
+                  const colorTag = session.colorTag || "indigo";
+                  const resolvedColor = colorClasses[colorTag] || colorClasses.indigo;
+
                   return (
                     <button
                       key={session.uuid}
-                      onClick={() => onScrollToSession(session.uuid)}
-                      className="w-full text-left bg-bg-base/50 hover:bg-brand-indigo/10 border border-brand-sand/30 hover:border-brand-indigo/35 p-3 rounded-2xl transition-all cursor-pointer flex items-center justify-between group"
+                      onClick={() => {
+                        setActiveTab("timeline");
+                        // Dar tiempo a que cambie el tab si es necesario
+                        setTimeout(() => onScrollToSession(session.uuid), 50);
+                      }}
+                      className="w-full text-left bg-bg-base/50 hover:bg-brand-indigo/10 border border-brand-sand/30 hover:border-brand-indigo/35 p-3 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 group"
                     >
-                      <div>
+                      <div className="flex items-center justify-between w-full">
                         <span className="font-title font-bold text-xs text-text-main block group-hover:text-brand-indigo">
                           Sesión N° {sessionNumber}
                         </span>
-                        <span className="text-[10px] text-text-sub block mt-0.5 font-mono">
-                          {dateFormatted} hs
+                        <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border ${
+                          session.status === "completed"
+                            ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
+                            : session.status === "cancelled"
+                            ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
+                            : "bg-brand-sand/30 text-text-sub border-brand-sand/55"
+                        }`}>
+                          {session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}
                         </span>
                       </div>
-                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border ${
-                        session.status === "completed"
-                          ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
-                          : session.status === "cancelled"
-                          ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
-                          : "bg-brand-sand/30 text-text-sub border-brand-sand/55"
-                      }`}>
-                        {session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}
-                      </span>
+                      
+                      {session.description && (
+                        <p className="text-[11px] text-text-main font-semibold line-clamp-1">
+                          {session.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[9px] text-text-sub font-mono">
+                          {dateFormatted} hs
+                        </span>
+                        {session.colorTag && (
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase ${resolvedColor}`}>
+                            {session.colorTag}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -183,26 +238,158 @@ export function PatientDetail({ patient: initialPatient, onBack }: PatientDetail
             )}
           </div>
 
-          {/* Panel Derecho: Gran Editor Clínico Word-Like */}
-          <div 
-            ref={editorContainerRef}
-            className="lg:col-span-9 bg-white border border-brand-sand rounded-3xl p-6 md:p-8 shadow-md max-h-[75vh] overflow-y-auto space-y-4"
-          >
-            <div className="border-b border-brand-sand pb-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-title font-bold text-base text-text-main">📖 Expediente Clínico Unificado</h3>
-                <p className="text-[10px] text-text-sub font-semibold mt-0.5">Formato compatible nativo con Microsoft Word</p>
-              </div>
-              <span className="text-[10px] text-text-sub/50 font-semibold italic">Guardado automático en IndexedDB</span>
+          {/* Panel Derecho: Gran Editor Clínico Word-Like con Pestañas */}
+          <div className="lg:col-span-9 space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-brand-sand bg-bg-card p-1 rounded-t-3xl gap-4 px-6 pt-3">
+              <button
+                onClick={() => setActiveTab("timeline")}
+                className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+                  activeTab === "timeline"
+                    ? "border-brand-indigo text-brand-indigo"
+                    : "border-transparent text-text-sub hover:text-text-main"
+                }`}
+              >
+                📖 Expediente Continuo
+              </button>
+              <button
+                onClick={() => setActiveTab("ceci")}
+                className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+                  activeTab === "ceci"
+                    ? "border-brand-indigo text-brand-indigo"
+                    : "border-transparent text-text-sub hover:text-text-main"
+                }`}
+              >
+                📋 Ficha CECI
+              </button>
             </div>
 
-            <div className="prose max-w-none">
-              <RichTextEditor
-                initialValue={clinicalHistoryHtml}
-                onChange={handleHistoryChange}
-                placeholder="Comenzá a redactar el expediente clínico unificado de este paciente..."
-              />
-            </div>
+            {activeTab === "timeline" ? (
+              <div 
+                ref={editorContainerRef}
+                className="bg-white border border-brand-sand rounded-b-3xl p-6 md:p-8 shadow-md max-h-[75vh] overflow-y-auto space-y-4"
+              >
+                <div className="border-b border-brand-sand pb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-title font-bold text-base text-text-main">📖 Expediente Clínico Unificado</h3>
+                    <p className="text-[10px] text-text-sub font-semibold mt-0.5">Formato compatible nativo con Microsoft Word</p>
+                  </div>
+                  <span className="text-[10px] text-text-sub/50 font-semibold italic">Guardado automático en IndexedDB</span>
+                </div>
+
+                <div className="prose max-w-none">
+                  <RichTextEditor
+                    initialValue={clinicalHistoryHtml}
+                    onChange={handleHistoryChange}
+                    placeholder="Comenzá a redactar el expediente clínico unificado de este paciente..."
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-brand-sand rounded-b-3xl p-6 md:p-8 shadow-md max-h-[75vh] overflow-y-auto space-y-6">
+                <div>
+                  <h3 className="font-title font-bold text-base text-text-main">📋 Ficha del Paciente (CECI)</h3>
+                  <p className="text-[10px] text-text-sub font-semibold mt-0.5">Marco y variables clínicas estructuradas</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-text-sub font-bold block mb-1">Convive Con</label>
+                    <input
+                      type="text"
+                      value={patient.ceciConviveCon || ""}
+                      onChange={(e) => handleCeciChange("ceciConviveCon", e.target.value)}
+                      placeholder="Ej: Padres y un hermano menor..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-text-sub font-bold block mb-1">Familia (Estructura familiar)</label>
+                    <textarea
+                      value={patient.ceciFamilia || ""}
+                      onChange={(e) => handleCeciChange("ceciFamilia", e.target.value)}
+                      placeholder="Describa la composición y dinámica familiar..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-sub font-bold block mb-1">Ocupación</label>
+                    <input
+                      type="text"
+                      value={patient.ceciOcupacion || ""}
+                      onChange={(e) => handleCeciChange("ceciOcupacion", e.target.value)}
+                      placeholder="Ej: Profesional independiente, Estudiante..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-sub font-bold block mb-1">Estudios</label>
+                    <input
+                      type="text"
+                      value={patient.ceciEstudios || ""}
+                      onChange={(e) => handleCeciChange("ceciEstudios", e.target.value)}
+                      placeholder="Ej: Universitario en curso, Primario..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-text-sub font-bold block mb-1">Tratamientos Anteriores</label>
+                    <textarea
+                      value={patient.ceciTratamientosAnteriores || ""}
+                      onChange={(e) => handleCeciChange("ceciTratamientosAnteriores", e.target.value)}
+                      placeholder="Detalle tratamientos psicológicos o psiquiátricos previos..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-sub font-bold block mb-1">Inicio de Consulta</label>
+                    <input
+                      type="date"
+                      value={patient.ceciInicioConsulta || ""}
+                      onChange={(e) => handleCeciChange("ceciInicioConsulta", e.target.value)}
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-sub font-bold block mb-1">Día y Horario de Atención</label>
+                    <input
+                      type="text"
+                      value={patient.ceciDiaHorarioAtencion || ""}
+                      onChange={(e) => handleCeciChange("ceciDiaHorarioAtencion", e.target.value)}
+                      placeholder="Ej: Miércoles 16:00 hs..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-text-sub font-bold block mb-1">Frecuencia del Tratamiento</label>
+                    <input
+                      type="text"
+                      value={patient.ceciFrecuenciaTratamiento || ""}
+                      onChange={(e) => handleCeciChange("ceciFrecuenciaTratamiento", e.target.value)}
+                      placeholder="Ej: Semanal, Quincenal..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-text-sub font-bold block mb-1">Datos Adicionales / Notas</label>
+                    <textarea
+                      value={patient.ceciDatosAdicionales || ""}
+                      onChange={(e) => handleCeciChange("ceciDatosAdicionales", e.target.value)}
+                      placeholder="Notas adicionales relevantes para la admisión..."
+                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

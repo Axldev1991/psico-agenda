@@ -34,17 +34,22 @@ export function usePatientDetail(initialPatient: Patient) {
 
   // Auto-descarga al ingresar al expediente si no está en caché local
   useEffect(() => {
+    console.log("DEBUG: Verificando autodescarga. ¿Token?", !!googleToken, "¿Historial cargado?", patient.isHistoryLoaded);
     const autoDownload = async () => {
       if (patient.isHistoryLoaded === false && googleToken) {
+        console.log("DEBUG: Condiciones cumplidas, iniciando descarga para:", patient.uuid);
         setIsDownloading(true);
         setDownloadError(null);
         try {
           await downloadPatientHistory(patient.uuid);
         } catch (err: any) {
+          console.log("DEBUG: Error en descarga:", err);
           setDownloadError(err.message || "Error al intentar sincronizar el expediente desde Drive.");
         } finally {
           setIsDownloading(false);
         }
+      } else {
+        console.log("DEBUG: Autodescarga salteada. ¿Token faltante o Historial ya cargado?");
       }
     };
     autoDownload();
@@ -166,6 +171,20 @@ export function usePatientDetail(initialPatient: Patient) {
     }
   };
 
+  // Guardar cambios en ficha CECI
+  const handleCeciChange = async (key: string, value: string) => {
+    try {
+      const updatedPatient = {
+        ...patient,
+        [key]: value,
+        updatedAt: new Date().toISOString(),
+      };
+      await patientRepo.save(updatedPatient);
+    } catch (err) {
+      console.error("Error guardando datos CECI:", err);
+    }
+  };
+
   return {
     patient,
     sortedSessions,
@@ -177,5 +196,6 @@ export function usePatientDetail(initialPatient: Patient) {
     handleHistoryChange,
     handleRetryDownload,
     handleScrollToSession,
+    handleCeciChange,
   };
 }

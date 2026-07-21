@@ -28,6 +28,13 @@ export class PsicoAgendaDatabase extends Dexie {
       sessions: 'uuid, patientUuid, dateTime, status',
       recurrenceRules: 'patientUuid'
     });
+
+    // Versión 4: Detección y clasificación de tipo de paciente y edad
+    this.version(4).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid'
+    });
   }
 }
 

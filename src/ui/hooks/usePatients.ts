@@ -26,10 +26,25 @@ export function usePatients() {
     await repository.delete(uuid);
   };
 
+  const updatePatient = async (
+    uuid: string,
+    patientData: Omit<Patient, "uuid" | "createdAt" | "updatedAt">
+  ) => {
+    const existing = await repository.getByUuid(uuid);
+    if (!existing) return;
+    const updated: Patient = {
+      ...existing,
+      ...patientData,
+      updatedAt: new Date().toISOString(),
+    };
+    await repository.save(updated);
+  };
+
   return {
     patients,
     loading,
     addPatient,
     removePatient,
+    updatePatient,
   };
 }

@@ -237,11 +237,14 @@ export function useCalendar() {
     nextWeek,
     prevWeek,
     goToToday,
+    selectDate: setCurrentDate,
     addManualSession,
     addRecurrence,
     updateSessionStatus,
     removeRecurrenceRule,
     patients,
-    holidays
+    holidays,
+    dbSessions,
+    recurrenceRules
   };
 }

@@ -1,4 +1,5 @@
 import { IDriveRepository } from "../../repositories/drive.repository";
+import { driveLogger } from "./drive-logger";
 
 // Declaración global para TypeScript
 declare global {
@@ -11,6 +12,7 @@ export class GoogleDriveRepository implements IDriveRepository {
   private clientId: string;
   private accessToken: string | null = null;
   private gisScriptLoaded = false;
+  private appDataFolderId: string | null = null;
 
   constructor() {
     // Leer Client ID de variables de entorno o usar un valor por defecto didáctico
@@ -88,6 +90,8 @@ export class GoogleDriveRepository implements IDriveRepository {
   }
 
   setAccessToken(token: string | null): void {
+    console.log("[GoogleDriveRepository] Setting token:", token ? `${token.substring(0, 15)}...` : "null");
+    driveLogger.log("info", `Configurando token de acceso: ${token ? `${token.substring(0, 15)}...` : "null"}`);
     this.accessToken = token;
   }
 
@@ -213,7 +217,12 @@ export class GoogleDriveRepository implements IDriveRepository {
       query += ` and 'root' in parents`;
     }
 
-    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id)`;
+    const isAppData = parentId === "appDataFolder" || (this.appDataFolderId && parentId === this.appDataFolderId);
+    const spaces = isAppData ? "appDataFolder" : "drive";
+
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=${spaces}&q=${encodeURIComponent(query)}&fields=files(id)`;
+    driveLogger.log("request", `GET Buscar carpeta: "${name}" (Espacio: ${spaces}, Padre: ${parentId || "root"})`, { query });
+
     const response = await fetch(searchUrl, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -221,14 +230,22 @@ export class GoogleDriveRepository implements IDriveRepository {
     });
 
     if (!response.ok) {
-      throw new Error(`Error buscando la carpeta "${name}" en Google Drive.`);
+      const errText = await response.text();
+      driveLogger.log("error", `Error buscando carpeta "${name}": ${response.status} - ${errText}`);
+      throw new Error(`Error buscando la carpeta "${name}" en Google Drive: ${response.status} ${response.statusText} - ${errText}`);
     }
 
     const data = await response.json();
     if (data.files && data.files.length > 0) {
-      return data.files[0].id;
+      const folderId = data.files[0].id;
+      driveLogger.log("response", `Carpeta encontrada: "${name}" -> ID: ${folderId}`);
+      if (name === "patients" && parentId === "appDataFolder") {
+        this.appDataFolderId = folderId;
+      }
+      return folderId;
     }
 
+    // Crear carpeta
     const createUrl = "https://www.googleapis.com/drive/v3/files";
     const body: any = {
       name: name,
@@ -237,6 +254,8 @@ export class GoogleDriveRepository implements IDriveRepository {
     if (parentId) {
       body.parents = [parentId];
     }
+
+    driveLogger.log("request", `POST Crear carpeta: "${name}" (Padre: ${parentId || "root"})`);
 
     const createResponse = await fetch(createUrl, {
       method: "POST",
@@ -248,21 +267,31 @@ export class GoogleDriveRepository implements IDriveRepository {
     });
 
     if (!createResponse.ok) {
+      const errText = await createResponse.text();
+      driveLogger.log("error", `Error al crear carpeta "${name}": ${createResponse.status} - ${errText}`);
       throw new Error(`Error al crear la carpeta "${name}" en Google Drive.`);
     }
 
     const createdData = await createResponse.json();
-    return createdData.id;
+    const folderId = createdData.id;
+    driveLogger.log("response", `Carpeta creada exitosamente: "${name}" -> ID: ${folderId}`);
+    if (name === "patients" && parentId === "appDataFolder") {
+      this.appDataFolderId = folderId;
+    }
+    return folderId;
   }
 
-  /**
-   * Sube o actualiza un archivo en una carpeta específica en Drive.
-   */
   async uploadFileToFolder(folderId: string, filename: string, mimeType: string, content: string | Blob): Promise<string> {
     if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
 
+    const isAppData = folderId === "appDataFolder" || (this.appDataFolderId && folderId === this.appDataFolderId);
+    const spaces = isAppData ? "appDataFolder" : "drive";
+
     const query = `name='${filename}' and '${folderId}' in parents and trashed=false`;
-    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id)`;
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=${spaces}&q=${encodeURIComponent(query)}&fields=files(id)`;
+    
+    driveLogger.log("request", `GET Buscar archivo: "${filename}" (Carpeta: ${folderId}, Espacio: ${spaces})`);
+    
     const searchResponse = await fetch(searchUrl, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -274,6 +303,7 @@ export class GoogleDriveRepository implements IDriveRepository {
       const data = await searchResponse.json();
       if (data.files && data.files.length > 0) {
         fileId = data.files[0].id;
+        driveLogger.log("response", `Archivo encontrado en la nube -> ID: ${fileId}`);
       }
     }
 
@@ -281,6 +311,8 @@ export class GoogleDriveRepository implements IDriveRepository {
 
     if (fileId) {
       const url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
+      driveLogger.log("request", `PATCH Actualizar archivo: "${filename}" -> ID: ${fileId} (${mimeType})`);
+      
       const response = await fetch(url, {
         method: "PATCH",
         headers: {
@@ -291,11 +323,15 @@ export class GoogleDriveRepository implements IDriveRepository {
       });
 
       if (!response.ok) {
+        const errText = await response.text();
+        driveLogger.log("error", `Error actualizando archivo "${filename}": ${response.status} - ${errText}`);
         throw new Error(`Error al actualizar el archivo "${filename}" en Google Drive.`);
       }
+      driveLogger.log("response", `Archivo "${filename}" actualizado exitosamente.`);
       return fileId;
     } else {
       const url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+      driveLogger.log("request", `POST Crear archivo: "${filename}" (Carpeta Padre: ${folderId})`);
       
       const metadata = {
         name: filename,
@@ -327,11 +363,14 @@ export class GoogleDriveRepository implements IDriveRepository {
 
       if (!response.ok) {
         const errText = await response.text();
+        driveLogger.log("error", `Error al crear archivo "${filename}": ${response.status} - ${errText}`);
         throw new Error(`Error al crear el archivo "${filename}" en Google Drive: ` + errText);
       }
 
       const createdData = await response.json();
-      return createdData.id;
+      const newFileId = createdData.id;
+      driveLogger.log("response", `Archivo "${filename}" creado exitosamente -> ID: ${newFileId}`);
+      return newFileId;
     }
   }
 
@@ -341,8 +380,14 @@ export class GoogleDriveRepository implements IDriveRepository {
   async downloadFileFromFolder(folderId: string, filename: string): Promise<string | null> {
     if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
 
+    const isAppData = folderId === "appDataFolder" || (this.appDataFolderId && folderId === this.appDataFolderId);
+    const spaces = isAppData ? "appDataFolder" : "drive";
+
     const query = `name='${filename}' and '${folderId}' in parents and trashed=false`;
-    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id)`;
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?spaces=${spaces}&q=${encodeURIComponent(query)}&fields=files(id)`;
+    
+    driveLogger.log("request", `GET Buscar archivo para descarga: "${filename}" (Carpeta: ${folderId}, Espacio: ${spaces})`);
+    
     const response = await fetch(searchUrl, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -350,16 +395,21 @@ export class GoogleDriveRepository implements IDriveRepository {
     });
 
     if (!response.ok) {
+      const errText = await response.text();
+      driveLogger.log("error", `Error buscando archivo "${filename}": ${response.status} - ${errText}`);
       throw new Error(`Error buscando el archivo "${filename}" en la carpeta.`);
     }
 
     const data = await response.json();
     if (!data.files || data.files.length === 0) {
+      driveLogger.log("response", `Archivo no encontrado: "${filename}"`);
       return null;
     }
 
     const fileId = data.files[0].id;
     const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+    driveLogger.log("request", `GET Descargar contenido: "${filename}" -> ID: ${fileId}`);
+    
     const downloadResponse = await fetch(downloadUrl, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -367,9 +417,12 @@ export class GoogleDriveRepository implements IDriveRepository {
     });
 
     if (!downloadResponse.ok) {
+      const errText = await downloadResponse.text();
+      driveLogger.log("error", `Error descargando contenido de "${filename}": ${downloadResponse.status} - ${errText}`);
       throw new Error(`Error al descargar el archivo "${filename}" desde Google Drive.`);
     }
 
+    driveLogger.log("response", `Archivo "${filename}" descargado exitosamente.`);
     return await downloadResponse.text();
   }
 }
