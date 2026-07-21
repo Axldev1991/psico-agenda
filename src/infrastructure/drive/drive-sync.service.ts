@@ -158,48 +158,55 @@ export class DriveSyncService {
     const patientsToUpload: string[] = [];
     const patientsToDownload: string[] = [];
 
-    remotePatients.forEach(p => {
-      if (isMigrating) {
-        p.isHistoryLoaded = true;
-        p.status = 'active';
-      }
-      patientMap.set(p.uuid, p);
+    // 1. Inicializar el mapa con todos los pacientes locales (que contienen el historial clínico local)
+    localPatients.forEach(localP => {
+      patientMap.set(localP.uuid, localP);
     });
 
-    localPatients.forEach(localP => {
-      const remoteP = patientMap.get(localP.uuid);
-      if (remoteP) {
+    // 2. Analizar pacientes remotos para determinar subidas, descargas y fusiones
+    remotePatients.forEach(remoteP => {
+      if (isMigrating) {
+        remoteP.isHistoryLoaded = true;
+        remoteP.status = 'active';
+      }
+
+      const localP = patientMap.get(remoteP.uuid);
+      if (localP) {
         const localTime = new Date(localP.updatedAt).getTime();
         const remoteTime = new Date(remoteP.updatedAt).getTime();
 
         if (localTime > remoteTime) {
-          // Local es más nuevo -> planear subida (solo si el historial está cargado localmente)
-          patientMap.set(localP.uuid, localP);
+          // Local es más nuevo -> subir a Drive
           if (localP.isHistoryLoaded !== false) {
             patientsToUpload.push(localP.uuid);
           }
         } else if (remoteTime > localTime) {
-          // Remoto es más nuevo -> planear descarga si el local ya estaba cargado o el remoto es activo
+          // Remoto es más nuevo -> descargar de Drive y actualizar local
           if (localP.isHistoryLoaded === true || remoteP.status === 'active') {
             patientsToDownload.push(localP.uuid);
           }
+          // Actualizar metadatos en el mapa conservando la historia local de forma transitoria
+          const historyBackup = localP.clinicalHistory;
+          patientMap.set(remoteP.uuid, {
+            ...remoteP,
+            clinicalHistory: historyBackup,
+            isHistoryLoaded: localP.isHistoryLoaded
+          });
         }
       } else {
-        // Solo existe localmente -> subir
-        patientMap.set(localP.uuid, localP);
-        if (localP.isHistoryLoaded !== false) {
-          patientsToUpload.push(localP.uuid);
+        // Solo existe remotamente -> descargar
+        patientMap.set(remoteP.uuid, remoteP);
+        if (remoteP.status === 'active' || isMigrating) {
+          patientsToDownload.push(remoteP.uuid);
         }
       }
     });
 
-    // Pacientes nuevos remotamente
-    remotePatients.forEach(remoteP => {
-      const localP = localPatients.find(p => p.uuid === remoteP.uuid);
-      if (!localP) {
-        if (remoteP.status === 'active' || isMigrating) {
-          patientsToDownload.push(remoteP.uuid);
-        }
+    // 3. Identificar pacientes locales nuevos que no existen remotamente -> subir
+    localPatients.forEach(localP => {
+      const existsRemote = remotePatients.some(remoteP => remoteP.uuid === localP.uuid);
+      if (!existsRemote && localP.isHistoryLoaded !== false) {
+        patientsToUpload.push(localP.uuid);
       }
     });
 
