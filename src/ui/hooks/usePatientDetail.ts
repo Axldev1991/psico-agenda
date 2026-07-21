@@ -93,6 +93,7 @@ export function usePatientDetail(initialPatient: Patient) {
         const updatedPatient = {
           ...patient,
           clinicalHistory: fullHtml,
+          isHistoryLoaded: true,
           updatedAt: new Date().toISOString(),
         };
         await patientRepo.save(updatedPatient);
@@ -142,6 +143,7 @@ export function usePatientDetail(initialPatient: Patient) {
             const updatedPatient = {
               ...patient,
               clinicalHistory: latestHistory,
+              isHistoryLoaded: true,
               updatedAt: new Date().toISOString(),
             };
             await patientRepo.save(updatedPatient);
@@ -216,6 +218,7 @@ export function usePatientDetail(initialPatient: Patient) {
         const updatedPatient = {
           ...patient,
           clinicalHistory: fullHtml,
+          isHistoryLoaded: true,
           updatedAt: new Date().toISOString(),
         };
         await patientRepo.save(updatedPatient);
