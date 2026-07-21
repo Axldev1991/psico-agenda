@@ -18,6 +18,8 @@ const {
   mockGetRecurrenceRules,
   mockSaveAllRecurrenceRules,
   mockGetAllSessions,
+  mockRenameFileOrFolder,
+  mockFindFolderBySuffix,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -32,6 +34,8 @@ const {
   mockGetRecurrenceRules: vi.fn(),
   mockSaveAllRecurrenceRules: vi.fn(),
   mockGetAllSessions: vi.fn(),
+  mockRenameFileOrFolder: vi.fn(),
+  mockFindFolderBySuffix: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -42,6 +46,8 @@ vi.mock('./google-drive.repository', () => {
       downloadFileFromFolder = mockDownloadFile;
       uploadFileToFolder = mockUploadFile;
       downloadBackup = mockDownloadBackup;
+      renameFileOrFolder = mockRenameFileOrFolder;
+      findFolderBySuffix = mockFindFolderBySuffix;
     }
   };
 });

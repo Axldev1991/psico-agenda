@@ -335,8 +335,25 @@ export class DriveSyncService {
         const partialUuid = patient.uuid.substring(0, 8);
         const patientFolderName = `${patient.fullName}_${partialUuid}`;
         
-        // Crear carpeta del paciente
-        const patientFolderId = await driveRepo.getOrCreateFolder(patientFolderName, pacientesFolderId);
+        // Buscar si ya existe una carpeta para este paciente usando su UUID único como sufijo
+        let patientFolderId: string;
+        const existingFolder = await driveRepo.findFolderBySuffix(partialUuid, pacientesFolderId);
+        
+        if (existingFolder) {
+          patientFolderId = existingFolder.id;
+          // Si el nombre de la carpeta cambió (porque se editó el nombre del paciente), la renombramos automáticamente en Drive
+          if (existingFolder.name !== patientFolderName) {
+            console.log(`[Rename] Renombrando carpeta en Drive: de "${existingFolder.name}" a "${patientFolderName}"`);
+            try {
+              await driveRepo.renameFileOrFolder(existingFolder.id, patientFolderName);
+            } catch (renameErr) {
+              console.error("Error intentando renombrar la carpeta en Drive:", renameErr);
+            }
+          }
+        } else {
+          // Si no existe, crear una nueva carpeta
+          patientFolderId = await driveRepo.getOrCreateFolder(patientFolderName, pacientesFolderId);
+        }
 
         // A. Subir/Actualizar perfil.json del paciente
         const profileData = {

@@ -281,6 +281,58 @@ export class GoogleDriveRepository implements IDriveRepository {
     return folderId;
   }
 
+  async renameFileOrFolder(fileId: string, newName: string): Promise<void> {
+    if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
+
+    const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+    driveLogger.log("request", `PATCH Renombrar archivo/carpeta ID: ${fileId} -> "${newName}"`);
+
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: newName }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      driveLogger.log("error", `Error renombrando ID "${fileId}": ${response.status} - ${errText}`);
+      throw new Error(`Error al renombrar el archivo/carpeta en Google Drive: ${response.status}`);
+    }
+    driveLogger.log("response", `Archivo/carpeta ID "${fileId}" renombrado exitosamente a "${newName}".`);
+  }
+
+  async findFolderBySuffix(suffix: string, parentId: string): Promise<{ id: string; name: string } | null> {
+    if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
+
+    const query = `mimeType='application/vnd.google-apps.folder' and trashed=false and '${parentId}' in parents and name contains '${suffix}'`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`;
+    driveLogger.log("request", `GET Buscar carpeta por sufijo "${suffix}" en Padre: ${parentId}`);
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      driveLogger.log("error", `Error buscando carpeta por sufijo: ${response.status} - ${errText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.files && data.files.length > 0) {
+      return {
+        id: data.files[0].id,
+        name: data.files[0].name,
+      };
+    }
+    return null;
+  }
+
   async uploadFileToFolder(folderId: string, filename: string, mimeType: string, content: string | Blob): Promise<string> {
     if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
 
