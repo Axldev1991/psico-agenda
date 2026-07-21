@@ -368,7 +368,8 @@ export class DriveSyncService {
         );
 
         // C. Subir evoluciones individuales en la subcarpeta 'sesiones'
-        const patientSessions = sessions.filter(s => s.patientUuid === patient.uuid);
+        // Solo creamos evoluciones individuales para sesiones atendidas/completadas
+        const patientSessions = sessions.filter(s => s.patientUuid === patient.uuid && s.status === "completed");
         if (patientSessions.length > 0) {
           const sessionsFolderId = await driveRepo.getOrCreateFolder("sesiones", patientFolderId);
 
