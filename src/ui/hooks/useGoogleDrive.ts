@@ -7,55 +7,100 @@ import { DriveSyncService } from "../../infrastructure/drive/drive-sync.service"
 const driveRepo = new GoogleDriveRepository();
 const syncService = new DriveSyncService();
 
-export function useGoogleDrive() {
-  const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
-  const [lastSynced, setLastSynced] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+// Shared global state for all useGoogleDrive instances
+let globalGoogleToken: string | null = null;
+let globalSyncStatus: "idle" | "syncing" | "synced" | "error" = "idle";
+let globalLastSynced: string | null = null;
+let globalErrorMessage: string | null = null;
+let globalLoading = false;
+const listeners = new Set<() => void>();
 
-  // Leer estado de la sesión local inicial al montar el hook e iniciar evicción
+function emitChange() {
+  listeners.forEach((listener) => listener());
+}
+
+export function useGoogleDrive() {
+  const [googleToken, setGoogleToken] = useState<string | null>(globalGoogleToken);
+  const [loading, setLoading] = useState(globalLoading);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">(globalSyncStatus);
+  const [lastSynced, setLastSynced] = useState<string | null>(globalLastSynced);
+  const [errorMessage, setErrorMessage] = useState<string | null>(globalErrorMessage);
+
   useEffect(() => {
+    const handleUpdate = () => {
+      setGoogleToken(globalGoogleToken);
+      setLoading(globalLoading);
+      setSyncStatus(globalSyncStatus);
+      setLastSynced(globalLastSynced);
+      setErrorMessage(globalErrorMessage);
+    };
+
+    listeners.add(handleUpdate);
+
     if (typeof window !== "undefined") {
       const savedSync = localStorage.getItem("gd-last-synced");
-      if (savedSync) setLastSynced(savedSync);
+      if (savedSync && !globalLastSynced) {
+        globalLastSynced = savedSync;
+        setLastSynced(savedSync);
+      }
 
       const cachedToken = localStorage.getItem("gd-access-token");
-      if (cachedToken) {
+      if (cachedToken && !globalGoogleToken) {
+        globalGoogleToken = cachedToken;
         setGoogleToken(cachedToken);
         driveRepo.setAccessToken(cachedToken);
       }
 
-      // Ejecutar evicción silenciosa delegada en el servicio
       syncService.evictOldCache();
     }
+
+    return () => {
+      listeners.delete(handleUpdate);
+    };
   }, []);
 
+  const setGlobalState = (updates: {
+    googleToken?: string | null;
+    loading?: boolean;
+    syncStatus?: "idle" | "syncing" | "synced" | "error";
+    lastSynced?: string | null;
+    errorMessage?: string | null;
+  }) => {
+    if (updates.googleToken !== undefined) {
+      globalGoogleToken = updates.googleToken;
+      if (updates.googleToken) {
+        driveRepo.setAccessToken(updates.googleToken);
+      }
+    }
+    if (updates.loading !== undefined) globalLoading = updates.loading;
+    if (updates.syncStatus !== undefined) globalSyncStatus = updates.syncStatus;
+    if (updates.lastSynced !== undefined) globalLastSynced = updates.lastSynced;
+    if (updates.errorMessage !== undefined) globalErrorMessage = updates.errorMessage;
+    emitChange();
+  };
+
   const connectGoogle = async () => {
-    setLoading(true);
-    setErrorMessage(null);
+    setGlobalState({ loading: true, errorMessage: null });
     try {
       const token = await driveRepo.login();
-      setGoogleToken(token);
       localStorage.setItem("gd-access-token", token);
-      setSyncStatus("idle");
+      setGlobalState({ googleToken: token, syncStatus: "idle", loading: false });
     } catch (err: any) {
       console.error(err);
-      setErrorMessage("No se pudo conectar con Google Drive: " + err.message);
-      setSyncStatus("error");
-    } finally {
-      setLoading(false);
+      setGlobalState({
+        errorMessage: "No se pudo conectar con Google Drive: " + err.message,
+        syncStatus: "error",
+        loading: false,
+      });
     }
   };
 
   const disconnectGoogle = () => {
     driveRepo.logout();
-    setGoogleToken(null);
     localStorage.removeItem("gd-access-token");
-    setSyncStatus("idle");
+    setGlobalState({ googleToken: null, syncStatus: "idle" });
   };
 
-  // Helper local para simular estados de red a través de la CLI
   const checkSimulatedNetwork = async () => {
     try {
       const res = await fetch("/net-config.json");
@@ -71,56 +116,41 @@ export function useGoogleDrive() {
       }
     } catch (e: any) {
       if (e.message.includes("simulated")) throw e;
-      // Si no existe el archivo o da error de parsing, simplemente continuar normal
     }
   };
 
-  /**
-   * Descarga el historial clínico y sesiones de un paciente específico de manera diferida.
-   */
   const downloadPatientHistory = async (uuid: string): Promise<void> => {
     if (!googleToken) throw new Error("No hay una sesión activa de Google.");
     await checkSimulatedNetwork();
     await syncService.downloadPatientHistory(uuid, googleToken);
   };
 
-  /**
-   * Descarga en bucle todos los expedientes pendientes para habilitar el uso 100% offline.
-   */
   const preloadAllForOffline = async () => {
     if (!googleToken) throw new Error("No hay una sesión activa de Google.");
-    setLoading(true);
-    setSyncStatus("syncing");
-    setErrorMessage(null);
+    setGlobalState({ loading: true, syncStatus: "syncing", errorMessage: null });
     try {
       await checkSimulatedNetwork();
       await syncService.preloadAllForOffline(googleToken);
-      setSyncStatus("synced");
+      setGlobalState({ syncStatus: "synced", loading: false });
     } catch (err: any) {
       console.error("Error en pre-carga completa offline:", err);
-      setErrorMessage("La pre-carga offline falló: " + err.message);
-      setSyncStatus("error");
-    } finally {
-      setLoading(false);
+      setGlobalState({
+        errorMessage: "La pre-carga offline falló: " + err.message,
+        syncStatus: "error",
+        loading: false,
+      });
     }
   };
 
-  /**
-   * Sincronización selectiva delegada.
-   */
   const performSync = async () => {
     if (!googleToken) return;
-    setLoading(true);
-    setSyncStatus("syncing");
-    setErrorMessage(null);
+    setGlobalState({ loading: true, syncStatus: "syncing", errorMessage: null });
 
     try {
       await checkSimulatedNetwork();
       const result = await syncService.performSync(googleToken);
-      
-      setLastSynced(result.lastSynced);
       localStorage.setItem("gd-last-synced", result.lastSynced);
-      setSyncStatus("synced");
+      setGlobalState({ lastSynced: result.lastSynced, syncStatus: "synced", loading: false });
     } catch (err: any) {
       console.error("Error en sincronización selectiva:", err);
       const errMessage = err.message || "";
@@ -132,13 +162,18 @@ export function useGoogleDrive() {
         errMessage.includes("sesión activa")
       ) {
         disconnectGoogle();
-        setErrorMessage("La sesión de Google Drive expiró. Por favor, conectate de nuevo.");
+        setGlobalState({
+          errorMessage: "La sesión de Google Drive expiró. Por favor, conectate de nuevo.",
+          syncStatus: "error",
+          loading: false,
+        });
       } else {
-        setErrorMessage("Sincronización fallida: " + errMessage);
+        setGlobalState({
+          errorMessage: "Sincronización fallida: " + errMessage,
+          syncStatus: "error",
+          loading: false,
+        });
       }
-      setSyncStatus("error");
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -17,25 +17,41 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
   const {
     patient,
     sortedSessions,
-    clinicalHistoryHtml,
+    selectedSessionUuid,
+    setSelectedSessionUuid,
+    selectedSessionContentHtml,
     saveFeedback,
+    hasPendingDriveUpload,
+    syncStatus,
+    triggerAutoSyncIfPending,
     isDownloading,
     downloadError,
+    googleToken,
     handleHistoryChange,
     handleRetryDownload,
-    handleScrollToSession,
     handleCeciChange,
   } = usePatientDetail(initialPatient);
 
   const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
-  const onScrollToSession = (sessionUuid: string) => {
-    handleScrollToSession(sessionUuid, editorContainerRef.current);
-  };
+  const selectedSessionIndex = sortedSessions.findIndex((s) => s.uuid === selectedSessionUuid);
+  const selectedSession = sortedSessions[selectedSessionIndex] || sortedSessions[0];
+  const selectedSessionNumber = selectedSession ? sortedSessions.length - selectedSessionIndex : null;
+  const selectedSessionDateFormatted = selectedSession
+    ? new Date(selectedSession.dateTime).toLocaleDateString("es-AR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
 
   return (
-    <section className="space-y-6 animate-in fade-in duration-300">
+    <>
+      <section className="space-y-6 animate-in fade-in duration-300">
       {/* Cabecera del Paciente */}
       <div className="bg-bg-card border border-brand-sand rounded-3xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-brand-sand/50 pb-6">
@@ -68,13 +84,8 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {saveFeedback && (
-              <span className="text-[10px] text-status-confirmed-dark bg-status-confirmed-light border border-status-confirmed-dark/25 px-3 py-1.5 rounded-xl font-bold animate-pulse">
-                💾 Guardado Automático
-              </span>
-            )}
-            <span className="font-mono text-xs font-bold bg-brand-lavender/30 text-text-main border border-brand-lavender/40 px-3 py-1.5 rounded-xl shadow-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-xs font-bold bg-brand-lavender/30 text-text-main border border-brand-lavender/40 px-3 py-1.5 rounded-xl shadow-sm select-none">
               Arancel: ${patient.sessionPrice.toLocaleString("es-AR")} ARS
             </span>
             <button
@@ -195,10 +206,13 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                       key={session.uuid}
                       onClick={() => {
                         setActiveTab("timeline");
-                        // Dar tiempo a que cambie el tab si es necesario
-                        setTimeout(() => onScrollToSession(session.uuid), 50);
+                        setSelectedSessionUuid(session.uuid);
                       }}
-                      className="w-full text-left bg-bg-base/50 hover:bg-brand-indigo/10 border border-brand-sand/30 hover:border-brand-indigo/35 p-3 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 group"
+                      className={`w-full text-left p-3 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 group border ${
+                        selectedSessionUuid === session.uuid
+                          ? "bg-brand-indigo/15 border-brand-indigo/60 shadow-sm"
+                          : "bg-bg-base/50 hover:bg-brand-indigo/10 border-brand-sand/30 hover:border-brand-indigo/35"
+                      }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <span className="font-title font-bold text-xs text-text-main block group-hover:text-brand-indigo">
@@ -277,11 +291,37 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                   <span className="text-[10px] text-text-sub/50 font-semibold italic">Guardado automático en IndexedDB</span>
                 </div>
 
+                {selectedSession && (
+                  <div className="bg-bg-base/50 border-l-4 border-brand-indigo rounded-r-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm select-none">
+                    <div>
+                      <h4 className="font-title font-bold text-sm text-brand-indigo">
+                        📅 Sesión N° {selectedSessionNumber} — {selectedSessionDateFormatted} hs
+                      </h4>
+                      {selectedSession.description && (
+                        <p className="text-xs text-text-main font-semibold mt-1">
+                          Motivo: {selectedSession.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border self-start sm:self-auto uppercase tracking-wider ${
+                      selectedSession.status === "completed"
+                        ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
+                        : selectedSession.status === "cancelled"
+                        ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
+                        : "bg-brand-sand/30 text-text-sub border-brand-sand/55"
+                    }`}>
+                      {selectedSession.status === "completed" ? "Atendido" : selectedSession.status === "cancelled" ? "Cancelado" : "Programado"}
+                    </span>
+                  </div>
+                )}
+
                 <div className="prose max-w-none">
                   <RichTextEditor
-                    initialValue={clinicalHistoryHtml}
+                    key={selectedSessionUuid}
+                    initialValue={selectedSessionContentHtml}
                     onChange={handleHistoryChange}
-                    placeholder="Comenzá a redactar el expediente clínico unificado de este paciente..."
+                    onBlur={triggerAutoSyncIfPending}
+                    placeholder="Comenzá a redactar la evolución clínica de esta sesión..."
                   />
                 </div>
               </div>
@@ -394,5 +434,25 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
         </div>
       )}
     </section>
+
+    {/* Semáforo de Respaldo Flotante */}
+    {googleToken && (
+      <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 select-none">
+        {syncStatus === "syncing" ? (
+          <div className="bg-brand-indigo/90 backdrop-blur-md text-white border border-brand-indigo/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200">
+            <span className="animate-spin text-sm">🌀</span> ☁️ Sincronizando en la nube...
+          </div>
+        ) : saveFeedback || hasPendingDriveUpload ? (
+          <div className="bg-amber-500/90 backdrop-blur-md text-white border border-amber-400/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 animate-pulse hover:scale-105 transition-transform duration-200">
+            💾 Guardado en PC
+          </div>
+        ) : (
+          <div className="bg-emerald-600/90 backdrop-blur-md text-white border border-emerald-500/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200">
+            ☁️ Respaldo al día
+          </div>
+        )}
+      </div>
+    )}
+    </>
   );
 }

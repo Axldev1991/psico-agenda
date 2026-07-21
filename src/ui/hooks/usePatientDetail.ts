@@ -4,6 +4,7 @@ import { Patient } from "../../domain/patient.types";
 import { DexiePatientRepository } from "../../infrastructure/db/dexie-patient.repository";
 import { DexieSessionRepository } from "../../infrastructure/db/dexie-session.repository";
 import { useGoogleDrive } from "./useGoogleDrive";
+import { parseClinicalHistory, rebuildClinicalHistory } from "../../domain/patient.utils";
 
 const patientRepo = new DexiePatientRepository();
 const sessionRepo = new DexieSessionRepository();
@@ -24,11 +25,26 @@ export function usePatientDetail(initialPatient: Patient) {
     (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
   );
 
-  const [clinicalHistoryHtml, setClinicalHistoryHtml] = useState<string>("");
+  const [selectedSessionUuid, setSelectedSessionUuid] = useState<string | null>(null);
+  const [sessionContents, setSessionContents] = useState<Map<string, string>>(new Map());
   const [saveFeedback, setSaveFeedback] = useState(false);
-  const saveTimeoutRef = useRef<any>(null);
+  const [hasPendingDriveUpload, setHasPendingDriveUpload] = useState(false);
 
-  const { googleToken, downloadPatientHistory } = useGoogleDrive();
+  const saveTimeoutRef = useRef<any>(null);
+  const uploadTimeoutRef = useRef<any>(null);
+  const pendingDriveUploadRef = useRef(false);
+
+  const sessionContentsRef = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    sessionContentsRef.current = sessionContents;
+  }, [sessionContents]);
+
+  useEffect(() => {
+    pendingDriveUploadRef.current = hasPendingDriveUpload;
+  }, [hasPendingDriveUpload]);
+
+  const { googleToken, downloadPatientHistory, performSync, syncStatus } = useGoogleDrive();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -67,19 +83,87 @@ export function usePatientDetail(initialPatient: Patient) {
     }
   };
 
-  // Limpiar el timeout al desmontar
+  const triggerAutoSyncIfPending = async () => {
+    if (!googleToken || !pendingDriveUploadRef.current) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      try {
+        const fullHtml = rebuildClinicalHistory(sessions, sessionContentsRef.current);
+        const updatedPatient = {
+          ...patient,
+          clinicalHistory: fullHtml,
+          updatedAt: new Date().toISOString(),
+        };
+        await patientRepo.save(updatedPatient);
+      } catch (e) {
+        console.error("Error forzando guardado local antes de sync:", e);
+      }
+    }
+
+    if (uploadTimeoutRef.current) {
+      clearTimeout(uploadTimeoutRef.current);
+    }
+
+    try {
+      setHasPendingDriveUpload(false);
+      await performSync();
+    } catch (err) {
+      console.error("Error en sincronización automática de fondo:", err);
+      setHasPendingDriveUpload(true);
+    }
+  };
+
+  // Intervalo de seguridad de 3 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (hasPendingDriveUpload && googleToken) {
+        triggerAutoSyncIfPending();
+      }
+    }, 180000);
+
+    return () => clearInterval(interval);
+  }, [hasPendingDriveUpload, googleToken]);
+
+  // Limpiar temporizadores y sincronizar de fondo al salir (Unmount)
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+      if (uploadTimeoutRef.current) {
+        clearTimeout(uploadTimeoutRef.current);
+      }
+
+      if (pendingDriveUploadRef.current && googleToken) {
+        const doFinalSync = async () => {
+          try {
+            const latestHistory = rebuildClinicalHistory(sessions, sessionContentsRef.current);
+            const updatedPatient = {
+              ...patient,
+              clinicalHistory: latestHistory,
+              updatedAt: new Date().toISOString(),
+            };
+            await patientRepo.save(updatedPatient);
+            await performSync();
+          } catch (e) {
+            console.error("Error en sincronización final al desmontar:", e);
+          }
+        };
+        doFinalSync();
+      }
     };
-  }, []);
+  }, [googleToken]);
 
   // Cargar el historial clínico inicial del paciente
   useEffect(() => {
     if (patient) {
-      setClinicalHistoryHtml(patient.clinicalHistory || "");
+      const parsed = parseClinicalHistory(patient.clinicalHistory || "");
+      setSessionContents(parsed);
+
+      if (sortedSessions.length > 0 && !selectedSessionUuid) {
+        setSelectedSessionUuid(sortedSessions[0].uuid);
+      }
     }
   }, [patient.uuid, patient.clinicalHistory]);
 
@@ -88,87 +172,74 @@ export function usePatientDetail(initialPatient: Patient) {
     if (sessions.length === 0 || !patient || patient.isHistoryLoaded === false) return;
 
     let currentHistory = patient.clinicalHistory || "";
-    let wasModified = false;
+    const parsed = parseClinicalHistory(currentHistory);
+    let mapModified = false;
 
-    const oldestFirstSessions = [...sessions].sort(
-      (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
-    );
-
-    oldestFirstSessions.forEach((session, index) => {
-      const anchorId = `session-anchor-${session.uuid}`;
-      if (!currentHistory.includes(anchorId)) {
-        const sessionDate = new Date(session.dateTime).toLocaleDateString("es-AR", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const sessionNumber = index + 1;
-        
-        const headerHtml = `
-          <div id="${anchorId}" style="margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #4f46e5; padding-bottom: 4px; font-family: Arial, sans-serif;">
-            <h3 style="color: #4f46e5; font-size: 14pt; margin: 0;">📅 Sesión N° ${sessionNumber} — ${sessionDate}</h3>
-            <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Estado: ${
-              session.status === "completed"
-                ? "Atendido"
-                : session.status === "cancelled"
-                ? "Cancelado"
-                : "Programado"
-            }</p>
-          </div>
-          <div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155; min-height: 20px;">
-            Escribí la evolución clínica aquí...
-          </div>
-          <br/>
-        `;
-        currentHistory = headerHtml + currentHistory;
-        wasModified = true;
+    sessions.forEach((session) => {
+      if (!parsed.has(session.uuid)) {
+        parsed.set(
+          session.uuid,
+          `<div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155; min-height: 20px;">Escribí la evolución clínica aquí...</div><br/>`
+        );
+        mapModified = true;
       }
     });
 
-    if (wasModified) {
-      const updatedPatient = { ...patient, clinicalHistory: currentHistory };
+    if (mapModified) {
+      const fullHtml = rebuildClinicalHistory(sessions, parsed);
+      const updatedPatient = { ...patient, clinicalHistory: fullHtml };
       patientRepo.save(updatedPatient);
-      setClinicalHistoryHtml(currentHistory);
+      setSessionContents(parsed);
+
+      if (sortedSessions.length > 0 && !selectedSessionUuid) {
+        setSelectedSessionUuid(sortedSessions[0].uuid);
+      }
     }
   }, [sessions, patient.uuid, patient.isHistoryLoaded]);
 
-  // Guardar cambios del gran editor unificado (Debounce de 1000ms)
   const handleHistoryChange = (newHtml: string) => {
-    setClinicalHistoryHtml(newHtml);
+    if (!selectedSessionUuid) return;
 
+    const newContents = new Map(sessionContents);
+    newContents.set(selectedSessionUuid, newHtml);
+    setSessionContents(newContents);
+    setHasPendingDriveUpload(true);
+    pendingDriveUploadRef.current = true;
+
+    // 1. Guardado local en IndexedDB (1s debounce)
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-
     saveTimeoutRef.current = setTimeout(async () => {
       try {
+        const fullHtml = rebuildClinicalHistory(sessions, newContents);
         const updatedPatient = {
           ...patient,
-          clinicalHistory: newHtml,
+          clinicalHistory: fullHtml,
           updatedAt: new Date().toISOString(),
         };
         await patientRepo.save(updatedPatient);
         setSaveFeedback(true);
+        setHasPendingDriveUpload(true);
         setTimeout(() => setSaveFeedback(false), 1500);
       } catch (err) {
-        console.error("Error guardando el historial clínico unificado:", err);
+        console.error("Error guardando el historial clínico por sesión:", err);
       }
     }, 1000);
+
+    // 2. Guardado en Google Drive (15s debounce)
+    if (uploadTimeoutRef.current) {
+      clearTimeout(uploadTimeoutRef.current);
+    }
+    if (googleToken) {
+      uploadTimeoutRef.current = setTimeout(() => {
+        triggerAutoSyncIfPending();
+      }, 15000);
+    }
   };
 
   const handleScrollToSession = (sessionUuid: string, containerEl: HTMLElement | null) => {
-    if (containerEl) {
-      const editorDiv = containerEl.querySelector(".contenteditable") || containerEl.querySelector("[contenteditable]");
-      if (editorDiv) {
-        const anchor = editorDiv.querySelector(`#session-anchor-${sessionUuid}`);
-        if (anchor) {
-          anchor.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      }
-    }
+    // Ya no es crítico el scroll porque cambiamos de sesión activa en la UI, pero dejamos la estructura vacía por compatibilidad
   };
 
   // Guardar cambios en ficha CECI
@@ -180,6 +251,7 @@ export function usePatientDetail(initialPatient: Patient) {
         updatedAt: new Date().toISOString(),
       };
       await patientRepo.save(updatedPatient);
+      setHasPendingDriveUpload(true);
     } catch (err) {
       console.error("Error guardando datos CECI:", err);
     }
@@ -188,8 +260,13 @@ export function usePatientDetail(initialPatient: Patient) {
   return {
     patient,
     sortedSessions,
-    clinicalHistoryHtml,
+    selectedSessionUuid,
+    setSelectedSessionUuid,
+    selectedSessionContentHtml: sessionContents.get(selectedSessionUuid || "") || "",
     saveFeedback,
+    hasPendingDriveUpload,
+    syncStatus,
+    triggerAutoSyncIfPending,
     isDownloading,
     downloadError,
     googleToken,

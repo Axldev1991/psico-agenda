@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   variant?: "standard" | "continuous";
+  onBlur?: () => void;
 }
 
 export function RichTextEditor({
@@ -15,6 +16,7 @@ export function RichTextEditor({
   onChange,
   placeholder = "Comenzá a redactar la evolución clínica del paciente...",
   variant = "standard",
+  onBlur,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -256,9 +258,10 @@ export function RichTextEditor({
           onBlur={() => {
             setIsFocused(false);
             triggerChange();
+            if (onBlur) onBlur();
           }}
           onInput={triggerChange}
-           className={`w-full overflow-y-auto text-text-main focus:outline-none font-sans leading-relaxed whitespace-pre-wrap select-text cursor-text ${
+           className={`w-full overflow-y-auto overflow-x-hidden break-words text-text-main focus:outline-none font-sans leading-relaxed whitespace-pre-wrap select-text cursor-text ${
             isContinuous 
               ? "p-2 min-h-[40px] max-h-[800px]" 
               : "p-4 min-h-[150px] max-h-[400px]"

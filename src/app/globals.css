@@ -32,3 +32,33 @@
   --color-status-rescheduled-dark: #8FA8D0;
   --color-status-rescheduled-light: #EDF2F9;
 }
+
+/* Estilos modernos y limpios para los separadores de sesión de solo lectura en el editor */
+div[id^="session-anchor-"][contenteditable="false"] {
+  background-color: #f8fafc !important;
+  border-left: 4px solid #6b7fbf !important;
+  border-bottom: none !important;
+  padding: 12px 16px !important;
+  margin-top: 32px !important;
+  margin-bottom: 16px !important;
+  border-radius: 0 12px 12px 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  user-select: none !important;
+}
+
+div[id^="session-anchor-"][contenteditable="false"] h3 {
+  color: #4f46e5 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 13pt !important;
+  font-weight: 700 !important;
+  margin: 0 0 4px 0 !important;
+}
+
+div[id^="session-anchor-"][contenteditable="false"] p {
+  color: #64748b !important;
+  font-size: 10px !important;
+  margin: 0 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
