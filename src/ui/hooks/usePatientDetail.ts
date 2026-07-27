@@ -142,18 +142,14 @@ export function usePatientDetail(initialPatient: Patient) {
     return () => clearInterval(interval);
   }, [hasPendingDriveUpload, googleToken]);
 
-  // Limpiar temporizadores y sincronizar de fondo al salir (Unmount)
+  // Limpiar temporizadores y garantizar guardado local/sincronización al salir (Unmount)
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
-      }
-      if (uploadTimeoutRef.current) {
-        clearTimeout(uploadTimeoutRef.current);
-      }
-
-      if (pendingDriveUploadRef.current && googleToken) {
-        const doFinalSync = async () => {
+        
+        // Forzar guardado local inmediato de emergencia
+        const forceLocalSave = async () => {
           try {
             const latestHistory = rebuildClinicalHistory(sessions, sessionContentsRef.current);
             const updatedPatient = {
@@ -163,15 +159,43 @@ export function usePatientDetail(initialPatient: Patient) {
               updatedAt: new Date().toISOString(),
             };
             await patientRepo.save(updatedPatient);
-            await performSync();
+
+            if (selectedSessionUuid) {
+              const currentSession = sessions.find(s => s.uuid === selectedSessionUuid);
+              if (currentSession) {
+                const newHtml = sessionContentsRef.current.get(selectedSessionUuid);
+                if (newHtml !== undefined) {
+                  const updatedSession = {
+                    ...currentSession,
+                    notes: newHtml,
+                    updatedAt: new Date().toISOString(),
+                  };
+                  await sessionRepo.save(updatedSession);
+                }
+              }
+            }
+            
+            // Si hay token, sincronizar a la nube de inmediato
+            if (googleToken) {
+              await performSync();
+            }
           } catch (e) {
-            console.error("Error en sincronización final al desmontar:", e);
+            console.error("Error forzando guardado local en desmontaje:", e);
           }
         };
-        doFinalSync();
+        forceLocalSave();
+      } else if (pendingDriveUploadRef.current && googleToken) {
+        // Si no había guardado local pendiente pero sí quedaba subir a la nube
+        performSync().catch(err => {
+          console.error("Error en sincronización final al desmontar:", err);
+        });
+      }
+
+      if (uploadTimeoutRef.current) {
+        clearTimeout(uploadTimeoutRef.current);
       }
     };
-  }, [googleToken]);
+  }, [googleToken, selectedSessionUuid, sessions, patient]);
 
   // Cargar el historial clínico inicial del paciente
   useEffect(() => {
