@@ -3,7 +3,6 @@ import { DexiePatientRepository } from "../db/dexie-patient.repository";
 import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule } from "../../domain/session.types";
-import { generateFullHistoryWordHtml, generateSessionWordHtml } from "../export/docx-exporter";
 import { driveLogger } from "./drive-logger";
 import { container } from "../container";
 
@@ -311,7 +310,8 @@ export class DriveSyncService {
     // Sincronizar estructura visible en Drive
     const finalSessions = await sessionRepo.getAll();
     driveLogger.log("info", "Iniciando volcado asíncrono de documentos clínicos visibles (.doc y .json)...");
-    this.syncVisibleFiles(mergedPatients, finalSessions).catch(err => {
+    const folderSyncService = container.getDriveFolderSyncService();
+    folderSyncService.syncVisibleFiles(mergedPatients, finalSessions).catch(err => {
       driveLogger.log("error", `Falla en volcado de archivos visibles: ${err.message}`, err);
       console.error("Error en sincronización de archivos visibles:", err);
     });
@@ -324,104 +324,4 @@ export class DriveSyncService {
     });
 
     return { lastSynced: timestamp };
-  }
-
-  /**
-   * Sincronizador en segundo plano de la estructura visible del consultorio (con guardas DLP).
-   */
-  private async syncVisibleFiles(patients: Patient[], sessions: Session[]) {
-    try {
-      driveLogger.log("info", "Creando/Buscando carpetas de consultorio en Google Drive...");
-      const rootFolderId = await driveRepo.getOrCreateFolder("PSICO-AGENDA");
-      const pacientesFolderId = await driveRepo.getOrCreateFolder("pacientes", rootFolderId);
-
-      for (const patient of patients) {
-        // REQ-5: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto con datos vacíos
-        if (patient.isHistoryLoaded === false) {
-          driveLogger.log("info", `[DLP Guard] Saltando sync visible para paciente inactivo: ${patient.fullName}`);
-          continue;
-        }
-
-        const partialUuid = patient.uuid.includes("-demo-") 
-          ? patient.uuid 
-          : patient.uuid.substring(0, 8);
-        const patientFolderName = `${patient.fullName}_${partialUuid}`;
-        
-        driveLogger.log("info", `Procesando volcado visible para: ${patient.fullName} (Carpeta: ${patientFolderName})...`);
-        // Buscar si ya existe una carpeta para este paciente usando su UUID único como sufijo
-        let patientFolderId: string;
-        const existingFolder = await driveRepo.findFolderBySuffix(partialUuid, pacientesFolderId);
-        
-        if (existingFolder) {
-          patientFolderId = existingFolder.id;
-          // Si el nombre de la carpeta cambió (porque se editó el nombre del paciente), la renombramos automáticamente en Drive
-          if (existingFolder.name !== patientFolderName) {
-            console.log(`[Rename] Renombrando carpeta en Drive: de "${existingFolder.name}" a "${patientFolderName}"`);
-            try {
-              await driveRepo.renameFileOrFolder(existingFolder.id, patientFolderName);
-            } catch (renameErr) {
-              console.error("Error intentando renombrar la carpeta en Drive:", renameErr);
-            }
-          }
-        } else {
-          // Si no existe, crear una nueva carpeta
-          patientFolderId = await driveRepo.getOrCreateFolder(patientFolderName, pacientesFolderId);
-        }
-
-        // A. Subir/Actualizar perfil.json del paciente
-        const profileData = {
-          uuid: patient.uuid,
-          fullName: patient.fullName,
-          email: patient.email,
-          phone: patient.phone,
-          address: patient.address,
-          healthInsurance: patient.healthInsurance,
-          affiliateNumber: patient.affiliateNumber,
-          sessionPrice: patient.sessionPrice,
-          createdAt: patient.createdAt,
-          updatedAt: patient.updatedAt,
-        };
-        await driveRepo.uploadFileToFolder(
-          patientFolderId,
-          "perfil.json",
-          "application/json",
-          JSON.stringify(profileData, null, 2)
-        );
-
-        // B. Subir/Actualizar Historial_Clinico.doc consolidado
-        const fullHistoryHtml = generateFullHistoryWordHtml(patient);
-        await driveRepo.uploadFileToFolder(
-          patientFolderId,
-          "Historial_Clinico.doc",
-          "application/msword",
-          "\ufeff" + fullHistoryHtml
-        );
-
-        // C. Subir evoluciones individuales en la subcarpeta 'sesiones'
-        // Solo creamos evoluciones individuales para sesiones atendidas/completadas
-        const patientSessions = sessions.filter(s => s.patientUuid === patient.uuid && s.status === "completed");
-        if (patientSessions.length > 0) {
-          const sessionsFolderId = await driveRepo.getOrCreateFolder("sesiones", patientFolderId);
-
-          for (const session of patientSessions) {
-            const dateStr = session.dateTime.split("T")[0];
-            const sessionDate = new Date(session.dateTime);
-            const timeStr = `${sessionDate.getHours().toString().padStart(2, '0')}-${sessionDate.getMinutes().toString().padStart(2, '0')}`;
-            const filename = `${dateStr}_${timeStr}_Sesion.doc`;
-
-            const sessionHtml = generateSessionWordHtml(patient, session);
-            await driveRepo.uploadFileToFolder(
-              sessionsFolderId,
-              filename,
-              "application/msword",
-              "\ufeff" + sessionHtml
-            );
-          }
-        }
-      }
-      console.log("Volcado de archivos visibles en Drive completado.");
-    } catch (error) {
-      console.error("Error al sincronizar estructura visible en Drive:", error);
-    }
-  }
-}
+  }}

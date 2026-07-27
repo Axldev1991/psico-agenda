@@ -1,6 +1,7 @@
 import { DexiePatientRepository } from "./db/dexie-patient.repository";
 import { DexieSessionRepository } from "./db/dexie-session.repository";
 import { GoogleDriveRepository } from "./drive/google-drive.repository";
+import { DriveFolderSyncService } from "./drive/drive-folder-sync.service";
 import { IPatientRepository } from "../repositories/patient.repository";
 import { ISessionRepository } from "../repositories/session.repository";
 import { IDriveRepository } from "../repositories/drive.repository";
@@ -13,6 +14,7 @@ class ServiceContainer {
     this.register<IPatientRepository>("patientRepository", new DexiePatientRepository());
     this.register<ISessionRepository>("sessionRepository", new DexieSessionRepository());
     this.register<IDriveRepository>("driveRepository", new GoogleDriveRepository());
+    this.register<DriveFolderSyncService>("driveFolderSyncService", new DriveFolderSyncService());
   }
 
   register<T>(key: string, instance: T) {
@@ -37,6 +39,10 @@ class ServiceContainer {
 
   getDriveRepository(): IDriveRepository {
     return this.get<IDriveRepository>("driveRepository");
+  }
+
+  getDriveFolderSyncService(): DriveFolderSyncService {
+    return this.get<DriveFolderSyncService>("driveFolderSyncService");
   }
 }
 
