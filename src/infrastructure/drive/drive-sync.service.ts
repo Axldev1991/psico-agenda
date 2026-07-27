@@ -5,10 +5,11 @@ import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule } from "../../domain/session.types";
 import { generateFullHistoryWordHtml, generateSessionWordHtml } from "../export/docx-exporter";
 import { driveLogger } from "./drive-logger";
+import { container } from "../container";
 
-const driveRepo = new GoogleDriveRepository();
-const patientRepo = new DexiePatientRepository();
-const sessionRepo = new DexieSessionRepository();
+const driveRepo = container.getDriveRepository();
+const patientRepo = container.getPatientRepository();
+const sessionRepo = container.getSessionRepository();
 
 interface BackupData {
   patients: Patient[];

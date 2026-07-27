@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Patient } from "../../domain/patient.types";
-import { DexiePatientRepository } from "../../infrastructure/db/dexie-patient.repository";
-import { DexieSessionRepository } from "../../infrastructure/db/dexie-session.repository";
+import { container } from "../../infrastructure/container";
 import { useGoogleDrive } from "./useGoogleDrive";
 import { parseClinicalHistory, rebuildClinicalHistory } from "../../domain/patient.utils";
 
-const patientRepo = new DexiePatientRepository();
-const sessionRepo = new DexieSessionRepository();
+const patientRepo = container.getPatientRepository();
+const sessionRepo = container.getSessionRepository();
 
 export function usePatientDetail(initialPatient: Patient) {
   const dbPatient = useLiveQuery(

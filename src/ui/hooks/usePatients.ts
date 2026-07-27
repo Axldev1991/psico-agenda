@@ -1,8 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Patient } from '../../domain/patient.types';
-import { DexiePatientRepository } from '../../infrastructure/db/dexie-patient.repository';
+import { container } from '../../infrastructure/container';
 
-const repository = new DexiePatientRepository();
+const repository = container.getPatientRepository();
 
 export function usePatients() {
   // useLiveQuery es un React Hook provisto por Dexie que automáticamente

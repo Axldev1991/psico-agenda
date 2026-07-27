@@ -12,13 +12,12 @@ import {
   isSameDay,
   parse
 } from 'date-fns';
-import { DexieSessionRepository } from '../../infrastructure/db/dexie-session.repository';
-import { DexiePatientRepository } from '../../infrastructure/db/dexie-patient.repository';
+import { container } from '../../infrastructure/container';
 import { Session, RecurrenceRule } from '../../domain/session.types';
 import { getHoliday, Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 
-const sessionRepo = new DexieSessionRepository();
-const patientRepo = new DexiePatientRepository();
+const sessionRepo = container.getSessionRepository();
+const patientRepo = container.getPatientRepository();
 
 export interface CalendarSlot {
   uuid?: string; // Si ya fue grabada físicamente
