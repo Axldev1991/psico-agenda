@@ -29,6 +29,7 @@ export function usePatientDetail(initialPatient: Patient) {
   const [selectedSessionUuid, setSelectedSessionUuid] = useState<string | null>(null);
   const [sessionContents, setSessionContents] = useState<Map<string, string>>(new Map());
   const [saveFeedback, setSaveFeedback] = useState(false);
+  const [isLocalSaving, setIsLocalSaving] = useState(false);
   const [hasPendingDriveUpload, setHasPendingDriveUpload] = useState(false);
 
   const saveTimeoutRef = useRef<any>(null);
@@ -254,6 +255,7 @@ export function usePatientDetail(initialPatient: Patient) {
     sessionContentsRef.current = newContents;
     setHasPendingDriveUpload(true);
     pendingDriveUploadRef.current = true;
+    setIsLocalSaving(true);
 
     // 1. Guardado local en IndexedDB (1s debounce)
     if (saveTimeoutRef.current) {
@@ -280,10 +282,12 @@ export function usePatientDetail(initialPatient: Patient) {
           await sessionRepo.save(updatedSession);
         }
 
+        setIsLocalSaving(false);
         setSaveFeedback(true);
         setHasPendingDriveUpload(true);
         setTimeout(() => setSaveFeedback(false), 1500);
       } catch (err) {
+        setIsLocalSaving(false);
         console.error("Error guardando el historial clínico por sesión:", err);
       }
     }, 1000);
@@ -383,6 +387,7 @@ export function usePatientDetail(initialPatient: Patient) {
     setSelectedSessionUuid,
     selectedSessionContentHtml: sessionContents.get(selectedSessionUuid || "") || "",
     saveFeedback,
+    isLocalSaving,
     hasPendingDriveUpload,
     syncStatus,
     triggerAutoSyncIfPending,

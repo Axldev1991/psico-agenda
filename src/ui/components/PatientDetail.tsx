@@ -24,6 +24,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     setSelectedSessionUuid,
     selectedSessionContentHtml,
     saveFeedback,
+    isLocalSaving,
     hasPendingDriveUpload,
     syncStatus,
     triggerAutoSyncIfPending,
@@ -255,23 +256,41 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     </section>
 
     {/* Semáforo de Respaldo Flotante */}
-    {googleToken && (
-      <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 select-none">
-        {syncStatus === "syncing" ? (
+    <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 select-none">
+      {googleToken ? (
+        syncStatus === "syncing" ? (
           <div className="bg-brand-indigo/90 backdrop-blur-md text-white border border-brand-indigo/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200">
             <span className="animate-spin text-sm">🌀</span> ☁️ Sincronizando en la nube...
           </div>
-        ) : saveFeedback || hasPendingDriveUpload ? (
+        ) : isLocalSaving ? (
           <div className="bg-amber-500/90 backdrop-blur-md text-white border border-amber-400/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 animate-pulse hover:scale-105 transition-transform duration-200">
+            ✍️ Guardando en PC...
+          </div>
+        ) : saveFeedback || hasPendingDriveUpload ? (
+          <div className="bg-amber-500/90 backdrop-blur-md text-white border border-amber-400/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200">
             💾 Guardado en PC
           </div>
         ) : (
           <div className="bg-emerald-600/90 backdrop-blur-md text-white border border-emerald-500/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200">
             ☁️ Respaldo al día
           </div>
-        )}
-      </div>
-    )}
+        )
+      ) : (
+        isLocalSaving ? (
+          <div className="bg-amber-500/90 backdrop-blur-md text-white border border-amber-400/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 animate-pulse hover:scale-105 transition-transform duration-200">
+            ✍️ Guardando en PC...
+          </div>
+        ) : saveFeedback ? (
+          <div className="bg-emerald-600/90 backdrop-blur-md text-white border border-emerald-500/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200 animate-bounce">
+            💾 ¡Guardado en PC!
+          </div>
+        ) : (
+          <div className="bg-slate-600/90 backdrop-blur-md text-white border border-slate-500/40 px-5 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 hover:scale-105 transition-transform duration-200 opacity-80">
+            💾 Guardado en PC (Sin conexión)
+          </div>
+        )
+      )}
+    </div>
     </>
   );
 }
