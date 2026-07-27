@@ -49,6 +49,11 @@ export function usePatientDetail(initialPatient: Patient) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const latestStateRef = useRef({ patient, sessions, googleToken, selectedSessionUuid });
+  useEffect(() => {
+    latestStateRef.current = { patient, sessions, googleToken, selectedSessionUuid };
+  }, [patient, sessions, googleToken, selectedSessionUuid]);
+
   // Auto-descarga al ingresar al expediente si no está en caché local
   useEffect(() => {
     console.log("DEBUG: Verificando autodescarga. ¿Token?", !!googleToken, "¿Historial cargado?", patient.isHistoryLoaded);
@@ -142,28 +147,30 @@ export function usePatientDetail(initialPatient: Patient) {
     return () => clearInterval(interval);
   }, [hasPendingDriveUpload, googleToken]);
 
-  // Limpiar temporizadores y garantizar guardado local/sincronización al salir (Unmount)
+  // Garantizar guardado local/sincronización al desmontar el componente (salir de la ficha)
   useEffect(() => {
     return () => {
+      const { patient: currentPatient, sessions: currentSessions, googleToken: currentToken, selectedSessionUuid: currentSessionUuid } = latestStateRef.current;
+
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         
         // Forzar guardado local inmediato de emergencia
         const forceLocalSave = async () => {
           try {
-            const latestHistory = rebuildClinicalHistory(sessions, sessionContentsRef.current);
+            const latestHistory = rebuildClinicalHistory(currentSessions, sessionContentsRef.current);
             const updatedPatient = {
-              ...patient,
+              ...currentPatient,
               clinicalHistory: latestHistory,
               isHistoryLoaded: true,
               updatedAt: new Date().toISOString(),
             };
             await patientRepo.save(updatedPatient);
 
-            if (selectedSessionUuid) {
-              const currentSession = sessions.find(s => s.uuid === selectedSessionUuid);
+            if (currentSessionUuid) {
+              const currentSession = currentSessions.find(s => s.uuid === currentSessionUuid);
               if (currentSession) {
-                const newHtml = sessionContentsRef.current.get(selectedSessionUuid);
+                const newHtml = sessionContentsRef.current.get(currentSessionUuid);
                 if (newHtml !== undefined) {
                   const updatedSession = {
                     ...currentSession,
@@ -176,7 +183,7 @@ export function usePatientDetail(initialPatient: Patient) {
             }
             
             // Si hay token, sincronizar a la nube de inmediato
-            if (googleToken) {
+            if (currentToken) {
               await performSync();
             }
           } catch (e) {
@@ -184,7 +191,7 @@ export function usePatientDetail(initialPatient: Patient) {
           }
         };
         forceLocalSave();
-      } else if (pendingDriveUploadRef.current && googleToken) {
+      } else if (pendingDriveUploadRef.current && currentToken) {
         // Si no había guardado local pendiente pero sí quedaba subir a la nube
         performSync().catch(err => {
           console.error("Error en sincronización final al desmontar:", err);
@@ -195,7 +202,7 @@ export function usePatientDetail(initialPatient: Patient) {
         clearTimeout(uploadTimeoutRef.current);
       }
     };
-  }, [googleToken, selectedSessionUuid, sessions, patient]);
+  }, []);
 
   // Cargar el historial clínico inicial del paciente
   useEffect(() => {
