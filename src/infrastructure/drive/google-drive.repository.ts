@@ -477,4 +477,34 @@ export class GoogleDriveRepository implements IDriveRepository {
     driveLogger.log("response", `Archivo "${filename}" descargado exitosamente.`);
     return await downloadResponse.text();
   }
+
+  async getFileMetadata(folderId: string, filename: string): Promise<{ id: string; modifiedTime: string; name: string } | null> {
+    if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
+
+    const query = `name='${filename}' and '${folderId}' in parents and trashed=false`;
+    const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime)`;
+    driveLogger.log("request", `GET Obtener metadatos del archivo: "${filename}" (Carpeta: ${folderId})`);
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      driveLogger.log("error", `Error obteniendo metadatos de "${filename}": ${response.status} - ${errText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.files && data.files.length > 0) {
+      return {
+        id: data.files[0].id,
+        name: data.files[0].name,
+        modifiedTime: data.files[0].modifiedTime,
+      };
+    }
+    return null;
+  }
 }

@@ -69,10 +69,39 @@ export class DriveFolderSyncService {
         );
 
         // B. Subir/Actualizar Historial_Clinico.doc consolidado
+        const docFilename = "Historial_Clinico.doc";
+        try {
+          const existingDocMetadata = await driveRepo.getFileMetadata(patientFolderId, docFilename);
+          if (existingDocMetadata) {
+            const remoteModifiedTime = new Date(existingDocMetadata.modifiedTime).getTime();
+            const localTime = new Date(patient.updatedAt).getTime();
+            
+            // Si el archivo en Drive es más nuevo que el paciente local (margen de 5 seg)
+            if (remoteModifiedTime > localTime + 5000) {
+              const rawDate = new Date(existingDocMetadata.modifiedTime);
+              const formattedDate = rawDate.toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              }).replace(/[\/\s:]/g, "-") + "_" + 
+              rawDate.toLocaleTimeString("es-AR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }).replace(/[\/\s:]/g, "-");
+              
+              const backupName = `Historial_Clinico_Editado_en_Drive_${formattedDate}.doc`;
+              driveLogger.log("info", `[Word Backup] Detectada edición manual en Drive para ${patient.fullName}. Resguardando como "${backupName}"`);
+              await driveRepo.renameFileOrFolder(existingDocMetadata.id, backupName);
+            }
+          }
+        } catch (metadataErr) {
+          console.error("Error verificando o resguardando el Word existente:", metadataErr);
+        }
+
         const fullHistoryHtml = generateFullHistoryWordHtml(patient);
         await driveRepo.uploadFileToFolder(
           patientFolderId,
-          "Historial_Clinico.doc",
+          docFilename,
           "application/msword",
           "\ufeff" + fullHistoryHtml
         );

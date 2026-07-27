@@ -20,6 +20,7 @@ const {
   mockGetAllSessions,
   mockRenameFileOrFolder,
   mockFindFolderBySuffix,
+  mockGetFileMetadata,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -36,6 +37,7 @@ const {
   mockGetAllSessions: vi.fn(),
   mockRenameFileOrFolder: vi.fn(),
   mockFindFolderBySuffix: vi.fn(),
+  mockGetFileMetadata: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -48,6 +50,7 @@ vi.mock('./google-drive.repository', () => {
       downloadBackup = mockDownloadBackup;
       renameFileOrFolder = mockRenameFileOrFolder;
       findFolderBySuffix = mockFindFolderBySuffix;
+      getFileMetadata = mockGetFileMetadata;
     }
   };
 });

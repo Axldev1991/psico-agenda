@@ -51,4 +51,9 @@ export interface IDriveRepository {
    * Renombra una carpeta o archivo en Google Drive.
    */
   renameFileOrFolder(fileId: string, newName: string): Promise<void>;
+
+  /**
+   * Obtiene los metadatos básicos de un archivo en una carpeta específica.
+   */
+  getFileMetadata(folderId: string, filename: string): Promise<{ id: string; modifiedTime: string; name: string } | null>;
 }
