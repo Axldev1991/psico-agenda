@@ -6,6 +6,9 @@ import { exportFullHistoryToWord } from "../../infrastructure/export/docx-export
 import { RichTextEditor } from "./RichTextEditor";
 import { usePatientDetail } from "../hooks/usePatientDetail";
 import { calculateAge } from "../../domain/patient.utils";
+import { SessionSidebar } from "./SessionSidebar";
+import { ActiveSessionHeader } from "./ActiveSessionHeader";
+import { CeciForm } from "./CeciForm";
 
 interface PatientDetailProps {
   patient: Patient;
@@ -34,19 +37,11 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     changeSessionDescription,
   } = usePatientDetail(initialPatient);
 
-  const [localDescription, setLocalDescription] = useState<string>("");
-  const [lastSessionUuid, setLastSessionUuid] = useState<string>("");
-
   const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedSessionIndex = sortedSessions.findIndex((s) => s.uuid === selectedSessionUuid);
   const selectedSession = sortedSessions[selectedSessionIndex] || sortedSessions[0];
-
-  if (selectedSession && selectedSession.uuid !== lastSessionUuid) {
-    setLocalDescription(selectedSession.description || "");
-    setLastSessionUuid(selectedSession.uuid);
-  }
 
   const selectedSessionNumber = selectedSession ? sortedSessions.length - selectedSessionIndex : null;
   const selectedSessionDateFormatted = selectedSession
@@ -182,89 +177,12 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Barra Lateral Izquierda: Anclas de Sesiones */}
-          <div className="lg:col-span-3 bg-bg-card border border-brand-sand rounded-3xl p-5 shadow-sm space-y-4 max-h-[75vh] overflow-y-auto">
-            <div>
-              <h3 className="font-title font-bold text-sm text-text-main">📍 Índice de Sesiones</h3>
-              <p className="text-[10px] text-text-sub font-semibold mt-0.5">Hacé clic para desplazarte en el historial</p>
-            </div>
-            
-            {sortedSessions.length === 0 ? (
-              <p className="text-xs text-text-sub/70 italic py-4">No hay sesiones programadas.</p>
-            ) : (
-              <div className="space-y-2">
-                {sortedSessions.map((session, index) => {
-                  const sessionDate = new Date(session.dateTime);
-                  const dateFormatted = sessionDate.toLocaleDateString("es-AR", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const sessionNumber = sortedSessions.length - index;
-
-                  // Resolving tag colors
-                  const colorClasses: Record<string, string> = {
-                    indigo: "bg-brand-indigo/20 text-brand-indigo border-brand-indigo/35",
-                    rose: "bg-rose-100 text-rose-800 border-rose-200",
-                    emerald: "bg-emerald-100 text-emerald-800 border-emerald-200",
-                    amber: "bg-amber-100 text-amber-800 border-amber-200",
-                  };
-                  const colorTag = session.colorTag || "indigo";
-                  const resolvedColor = colorClasses[colorTag] || colorClasses.indigo;
-
-                  return (
-                    <button
-                      key={session.uuid}
-                      onClick={() => {
-                        setActiveTab("timeline");
-                        setSelectedSessionUuid(session.uuid);
-                      }}
-                      className={`w-full text-left p-3 rounded-2xl transition-all cursor-pointer flex flex-col gap-1 group border ${
-                        selectedSessionUuid === session.uuid
-                          ? "bg-brand-indigo/15 border-brand-indigo/60 shadow-sm"
-                          : "bg-bg-base/50 hover:bg-brand-indigo/10 border-brand-sand/30 hover:border-brand-indigo/35"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="font-title font-bold text-xs text-text-main block group-hover:text-brand-indigo">
-                          Sesión N° {sessionNumber}
-                        </span>
-                        <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border ${
-                          session.status === "completed"
-                            ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
-                            : session.status === "cancelled"
-                            ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
-                            : "bg-brand-sand/30 text-text-sub border-brand-sand/55"
-                        }`}>
-                          {session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}
-                        </span>
-                      </div>
-                      
-                      {session.description && (
-                        <p className="text-[11px] text-text-main font-semibold line-clamp-1">
-                          {session.description}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[9px] text-text-sub font-mono">
-                          {dateFormatted} hs
-                        </span>
-                        {session.colorTag && (
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase ${resolvedColor}`}>
-                            {session.colorTag === "indigo" ? "Control" :
-                             session.colorTag === "rose" ? "Cognitivo" :
-                             session.colorTag === "emerald" ? "Fisiológico" :
-                             session.colorTag === "amber" ? "Otro" : session.colorTag}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <SessionSidebar
+            sortedSessions={sortedSessions}
+            selectedSessionUuid={selectedSessionUuid}
+            setSelectedSessionUuid={setSelectedSessionUuid}
+            setActiveTab={setActiveTab}
+          />
 
           {/* Panel Derecho: Gran Editor Clínico Word-Like con Pestañas */}
           <div className="lg:col-span-9 space-y-4">
@@ -306,76 +224,13 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                 </div>
 
                 {selectedSession && (
-                  <div className="bg-bg-base/50 border-l-4 border-brand-indigo rounded-r-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm select-none">
-                    <div className="flex-1">
-                      <h4 className="font-title font-bold text-sm text-brand-indigo">
-                        📅 Sesión N° {selectedSessionNumber} — {selectedSessionDateFormatted} hs
-                      </h4>
-                      <div className="flex items-center gap-1 mt-1 text-xs">
-                        <span className="text-text-sub font-semibold">Motivo:</span>
-                        <input
-                          type="text"
-                          value={localDescription}
-                          onChange={(e) => setLocalDescription(e.target.value)}
-                          onBlur={() => {
-                            if (localDescription !== (selectedSession.description || "")) {
-                              changeSessionDescription(selectedSession.uuid, localDescription);
-                            }
-                          }}
-                          placeholder="Escribí el motivo de consulta..."
-                          className="bg-transparent border-b border-transparent hover:border-brand-sand/50 focus:border-brand-indigo focus:outline-none px-1 py-0.5 text-text-main font-semibold w-full max-w-[280px] sm:max-w-md transition-all rounded-sm"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Selector de Etiquetas de Color */}
-                    <div className="flex items-center gap-1.5 self-start md:self-auto bg-white/70 border border-brand-sand/30 px-2.5 py-1 rounded-2xl">
-                      <span className="text-[9px] text-text-sub font-bold mr-1">Categoría:</span>
-                      {["indigo", "rose", "emerald", "amber"].map((color) => {
-                        const colorLabels: Record<string, string> = {
-                          indigo: "Control",
-                          rose: "Cognitivo",
-                          emerald: "Fisiológico",
-                          amber: "Otro",
-                        };
-                        const colorStyles: Record<string, string> = {
-                          indigo: "bg-brand-indigo/10 text-brand-indigo border-brand-indigo/25 hover:bg-brand-indigo/20",
-                          rose: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
-                          emerald: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
-                          amber: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
-                        };
-                        const activeStyles: Record<string, string> = {
-                          indigo: "ring-1.5 ring-brand-indigo bg-brand-indigo/25 text-brand-indigo font-black border-brand-indigo/55",
-                          rose: "ring-1.5 ring-rose-500 bg-rose-100 text-rose-800 font-black border-rose-300",
-                          emerald: "ring-1.5 ring-emerald-500 bg-emerald-100 text-emerald-800 font-black border-emerald-300",
-                          amber: "ring-1.5 ring-amber-500 bg-amber-100 text-amber-800 font-black border-amber-300",
-                        };
-                        const isSelected = (selectedSession.colorTag || "indigo") === color;
-                        return (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => changeSessionColor(selectedSession.uuid, color)}
-                            className={`text-[9px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer border ${
-                              isSelected ? activeStyles[color] : colorStyles[color]
-                            }`}
-                          >
-                            {colorLabels[color]}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border self-start md:self-auto uppercase tracking-wider ${
-                      selectedSession.status === "completed"
-                        ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
-                        : selectedSession.status === "cancelled"
-                        ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
-                        : "bg-brand-sand/30 text-text-sub border-brand-sand/55"
-                    }`}>
-                      {selectedSession.status === "completed" ? "Atendido" : selectedSession.status === "cancelled" ? "Cancelado" : "Programado"}
-                    </span>
-                  </div>
+                  <ActiveSessionHeader
+                    selectedSession={selectedSession}
+                    selectedSessionNumber={selectedSessionNumber}
+                    selectedSessionDateFormatted={selectedSessionDateFormatted}
+                    changeSessionDescription={changeSessionDescription}
+                    changeSessionColor={changeSessionColor}
+                  />
                 )}
 
                 <div className="prose max-w-none">
@@ -389,109 +244,10 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                 </div>
               </div>
             ) : (
-              <div className="bg-white border border-brand-sand rounded-b-3xl p-6 md:p-8 shadow-md max-h-[75vh] overflow-y-auto space-y-6">
-                <div>
-                  <h3 className="font-title font-bold text-base text-text-main">📋 Ficha del Paciente (CECI)</h3>
-                  <p className="text-[10px] text-text-sub font-semibold mt-0.5">Marco y variables clínicas estructuradas</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-text-sub font-bold block mb-1">Convive Con</label>
-                    <input
-                      type="text"
-                      value={patient.ceciConviveCon || ""}
-                      onChange={(e) => handleCeciChange("ceciConviveCon", e.target.value)}
-                      placeholder="Ej: Padres y un hermano menor..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-text-sub font-bold block mb-1">Familia (Estructura familiar)</label>
-                    <textarea
-                      value={patient.ceciFamilia || ""}
-                      onChange={(e) => handleCeciChange("ceciFamilia", e.target.value)}
-                      placeholder="Describa la composición y dinámica familiar..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-text-sub font-bold block mb-1">Ocupación</label>
-                    <input
-                      type="text"
-                      value={patient.ceciOcupacion || ""}
-                      onChange={(e) => handleCeciChange("ceciOcupacion", e.target.value)}
-                      placeholder="Ej: Profesional independiente, Estudiante..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-text-sub font-bold block mb-1">Estudios</label>
-                    <input
-                      type="text"
-                      value={patient.ceciEstudios || ""}
-                      onChange={(e) => handleCeciChange("ceciEstudios", e.target.value)}
-                      placeholder="Ej: Universitario en curso, Primario..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-text-sub font-bold block mb-1">Tratamientos Anteriores</label>
-                    <textarea
-                      value={patient.ceciTratamientosAnteriores || ""}
-                      onChange={(e) => handleCeciChange("ceciTratamientosAnteriores", e.target.value)}
-                      placeholder="Detalle tratamientos psicológicos o psiquiátricos previos..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-text-sub font-bold block mb-1">Inicio de Consulta</label>
-                    <input
-                      type="date"
-                      value={patient.ceciInicioConsulta || ""}
-                      onChange={(e) => handleCeciChange("ceciInicioConsulta", e.target.value)}
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-text-sub font-bold block mb-1">Día y Horario de Atención</label>
-                    <input
-                      type="text"
-                      value={patient.ceciDiaHorarioAtencion || ""}
-                      onChange={(e) => handleCeciChange("ceciDiaHorarioAtencion", e.target.value)}
-                      placeholder="Ej: Miércoles 16:00 hs..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-text-sub font-bold block mb-1">Frecuencia del Tratamiento</label>
-                    <input
-                      type="text"
-                      value={patient.ceciFrecuenciaTratamiento || ""}
-                      onChange={(e) => handleCeciChange("ceciFrecuenciaTratamiento", e.target.value)}
-                      placeholder="Ej: Semanal, Quincenal..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="text-xs text-text-sub font-bold block mb-1">Datos Adicionales / Notas</label>
-                    <textarea
-                      value={patient.ceciDatosAdicionales || ""}
-                      onChange={(e) => handleCeciChange("ceciDatosAdicionales", e.target.value)}
-                      placeholder="Notas adicionales relevantes para la admisión..."
-                      className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo text-xs cursor-pointer h-20"
-                    />
-                  </div>
-                </div>
-              </div>
+              <CeciForm
+                patient={patient}
+                handleCeciChange={handleCeciChange}
+              />
             )}
           </div>
         </div>
