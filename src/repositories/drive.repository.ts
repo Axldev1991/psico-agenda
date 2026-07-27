@@ -41,4 +41,14 @@ export interface IDriveRepository {
    * Descarga el contenido de un archivo por su nombre dentro de una carpeta específica.
    */
   downloadFileFromFolder(folderId: string, filename: string): Promise<string | null>;
+
+  /**
+   * Busca una carpeta usando un sufijo dentro de un directorio padre específico.
+   */
+  findFolderBySuffix(suffix: string, parentId: string): Promise<{ id: string; name: string } | null>;
+
+  /**
+   * Renombra una carpeta o archivo en Google Drive.
+   */
+  renameFileOrFolder(fileId: string, newName: string): Promise<void>;
 }
