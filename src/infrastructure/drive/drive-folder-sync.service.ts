@@ -73,29 +73,39 @@ export class DriveFolderSyncService {
         try {
           const appDataPatientsFolderId = await driveRepo.getOrCreateFolder("patients", "appDataFolder");
           const jsonMetadata = await driveRepo.getFileMetadata(appDataPatientsFolderId, `${patient.uuid}.json`);
-          const existingDocMetadata = await driveRepo.getFileMetadata(patientFolderId, docFilename);
           
-          if (existingDocMetadata && jsonMetadata) {
-            const docModifiedTime = new Date(existingDocMetadata.modifiedTime).getTime();
+          // Buscar tanto Historial_Clinico.doc como Historial_Clinico.docx (por conversión automática de Drive)
+          const docMetadata = await driveRepo.getFileMetadata(patientFolderId, "Historial_Clinico.doc");
+          const docxMetadata = await driveRepo.getFileMetadata(patientFolderId, "Historial_Clinico.docx");
+          
+          const filesToCheck = [docMetadata, docxMetadata].filter(Boolean) as { id: string; modifiedTime: string; name: string }[];
+          
+          if (jsonMetadata) {
             const jsonModifiedTime = new Date(jsonMetadata.modifiedTime).getTime();
             
-            // Si el Word en Drive es al menos 15 segundos más nuevo que el JSON de backup,
-            // significa que fue editado directamente en Drive (en sync normal se suben juntos).
-            if (docModifiedTime > jsonModifiedTime + 15000) {
-              const rawDate = new Date(existingDocMetadata.modifiedTime);
-              const formattedDate = rawDate.toLocaleDateString("es-AR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              }).replace(/[\/\s:]/g, "-") + "_" + 
-              rawDate.toLocaleTimeString("es-AR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }).replace(/[\/\s:]/g, "-");
+            for (const fileMetadata of filesToCheck) {
+              const fileModifiedTime = new Date(fileMetadata.modifiedTime).getTime();
               
-              const backupName = `Historial_Clinico_Editado_en_Drive_${formattedDate}.doc`;
-              driveLogger.log("info", `[Word Backup] Detectada edición manual en Drive para ${patient.fullName}. Resguardando como "${backupName}"`);
-              await driveRepo.renameFileOrFolder(existingDocMetadata.id, backupName);
+              // Si el Word en Drive (.doc o .docx) es al menos 15 segundos más nuevo que el JSON de backup
+              if (fileModifiedTime > jsonModifiedTime + 15000) {
+                const rawDate = new Date(fileMetadata.modifiedTime);
+                const formattedDate = rawDate.toLocaleDateString("es-AR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                }).replace(/[\/\s:]/g, "-") + "_" + 
+                rawDate.toLocaleTimeString("es-AR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).replace(/[\/\s:]/g, "-");
+                
+                // Mantener la extensión del archivo original
+                const extension = fileMetadata.name.endsWith(".docx") ? ".docx" : ".doc";
+                const backupName = `Historial_Clinico_Editado_en_Drive_${formattedDate}${extension}`;
+                
+                driveLogger.log("info", `[Word Backup] Detectada edición manual en Drive en "${fileMetadata.name}". Resguardando como "${backupName}"`);
+                await driveRepo.renameFileOrFolder(fileMetadata.id, backupName);
+              }
             }
           }
         } catch (metadataErr) {
