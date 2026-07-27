@@ -73,7 +73,7 @@ export function rebuildClinicalHistory(
     });
     const sessionNumber = index + 1;
 
-    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #4f46e5; padding-bottom: 4px; font-family: Arial, sans-serif;"><h3 style="color: #4f46e5; font-size: 14pt; margin: 0;">📅 Sesión N° ${sessionNumber} — ${sessionDate}</h3><p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Estado: ${
+    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; font-family: Arial, sans-serif;"><h3 style="color: #1e293b; font-size: 13pt; margin: 0; font-weight: bold;">Sesión N° ${sessionNumber} — ${sessionDate}</h3><p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Estado: ${
       session.status === "completed"
         ? "Atendido"
         : session.status === "cancelled"

@@ -116,32 +116,28 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
     </head>
     <body>
       <!-- Cabecera Profesional -->
-      <table className="header-table" style="width: 100%; border-bottom: 2px solid #4f46e5; margin-bottom: 20px;">
-        <tr>
-          <td style="padding-bottom: 10px;">
-            <div style="font-size: 18pt; font-weight: bold; color: #1e1b4b; font-family: Arial, sans-serif;">PSICO-AGENDA</div>
-            <div style="font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Registro Profesional de Evolución Clínica</div>
-          </td>
-        </tr>
-      </table>
+      <div style="font-family: Arial, sans-serif; margin-bottom: 25px; border-bottom: 1px solid #cbd5e1; padding-bottom: 15px;">
+        <h1 style="font-size: 18pt; font-weight: bold; color: #1e293b; margin: 0; letter-spacing: -0.5px;">PSICO-AGENDA</h1>
+        <p style="font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0 0;">Registro Profesional de Evolución Clínica</p>
+      </div>
 
       <!-- Datos del Paciente y la Sesión -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: Arial, sans-serif; font-size: 10pt;">
-        <tr>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 25%;">Paciente</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; color: #0f172a;">${patient.fullName}</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9; width: 25%;">ID Paciente</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; color: #0f172a; font-family: monospace;">${patient.uuid}</td>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 9.5pt; border: 1px solid #cbd5e1;">
+        <tr style="border-bottom: 1px solid #cbd5e1;">
+          <td style="padding: 10px; font-weight: bold; color: #64748b; width: 25%;">Paciente</td>
+          <td style="padding: 10px; color: #0f172a; font-weight: bold; width: 25%;">${patient.fullName}</td>
+          <td style="padding: 10px; font-weight: bold; color: #64748b; width: 25%;">ID Paciente</td>
+          <td style="padding: 10px; color: #64748b; font-family: monospace; font-size: 8.5pt; width: 25%;">${patient.uuid}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #cbd5e1;">
+          <td style="padding: 10px; font-weight: bold; color: #64748b;">Fecha y Hora</td>
+          <td style="padding: 10px; color: #0f172a;">${dateFormatted}</td>
+          <td style="padding: 10px; font-weight: bold; color: #64748b;">Costo Pactado</td>
+          <td style="padding: 10px; color: #0f172a;">$${session.priceAtSession.toLocaleString('es-AR')} ARS</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Fecha y Hora</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; color: #0f172a;">${dateFormatted}</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Costo Pactado</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; color: #0f172a;">$${session.priceAtSession.toLocaleString('es-AR')} ARS</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: bold; background-color: #f1f5f9;">Estado Sesión</td>
-          <td style="padding: 8px; border: 1px solid #e2e8f0; color: #0f172a;" colspan="3">
+          <td style="padding: 10px; font-weight: bold; color: #64748b;">Estado Sesión</td>
+          <td style="padding: 10px; color: #0f172a;" colspan="3">
             ${session.status === 'completed' ? 'Atendido / Realizado' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente / No asistió' : 'Programado'}
           </td>
         </tr>
@@ -219,31 +215,27 @@ export function generateFullHistoryWordHtml(patient: Patient): string {
     </head>
     <body>
       <!-- Cabecera Profesional -->
-      <table style="width: 100%; border-bottom: 3px double #4f46e5; margin-bottom: 30px; font-family: Arial, sans-serif;">
-        <tr>
-          <td style="padding-bottom: 15px;">
-            <div style="font-size: 22pt; font-weight: bold; color: #1e1b4b; letter-spacing: 0.5px;">PSICO-AGENDA</div>
-            <div style="font-size: 10pt; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; margin-top: 2px;">HISTORIAL CLÍNICO CONSOLIDADO</div>
-          </td>
-        </tr>
-      </table>
+      <div style="font-family: Arial, sans-serif; margin-bottom: 25px; border-bottom: 1px solid #cbd5e1; padding-bottom: 15px;">
+        <h1 style="font-size: 20pt; font-weight: bold; color: #1e293b; margin: 0; letter-spacing: -0.5px;">PSICO-AGENDA</h1>
+        <p style="font-size: 10pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0 0;">Historial Clínico Consolidado</p>
+      </div>
 
       <!-- Datos de Ficha del Paciente -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 35px; font-family: Arial, sans-serif; font-size: 10pt;">
-        <tr style="background-color: #f1f5f9;">
-          <td colspan="4" style="padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; color: #1e1b4b; font-size: 11pt; text-transform: uppercase;">Datos Generales del Paciente</td>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-family: Arial, sans-serif; font-size: 9.5pt; border: 1px solid #cbd5e1;">
+        <tr style="border-bottom: 1px solid #cbd5e1;">
+          <td colspan="4" style="padding: 10px; font-weight: bold; color: #1e293b; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.5px;">Datos Generales del Paciente</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #cbd5e1;">
+          <td style="padding: 10px; font-weight: bold; color: #64748b; width: 25%;">Nombre Completo</td>
+          <td style="padding: 10px; color: #0f172a; width: 25%; font-weight: bold;">${patient.fullName}</td>
+          <td style="padding: 10px; font-weight: bold; color: #64748b; width: 25%;">ID Único (UUID)</td>
+          <td style="padding: 10px; color: #64748b; font-family: monospace; font-size: 8.5pt; width: 25%;">${patient.uuid}</td>
         </tr>
         <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc; width: 25%;">Nombre Completo</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a; width: 25%; font-weight: bold;">${patient.fullName}</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc; width: 25%;">ID Único (UUID)</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #64748b; font-family: monospace; font-size: 9pt;">${patient.uuid}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc;">Cobertura Médica</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${patient.healthInsurance ? `${patient.healthInsurance} (N° ${patient.affiliateNumber || "Particular"})` : "Particular"}</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; background-color: #f8fafc;">Teléfono / Email</td>
-          <td style="padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">${patient.phone || "—"} / ${patient.email || "—"}</td>
+          <td style="padding: 10px; font-weight: bold; color: #64748b;">Cobertura Médica</td>
+          <td style="padding: 10px; color: #0f172a;">${patient.healthInsurance ? `${patient.healthInsurance} (N° ${patient.affiliateNumber || "Particular"})` : "Particular"}</td>
+          <td style="padding: 10px; font-weight: bold; color: #64748b;">Teléfono / Email</td>
+          <td style="padding: 10px; color: #0f172a;">${patient.phone || "—"} / ${patient.email || "—"}</td>
         </tr>
       </table>
 
