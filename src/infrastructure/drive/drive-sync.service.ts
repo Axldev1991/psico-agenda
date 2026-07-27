@@ -4,6 +4,7 @@ import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule } from "../../domain/session.types";
 import { generateFullHistoryWordHtml, generateSessionWordHtml } from "../export/docx-exporter";
+import { driveLogger } from "./drive-logger";
 
 const driveRepo = new GoogleDriveRepository();
 const patientRepo = new DexiePatientRepository();
@@ -116,6 +117,7 @@ export class DriveSyncService {
    * Sincronización selectiva de metadatos e índices activos.
    */
   async performSync(googleToken: string): Promise<{ lastSynced: string }> {
+    driveLogger.log("info", "Iniciando proceso de sincronización con Google Drive...");
     driveRepo.setAccessToken(googleToken);
     const patientsFolderId = await driveRepo.getOrCreateFolder("patients", "appDataFolder");
 
@@ -125,11 +127,13 @@ export class DriveSyncService {
     const localRecurrence = await sessionRepo.getRecurrenceRules();
 
     // 2. Descargar Datos de la Nube (index-db.json o migración desde backup viejo)
+    driveLogger.log("info", "Descargando índice de base de datos de la nube...");
     let remoteIndexStr = await driveRepo.downloadFileFromFolder("appDataFolder", "index-db.json");
     let isMigrating = false;
     let remoteBackupData: BackupData | null = null;
 
     if (!remoteIndexStr) {
+      driveLogger.log("info", "No se encontró el índice en la nube. Buscando backup heredado...");
       const oldBackupStr = await driveRepo.downloadBackup();
       if (oldBackupStr) {
         isMigrating = true;
@@ -175,23 +179,26 @@ export class DriveSyncService {
         const localTime = new Date(localP.updatedAt).getTime();
         const remoteTime = new Date(remoteP.updatedAt).getTime();
 
+        driveLogger.log("info", `Analizando paciente: ${localP.fullName} (Local: ${localP.updatedAt}, Remoto: ${remoteP.updatedAt})`);
+
         if (localTime > remoteTime) {
-          // Local es más nuevo -> subir a Drive
+          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Los cambios locales son más recientes. Subiendo...`);
           if (localP.isHistoryLoaded !== false) {
             patientsToUpload.push(localP.uuid);
           }
         } else if (remoteTime > localTime) {
-          // Remoto es más nuevo -> descargar de Drive y actualizar local
+          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Los datos remotos son más recientes. Descargando...`);
           if (localP.isHistoryLoaded === true || remoteP.status === 'active') {
             patientsToDownload.push(localP.uuid);
           }
-          // Actualizar metadatos en el mapa conservando la historia local de forma transitoria
           const historyBackup = localP.clinicalHistory;
           patientMap.set(remoteP.uuid, {
             ...remoteP,
             clinicalHistory: historyBackup,
             isHistoryLoaded: localP.isHistoryLoaded
           });
+        } else {
+          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Tiempos iguales. Sin acción.`);
         }
       } else {
         // Solo existe remotamente -> descargar
@@ -302,7 +309,9 @@ export class DriveSyncService {
 
     // Sincronizar estructura visible en Drive
     const finalSessions = await sessionRepo.getAll();
+    driveLogger.log("info", "Iniciando volcado asíncrono de documentos clínicos visibles (.doc y .json)...");
     this.syncVisibleFiles(mergedPatients, finalSessions).catch(err => {
+      driveLogger.log("error", `Falla en volcado de archivos visibles: ${err.message}`, err);
       console.error("Error en sincronización de archivos visibles:", err);
     });
 
@@ -321,20 +330,23 @@ export class DriveSyncService {
    */
   private async syncVisibleFiles(patients: Patient[], sessions: Session[]) {
     try {
-      console.log("Iniciando volcado de archivos visibles en Google Drive...");
+      driveLogger.log("info", "Creando/Buscando carpetas de consultorio en Google Drive...");
       const rootFolderId = await driveRepo.getOrCreateFolder("PSICO-AGENDA");
       const pacientesFolderId = await driveRepo.getOrCreateFolder("pacientes", rootFolderId);
 
       for (const patient of patients) {
         // REQ-5: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto con datos vacíos
         if (patient.isHistoryLoaded === false) {
-          console.log(`[DLP Guard] Saltando sync visible para paciente inactivo: ${patient.fullName}`);
+          driveLogger.log("info", `[DLP Guard] Saltando sync visible para paciente inactivo: ${patient.fullName}`);
           continue;
         }
 
-        const partialUuid = patient.uuid.substring(0, 8);
+        const partialUuid = patient.uuid.includes("-demo-") 
+          ? patient.uuid 
+          : patient.uuid.substring(0, 8);
         const patientFolderName = `${patient.fullName}_${partialUuid}`;
         
+        driveLogger.log("info", `Procesando volcado visible para: ${patient.fullName} (Carpeta: ${patientFolderName})...`);
         // Buscar si ya existe una carpeta para este paciente usando su UUID único como sufijo
         let patientFolderId: string;
         const existingFolder = await driveRepo.findFolderBySuffix(partialUuid, pacientesFolderId);

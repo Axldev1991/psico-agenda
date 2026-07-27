@@ -285,5 +285,33 @@ describe('DriveSyncService', () => {
         expect.stringContaining('Legacy History')
       );
     });
+
+    it('should generate Historial_Clinico.doc with the updated clinical history', async () => {
+      const localPatient = {
+        uuid: 'p1',
+        fullName: 'Juan Ignacio Rodríguez',
+        updatedAt: '2026-07-21T10:00:00Z',
+        isHistoryLoaded: true,
+        clinicalHistory: '<h1>Test Clinical History Content</h1>'
+      };
+      
+      mockGetAll.mockResolvedValue([localPatient]);
+      mockDownloadFile.mockImplementation(async (folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({ patients: [], recurrenceRules: [], exportedAt: '2026-07-20T10:00:00Z' });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Wait for any async calls inside performSync (like syncVisibleFiles) to complete
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Check if Historial_Clinico.doc was uploaded with the content
+      const docUploadCall = mockUploadFile.mock.calls.find(call => call[1] === 'Historial_Clinico.doc');
+      expect(docUploadCall).toBeDefined();
+      expect(docUploadCall![3]).toContain('<h1>Test Clinical History Content</h1>');
+    });
   });
 });

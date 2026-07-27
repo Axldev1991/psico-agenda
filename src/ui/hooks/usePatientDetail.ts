@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Patient } from "../../domain/patient.types";
 import { DexiePatientRepository } from "../../infrastructure/db/dexie-patient.repository";
@@ -21,9 +21,11 @@ export function usePatientDetail(initialPatient: Patient) {
     [patient.uuid]
   ) || [];
 
-  const sortedSessions = [...sessions].sort(
-    (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
-  );
+  const sortedSessions = useMemo(() => {
+    return [...sessions].sort(
+      (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+    );
+  }, [sessions]);
 
   const [selectedSessionUuid, setSelectedSessionUuid] = useState<string | null>(null);
   const [sessionContents, setSessionContents] = useState<Map<string, string>>(new Map());
@@ -97,6 +99,21 @@ export function usePatientDetail(initialPatient: Patient) {
           updatedAt: new Date().toISOString(),
         };
         await patientRepo.save(updatedPatient);
+
+        if (selectedSessionUuid) {
+          const currentSession = sessions.find(s => s.uuid === selectedSessionUuid);
+          if (currentSession) {
+            const newHtml = sessionContentsRef.current.get(selectedSessionUuid);
+            if (newHtml !== undefined) {
+              const updatedSession = {
+                ...currentSession,
+                notes: newHtml,
+                updatedAt: new Date().toISOString(),
+              };
+              await sessionRepo.save(updatedSession);
+            }
+          }
+        }
       } catch (e) {
         console.error("Error forzando guardado local antes de sync:", e);
       }
@@ -162,12 +179,15 @@ export function usePatientDetail(initialPatient: Patient) {
     if (patient) {
       const parsed = parseClinicalHistory(patient.clinicalHistory || "");
       setSessionContents(parsed);
-
-      if (sortedSessions.length > 0 && !selectedSessionUuid) {
-        setSelectedSessionUuid(sortedSessions[0].uuid);
-      }
     }
   }, [patient.uuid, patient.clinicalHistory]);
+
+  // Seleccionar automáticamente la sesión activa inicial cuando se cargan las sesiones
+  useEffect(() => {
+    if (sortedSessions.length > 0 && !selectedSessionUuid) {
+      setSelectedSessionUuid(sortedSessions[0].uuid);
+    }
+  }, [sortedSessions, selectedSessionUuid]);
 
   // AUTO-PREPEND LOGIC: prepend sessions that don't have an anchor in clinical history
   useEffect(() => {
@@ -192,10 +212,6 @@ export function usePatientDetail(initialPatient: Patient) {
       const updatedPatient = { ...patient, clinicalHistory: fullHtml };
       patientRepo.save(updatedPatient);
       setSessionContents(parsed);
-
-      if (sortedSessions.length > 0 && !selectedSessionUuid) {
-        setSelectedSessionUuid(sortedSessions[0].uuid);
-      }
     }
   }, [sessions, patient.uuid, patient.isHistoryLoaded]);
 
@@ -205,6 +221,7 @@ export function usePatientDetail(initialPatient: Patient) {
     const newContents = new Map(sessionContents);
     newContents.set(selectedSessionUuid, newHtml);
     setSessionContents(newContents);
+    sessionContentsRef.current = newContents;
     setHasPendingDriveUpload(true);
     pendingDriveUploadRef.current = true;
 
@@ -222,6 +239,17 @@ export function usePatientDetail(initialPatient: Patient) {
           updatedAt: new Date().toISOString(),
         };
         await patientRepo.save(updatedPatient);
+
+        const currentSession = sessions.find(s => s.uuid === selectedSessionUuid);
+        if (currentSession) {
+          const updatedSession = {
+            ...currentSession,
+            notes: newHtml,
+            updatedAt: new Date().toISOString(),
+          };
+          await sessionRepo.save(updatedSession);
+        }
+
         setSaveFeedback(true);
         setHasPendingDriveUpload(true);
         setTimeout(() => setSaveFeedback(false), 1500);
@@ -260,6 +288,64 @@ export function usePatientDetail(initialPatient: Patient) {
     }
   };
 
+  // Cambiar color visual de la sesión
+  const changeSessionColor = async (sessionUuid: string, newColor: string) => {
+    try {
+      const targetSession = sessions.find(s => s.uuid === sessionUuid);
+      if (targetSession) {
+        const updatedSession = {
+          ...targetSession,
+          colorTag: newColor,
+          updatedAt: new Date().toISOString(),
+        };
+        await sessionRepo.save(updatedSession);
+        
+        // Actualizar updatedAt del paciente para forzar sincronización
+        const updatedPatient = {
+          ...patient,
+          updatedAt: new Date().toISOString(),
+        };
+        await patientRepo.save(updatedPatient);
+        
+        // Marcar cambios pendientes y disparar sincronización inmediata
+        pendingDriveUploadRef.current = true;
+        setHasPendingDriveUpload(true);
+        triggerAutoSyncIfPending();
+      }
+    } catch (err) {
+      console.error("Error al cambiar el color de la sesión:", err);
+    }
+  };
+
+  // Cambiar motivo/descripción de la sesión
+  const changeSessionDescription = async (sessionUuid: string, newDescription: string) => {
+    try {
+      const targetSession = sessions.find(s => s.uuid === sessionUuid);
+      if (targetSession) {
+        const updatedSession = {
+          ...targetSession,
+          description: newDescription,
+          updatedAt: new Date().toISOString(),
+        };
+        await sessionRepo.save(updatedSession);
+        
+        // Actualizar updatedAt del paciente para forzar sincronización
+        const updatedPatient = {
+          ...patient,
+          updatedAt: new Date().toISOString(),
+        };
+        await patientRepo.save(updatedPatient);
+        
+        // Marcar cambios pendientes y disparar sincronización inmediata
+        pendingDriveUploadRef.current = true;
+        setHasPendingDriveUpload(true);
+        triggerAutoSyncIfPending();
+      }
+    } catch (err) {
+      console.error("Error al cambiar la descripción de la sesión:", err);
+    }
+  };
+
   return {
     patient,
     sortedSessions,
@@ -277,5 +363,7 @@ export function usePatientDetail(initialPatient: Patient) {
     handleRetryDownload,
     handleScrollToSession,
     handleCeciChange,
+    changeSessionColor,
+    changeSessionDescription,
   };
 }

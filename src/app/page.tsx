@@ -42,6 +42,7 @@ export default function Home() {
     disconnectGoogle,
     performSync,
     preloadAllForOffline,
+    downloadDiagnosticLogs,
   } = useGoogleDrive();
 
   // Vista activa: 'calendar' o 'patients'
@@ -259,6 +260,13 @@ export default function Home() {
                     className="bg-status-confirmed-light hover:bg-status-confirmed-light/80 text-status-confirmed-dark p-1.5 rounded-lg cursor-pointer transition-colors text-[9px] font-bold border border-status-confirmed-dark/20 flex items-center justify-center"
                   >
                     📥 {isSidebarCollapsed ? "" : "Offline"}
+                  </button>
+                  <button
+                    onClick={downloadDiagnosticLogs}
+                    title="Descargar Logs de Diagnóstico"
+                    className="bg-brand-sand hover:bg-brand-sand/85 text-text-main p-1.5 rounded-lg cursor-pointer transition-colors text-[9px] font-bold border border-brand-sand/55 flex items-center justify-center"
+                  >
+                    📋 {isSidebarCollapsed ? "" : "Logs"}
                   </button>
                   <button
                     onClick={disconnectGoogle}

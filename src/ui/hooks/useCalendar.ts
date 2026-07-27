@@ -172,12 +172,21 @@ export function useCalendar() {
     notes?: string;
   }) => {
     const patient = patientMap.get(sessionData.patientUuid);
+    
+    // Buscar la última sesión para heredar descripción y colorTag
+    const patientSessions = await sessionRepo.getByPatient(sessionData.patientUuid);
+    const lastSession = patientSessions.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0];
+    const inheritedDescription = lastSession ? lastSession.description : "";
+    const inheritedColorTag = lastSession ? lastSession.colorTag : "indigo";
+
     const newSession: Session = {
       uuid: crypto.randomUUID(),
       patientUuid: sessionData.patientUuid,
       dateTime: sessionData.dateTime,
       status: sessionData.status,
       priceAtSession: patient ? patient.sessionPrice : 0,
+      description: inheritedDescription,
+      colorTag: inheritedColorTag,
       notes: sessionData.notes,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -211,12 +220,19 @@ export function useCalendar() {
       }
     } else {
       // Si era un turno recurrente virtual, creamos una "excepción" física en IndexedDB
+      const patientSessions = await sessionRepo.getByPatient(slot.patientUuid);
+      const lastSession = patientSessions.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0];
+      const inheritedDescription = lastSession ? lastSession.description : "";
+      const inheritedColorTag = lastSession ? lastSession.colorTag : "indigo";
+
       const newSession: Session = {
         uuid: crypto.randomUUID(),
         patientUuid: slot.patientUuid,
         dateTime: slot.dateTime.toISOString(),
         status: newStatus,
         priceAtSession: slot.price,
+        description: inheritedDescription,
+        colorTag: inheritedColorTag,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

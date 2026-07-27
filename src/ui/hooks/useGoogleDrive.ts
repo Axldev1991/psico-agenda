@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { GoogleDriveRepository } from "../../infrastructure/drive/google-drive.repository";
 import { DriveSyncService } from "../../infrastructure/drive/drive-sync.service";
+import { driveLogger } from "../../infrastructure/drive/drive-logger";
 
 const driveRepo = new GoogleDriveRepository();
 const syncService = new DriveSyncService();
@@ -188,5 +189,6 @@ export function useGoogleDrive() {
     performSync,
     downloadPatientHistory,
     preloadAllForOffline,
+    downloadDiagnosticLogs: () => driveLogger.downloadDiagnosticLogs(),
   };
 }
