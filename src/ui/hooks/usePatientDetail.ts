@@ -119,7 +119,11 @@ export function usePatientDetail(initialPatient: Patient) {
             }
           }
         }
+        setIsLocalSaving(false);
+        setSaveFeedback(true);
+        setTimeout(() => setSaveFeedback(false), 1500);
       } catch (e) {
+        setIsLocalSaving(false);
         console.error("Error forzando guardado local antes de sync:", e);
       }
     }
