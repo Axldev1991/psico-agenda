@@ -73,13 +73,22 @@ export function rebuildClinicalHistory(
     });
     const sessionNumber = index + 1;
 
-    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top: 24px; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; font-family: Arial, sans-serif;"><h3 style="color: #1e293b; font-size: 13pt; margin: 0; font-weight: bold;">Sesión N° ${sessionNumber} — ${sessionDate}</h3><p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Estado: ${
-      session.status === "completed"
-        ? "Atendido"
-        : session.status === "cancelled"
-        ? "Cancelado"
-        : "Programado"
-    }</p></div>`;
+    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top: 35px; margin-bottom: 12px; font-family: Arial, sans-serif;">
+      <table style="width: 100%; border-collapse: collapse; border-bottom: 1px solid #cbd5e1; margin-bottom: 8px;">
+        <tr>
+          <td style="padding-bottom: 6px; vertical-align: bottom;">
+            <span style="font-size: 8.5pt; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Evolución Clínica</span><br/>
+            <strong style="font-size: 13pt; color: #1e293b;">Sesión N° ${sessionNumber}</strong>
+          </td>
+          <td style="padding-bottom: 6px; text-align: right; vertical-align: bottom; font-size: 9.5pt; color: #64748b;">
+            ${sessionDate}
+          </td>
+        </tr>
+      </table>
+      <div style="font-size: 8.5pt; color: #64748b; margin-bottom: 15px;">
+        Estado: <span style="font-weight: bold; color: #475569;">${session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}</span>
+      </div>
+    </div>`;
 
     const contentHtml =
       sessionContents.get(session.uuid) ||
