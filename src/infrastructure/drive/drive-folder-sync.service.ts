@@ -71,13 +71,17 @@ export class DriveFolderSyncService {
         // B. Subir/Actualizar Historial_Clinico.doc consolidado
         const docFilename = "Historial_Clinico.doc";
         try {
+          const appDataPatientsFolderId = await driveRepo.getOrCreateFolder("patients", "appDataFolder");
+          const jsonMetadata = await driveRepo.getFileMetadata(appDataPatientsFolderId, `${patient.uuid}.json`);
           const existingDocMetadata = await driveRepo.getFileMetadata(patientFolderId, docFilename);
-          if (existingDocMetadata) {
-            const remoteModifiedTime = new Date(existingDocMetadata.modifiedTime).getTime();
-            const localTime = new Date(patient.updatedAt).getTime();
+          
+          if (existingDocMetadata && jsonMetadata) {
+            const docModifiedTime = new Date(existingDocMetadata.modifiedTime).getTime();
+            const jsonModifiedTime = new Date(jsonMetadata.modifiedTime).getTime();
             
-            // Si el archivo en Drive es más nuevo que el paciente local (margen de 5 seg)
-            if (remoteModifiedTime > localTime + 5000) {
+            // Si el Word en Drive es al menos 15 segundos más nuevo que el JSON de backup,
+            // significa que fue editado directamente en Drive (en sync normal se suben juntos).
+            if (docModifiedTime > jsonModifiedTime + 15000) {
               const rawDate = new Date(existingDocMetadata.modifiedTime);
               const formattedDate = rawDate.toLocaleDateString("es-AR", {
                 day: "2-digit",
