@@ -30,7 +30,7 @@ export function ActiveSessionHeader({
           📅 Sesión N° {selectedSessionNumber} — {selectedSessionDateFormatted} hs
         </h4>
         <div className="flex items-center gap-1 mt-1 text-xs">
-          <span className="text-text-sub font-semibold">Motivo:</span>
+          <span className="text-text-sub font-semibold">Tema:</span>
           <input
             type="text"
             value={localDescription}
@@ -40,7 +40,7 @@ export function ActiveSessionHeader({
                 changeSessionDescription(selectedSession.uuid, localDescription);
               }
             }}
-            placeholder="Escribí el motivo de consulta..."
+            placeholder="Escribí el tema de consulta..."
             className="bg-transparent border-b border-transparent hover:border-brand-sand/50 focus:border-brand-indigo focus:outline-none px-1 py-0.5 text-text-main font-semibold w-full max-w-[280px] sm:max-w-md transition-all rounded-sm"
           />
         </div>
@@ -48,7 +48,7 @@ export function ActiveSessionHeader({
 
       {/* Selector de Etiquetas de Color */}
       <div className="flex items-center gap-1.5 self-start md:self-auto bg-white/70 border border-brand-sand/30 px-2.5 py-1 rounded-2xl">
-        <span className="text-[9px] text-text-sub font-bold mr-1">Categoría:</span>
+        <span className="text-[9px] text-text-sub font-bold mr-1">Movimientos:</span>
         {["indigo", "rose", "emerald", "amber"].map((color) => {
           const colorLabels: Record<string, string> = {
             indigo: "Control",
