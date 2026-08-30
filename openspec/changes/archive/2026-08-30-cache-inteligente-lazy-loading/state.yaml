@@ -1,8 +1,11 @@
 change-name: cache-inteligente-lazy-loading
-active-phase: apply
+active-phase: archived
 completed-phases:
   - explore
   - propose
   - specs
   - design
   - tasks
+  - apply
+  - verify
+  - archive
