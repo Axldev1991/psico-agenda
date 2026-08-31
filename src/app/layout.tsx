@@ -4,6 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "PSICO-AGENDA | Sistema de Gestión Clínica",
   description: "Gestión integral de pacientes, turnos recurrentes e historias clínicas con soberanía absoluta de datos sobre Google Drive.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PSICO-AGENDA",
+  },
 };
 
 export default function RootLayout({
