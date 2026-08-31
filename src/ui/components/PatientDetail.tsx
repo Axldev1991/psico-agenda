@@ -9,7 +9,6 @@ import { calculateAge } from "../../domain/patient.utils";
 import { SessionSidebar } from "./SessionSidebar";
 import { ActiveSessionHeader } from "./ActiveSessionHeader";
 import { CeciForm } from "./CeciForm";
-import { PatientHighlights } from "./PatientHighlights";
 
 interface PatientDetailProps {
   patient: Patient;
@@ -39,7 +38,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     changeSessionDescription,
   } = usePatientDetail(initialPatient);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "ceci" | "highlights">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const selectedSessionIndex = sortedSessions.findIndex((s) => s.uuid === selectedSessionUuid);
@@ -210,16 +209,6 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
               >
                 📋 Ficha CECI
               </button>
-              <button
-                onClick={() => setActiveTab("highlights")}
-                className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
-                  activeTab === "highlights"
-                    ? "border-brand-indigo text-brand-indigo"
-                    : "border-transparent text-text-sub hover:text-text-main"
-                }`}
-              >
-                ⭐ Marcaciones
-              </button>
             </div>
 
             {activeTab === "timeline" ? (
@@ -255,19 +244,10 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                   />
                 </div>
               </div>
-            ) : activeTab === "ceci" ? (
+            ) : (
               <CeciForm
                 patient={patient}
                 handleCeciChange={handleCeciChange}
-              />
-            ) : (
-              <PatientHighlights
-                patient={patient}
-                sortedSessions={sortedSessions}
-                onJumpToSession={(sessionUuid) => {
-                  setActiveTab("timeline");
-                  setSelectedSessionUuid(sessionUuid);
-                }}
               />
             )}
           </div>
