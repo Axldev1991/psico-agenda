@@ -99,3 +99,89 @@ export function rebuildClinicalHistory(
 
   return fullHtml.trim();
 }
+
+export interface HighlightedSnippet {
+  sessionUuid: string;
+  sessionNumber: number;
+  sessionDate: string;
+  text: string;
+  color: string;
+}
+
+/**
+ * Extracts highlighted text snippets from a unified clinical history.
+ */
+export function extractHighlights(
+  clinicalHistoryHtml: string,
+  sessions: { uuid: string; dateTime: string; status: string }[]
+): HighlightedSnippet[] {
+  if (!clinicalHistoryHtml) return [];
+
+  const sessionContents = parseClinicalHistory(clinicalHistoryHtml);
+  const highlights: HighlightedSnippet[] = [];
+
+  const oldestFirst = [...sessions].sort(
+    (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
+  );
+
+  const hasDOMParser = typeof DOMParser !== "undefined";
+
+  oldestFirst.forEach((session, index) => {
+    const sessionNumber = index + 1;
+    const sessionDate = new Date(session.dateTime).toLocaleDateString("es-AR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    const contentHtml = sessionContents.get(session.uuid);
+    if (!contentHtml) return;
+
+    if (hasDOMParser) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(`<div>${contentHtml}</div>`, "text/html");
+      const container = doc.body.firstChild as Element;
+      if (!container) return;
+
+      const elements = container.querySelectorAll("[style*='background-color']");
+      elements.forEach(el => {
+        const style = el.getAttribute("style") || "";
+        const bgMatch = style.match(/background-color:\s*([^;]+)/i);
+        if (bgMatch) {
+          const color = bgMatch[1].trim();
+          const text = el.textContent?.trim();
+          if (text) {
+            highlights.push({
+              sessionUuid: session.uuid,
+              sessionNumber,
+              sessionDate,
+              text,
+              color
+            });
+          }
+        }
+      });
+    } else {
+      // Fallback por regex para entornos Node.js (como test runners)
+      const regex = /<span[^>]*style="[^"]*background-color:\s*([^;"]+)[^"]*"[^>]*>([\s\S]*?)<\/span>/gi;
+      const matches = [...contentHtml.matchAll(regex)];
+      matches.forEach(m => {
+        const color = m[1].trim();
+        const text = m[2].replace(/<[^>]+>/g, "").trim();
+        if (text) {
+          highlights.push({
+            sessionUuid: session.uuid,
+            sessionNumber,
+            sessionDate,
+            text,
+            color
+          });
+        }
+      });
+    }
+  });
+
+  return highlights.reverse();
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge, sortPatientsAlphabetically, parseClinicalHistory, rebuildClinicalHistory } from "./patient.utils";
+import { calculateAge, sortPatientsAlphabetically, parseClinicalHistory, rebuildClinicalHistory, extractHighlights } from "./patient.utils";
 import { Patient } from "./patient.types";
 
 describe("Patient Utilities", () => {
@@ -72,6 +72,37 @@ describe("Patient Utilities", () => {
       expect(rebuilt).toContain('id="session-anchor-uuid2"');
       expect(rebuilt).toContain("<p>Evolución de sesión 1</p>");
       expect(rebuilt).toContain("<p>Evolución de sesión 2</p>");
+    });
+  });
+
+  describe("extractHighlights", () => {
+    it("should extract highlighted snippets from history HTML correctly", () => {
+      const htmlInput = `
+        <div id="session-anchor-uuid1" contenteditable="false">
+          <h3>📅 Sesión N° 1</h3>
+        </div>
+          Normal text here. <span style="background-color: rgb(254, 240, 138);">Highlight Amarillo</span>.
+        <div id="session-anchor-uuid2">
+          <h3>📅 Sesión N° 2</h3>
+        </div>
+          Other text. <span style="background-color: #bbf7d0;">Highlight Verde</span>.
+      `;
+      const sessions = [
+        { uuid: "uuid1", dateTime: "2026-05-10T10:00:00.000Z", status: "completed" },
+        { uuid: "uuid2", dateTime: "2026-05-17T10:00:00.000Z", status: "completed" }
+      ];
+
+      const highlights = extractHighlights(htmlInput, sessions);
+      expect(highlights.length).toBe(2);
+      expect(highlights[0].sessionUuid).toBe("uuid2");
+      expect(highlights[0].text).toBe("Highlight Verde");
+      expect(highlights[0].color).toBe("#bbf7d0");
+      expect(highlights[0].sessionNumber).toBe(2);
+
+      expect(highlights[1].sessionUuid).toBe("uuid1");
+      expect(highlights[1].text).toBe("Highlight Amarillo");
+      expect(highlights[1].color).toBe("rgb(254, 240, 138)");
+      expect(highlights[1].sessionNumber).toBe(1);
     });
   });
 });
