@@ -21,6 +21,8 @@ const {
   mockRenameFileOrFolder,
   mockFindFolderBySuffix,
   mockGetFileMetadata,
+  mockGetMovementConfigs,
+  mockSaveAllMovementConfigs,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -38,6 +40,8 @@ const {
   mockRenameFileOrFolder: vi.fn(),
   mockFindFolderBySuffix: vi.fn(),
   mockGetFileMetadata: vi.fn(),
+  mockGetMovementConfigs: vi.fn(),
+  mockSaveAllMovementConfigs: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -78,12 +82,22 @@ vi.mock('../db/dexie-session.repository', () => {
   };
 });
 
+vi.mock('../db/dexie-settings.repository', () => {
+  return {
+    DexieSettingsRepository: class {
+      getMovementConfigs = mockGetMovementConfigs;
+      saveAllMovementConfigs = mockSaveAllMovementConfigs;
+    }
+  };
+});
+
 describe('DriveSyncService', () => {
   let service: DriveSyncService;
   
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAllSessions.mockResolvedValue([]);
+    mockGetMovementConfigs.mockResolvedValue([]);
     service = new DriveSyncService();
   });
 

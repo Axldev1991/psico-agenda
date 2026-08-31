@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Session } from "../../domain/session.types";
+import { useSettings } from "../hooks/useSettings";
+import { MOVEMENT_COLOR_STYLES } from "../utils/movement-styles";
 
 interface ActiveSessionHeaderProps {
   selectedSession: Session;
@@ -16,6 +18,7 @@ export function ActiveSessionHeader({
   changeSessionDescription,
   changeSessionColor,
 }: ActiveSessionHeaderProps) {
+  const { movementConfigs } = useSettings();
   const [localDescription, setLocalDescription] = useState(selectedSession.description || "");
   const [lastSessionUuid, setLastSessionUuid] = useState(selectedSession.uuid);
 
@@ -23,6 +26,15 @@ export function ActiveSessionHeader({
     setLocalDescription(selectedSession.description || "");
     setLastSessionUuid(selectedSession.uuid);
   }
+
+  const defaultConfigs = [
+    { key: "indigo", color: "indigo", label: "Control" },
+    { key: "rose", color: "rose", label: "Cognitivo" },
+    { key: "emerald", color: "emerald", label: "Fisiológico" },
+    { key: "amber", color: "amber", label: "Otro" }
+  ];
+  const configsToUse = movementConfigs.length > 0 ? movementConfigs : defaultConfigs;
+
   return (
     <div className="bg-bg-base/50 border-l-4 border-brand-indigo rounded-r-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm select-none">
       <div className="flex-1">
@@ -49,36 +61,19 @@ export function ActiveSessionHeader({
       {/* Selector de Etiquetas de Color */}
       <div className="flex items-center gap-1.5 self-start md:self-auto bg-white/70 border border-brand-sand/30 px-2.5 py-1 rounded-2xl">
         <span className="text-[9px] text-text-sub font-bold mr-1">Movimientos:</span>
-        {["indigo", "rose", "emerald", "amber"].map((color) => {
-          const colorLabels: Record<string, string> = {
-            indigo: "Control",
-            rose: "Cognitivo",
-            emerald: "Fisiológico",
-            amber: "Otro",
-          };
-          const colorStyles: Record<string, string> = {
-            indigo: "bg-brand-indigo/10 text-brand-indigo border-brand-indigo/25 hover:bg-brand-indigo/20",
-            rose: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
-            emerald: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
-            amber: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
-          };
-          const activeStyles: Record<string, string> = {
-            indigo: "ring-1.5 ring-brand-indigo bg-brand-indigo/25 text-brand-indigo font-black border-brand-indigo/55",
-            rose: "ring-1.5 ring-rose-500 bg-rose-100 text-rose-800 font-black border-rose-300",
-            emerald: "ring-1.5 ring-emerald-500 bg-emerald-100 text-emerald-800 font-black border-emerald-300",
-            amber: "ring-1.5 ring-amber-500 bg-amber-100 text-amber-800 font-black border-amber-300",
-          };
-          const isSelected = (selectedSession.colorTag || "indigo") === color;
+        {configsToUse.map((config) => {
+          const isSelected = (selectedSession.colorTag || "indigo") === config.key;
+          const styles = MOVEMENT_COLOR_STYLES[config.color] || MOVEMENT_COLOR_STYLES.indigo;
           return (
             <button
-              key={color}
+              key={config.key}
               type="button"
-              onClick={() => changeSessionColor(selectedSession.uuid, color)}
+              onClick={() => changeSessionColor(selectedSession.uuid, config.key)}
               className={`text-[9px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer border ${
-                isSelected ? activeStyles[color] : colorStyles[color]
+                isSelected ? styles.active : styles.base
               }`}
             >
-              {colorLabels[color]}
+              {config.label}
             </button>
           );
         })}

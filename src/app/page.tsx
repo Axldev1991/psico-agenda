@@ -10,6 +10,7 @@ import { SessionModal } from "../ui/components/SessionModal";
 import { PatientManager } from "../ui/components/PatientManager";
 import { CalendarGrid } from "../ui/components/CalendarGrid";
 import { PatientDetail } from "../ui/components/PatientDetail";
+import { SettingsPanel } from "../ui/components/SettingsPanel";
 import { Patient } from "../domain/patient.types";
 
 export default function Home() {
@@ -45,8 +46,8 @@ export default function Home() {
     downloadDiagnosticLogs,
   } = useGoogleDrive();
 
-  // Vista activa: 'calendar' o 'patients'
-  const [activeTab, setActiveTab] = useState<"calendar" | "patients">("calendar");
+  // Vista activa: 'calendar', 'patients' o 'settings'
+  const [activeTab, setActiveTab] = useState<"calendar" | "patients" | "settings">("calendar");
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
 
@@ -193,6 +194,25 @@ export default function Home() {
               <span className="text-base">📂</span>
               <span className={`transition-opacity duration-300 ${isSidebarCollapsed ? "md:hidden" : "opacity-100"}`}>
                 Fichero
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("settings");
+                setSelectedPatientForDetail(null);
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-title font-bold transition-all cursor-pointer ${
+                activeTab === "settings"
+                  ? "bg-brand-indigo text-white shadow-sm"
+                  : "text-text-sub hover:text-text-main hover:bg-brand-sand/20"
+              } ${isSidebarCollapsed ? "md:justify-center" : ""}`}
+              title="Configuración"
+            >
+              <span className="text-base">⚙️</span>
+              <span className={`transition-opacity duration-300 ${isSidebarCollapsed ? "md:hidden" : "opacity-100"}`}>
+                Configuración
               </span>
             </button>
           </nav>
@@ -342,6 +362,8 @@ export default function Home() {
               recurrenceRules={recurrenceRules}
               onNavigateToPatientDetail={handleNavigateToPatientDetail}
             />
+          ) : activeTab === "settings" ? (
+            <SettingsPanel />
           ) : selectedPatientForDetail ? (
             <PatientDetail
               patient={selectedPatientForDetail}

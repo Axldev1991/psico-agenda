@@ -2,7 +2,7 @@ import { GoogleDriveRepository } from "./google-drive.repository";
 import { DexiePatientRepository } from "../db/dexie-patient.repository";
 import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
-import { Session, RecurrenceRule } from "../../domain/session.types";
+import { Session, RecurrenceRule, MovementConfig } from "../../domain/session.types";
 import { driveLogger } from "./drive-logger";
 import { container } from "../container";
 
@@ -125,6 +125,8 @@ export class DriveSyncService {
     const localPatients = await patientRepo.getAll();
     const localSessions = await sessionRepo.getAll();
     const localRecurrence = await sessionRepo.getRecurrenceRules();
+    const settingsRepo = container.getSettingsRepository();
+    const localSettings = await settingsRepo.getMovementConfigs();
 
     // 2. Descargar Datos de la Nube (index-db.json o migración desde backup viejo)
     driveLogger.log("info", "Descargando índice de base de datos de la nube...");
@@ -147,11 +149,13 @@ export class DriveSyncService {
 
     let remotePatients: Patient[] = [];
     let remoteRecurrence: RecurrenceRule[] = [];
-
+    let remoteSettings: MovementConfig[] = [];
+ 
     if (remoteIndexStr) {
       const indexData = JSON.parse(remoteIndexStr);
       remotePatients = indexData.patients || [];
       remoteRecurrence = indexData.recurrenceRules || [];
+      remoteSettings = indexData.movementConfigs || [];
     } else if (isMigrating && remoteBackupData) {
       remotePatients = remoteBackupData.patients || [];
       remoteRecurrence = remoteBackupData.recurrenceRules || [];
@@ -289,19 +293,29 @@ export class DriveSyncService {
     });
     const mergedRecurrence = Array.from(recurrenceMap.values());
 
+    // Fusión de Configuración de Movimientos
+    const settingsMap = new Map<string, MovementConfig>();
+    localSettings.forEach(s => settingsMap.set(s.key, s));
+    remoteSettings.forEach(s => settingsMap.set(s.key, s));
+    const mergedSettings = Array.from(settingsMap.values());
+ 
     // Escribir datos consolidados localmente
     await patientRepo.saveAll(mergedPatients);
     await sessionRepo.saveAllRecurrenceRules(mergedRecurrence);
-
+    if (mergedSettings.length > 0) {
+      await settingsRepo.saveAllMovementConfigs(mergedSettings);
+    }
+ 
     // Crear index-db.json despojando las historias clínicas detalladas
     const indexPatients = mergedPatients.map(p => {
       const { clinicalHistory, ...rest } = p;
       return rest;
     });
-
+ 
     const indexData = {
       patients: indexPatients,
       recurrenceRules: mergedRecurrence,
+      movementConfigs: mergedSettings,
       exportedAt: new Date().toISOString()
     };
 

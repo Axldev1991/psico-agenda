@@ -1,11 +1,13 @@
 import Dexie, { Table } from 'dexie';
 import { Patient } from '../../domain/patient.types';
-import { Session, RecurrenceRule } from '../../domain/session.types';
+import { Session, RecurrenceRule, MovementConfig } from '../../domain/session.types';
+
 
 export class PsicoAgendaDatabase extends Dexie {
   patients!: Table<Patient>;
   sessions!: Table<Session>;
   recurrenceRules!: Table<RecurrenceRule>;
+  movementConfigs!: Table<MovementConfig>;
 
   constructor() {
     super('PsicoAgendaDB');
@@ -34,6 +36,14 @@ export class PsicoAgendaDatabase extends Dexie {
       patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
       sessions: 'uuid, patientUuid, dateTime, status',
       recurrenceRules: 'patientUuid'
+    });
+
+    // Versión 5: Personalización de movimientos (Categorías)
+    this.version(5).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid',
+      movementConfigs: 'key'
     });
   }
 }

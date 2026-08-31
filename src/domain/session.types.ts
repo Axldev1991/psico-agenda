@@ -18,3 +18,9 @@ export interface RecurrenceRule {
   startTime: string;        // Hora de inicio (ej: "16:00")
   durationMinutes: number;  // Duración de la sesión (ej: 50)
 }
+
+export interface MovementConfig {
+  key: string;              // indigo, rose, emerald, amber
+  color: string;            // indigo, rose, emerald, amber, sky, violet, etc.
+  label: string;            // Control, Cognitivo, Fisiológico, Otro, etc.
+}

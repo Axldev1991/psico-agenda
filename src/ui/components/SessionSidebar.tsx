@@ -1,4 +1,6 @@
 import { Session } from "../../domain/session.types";
+import { useSettings } from "../hooks/useSettings";
+import { MOVEMENT_COLOR_STYLES } from "../utils/movement-styles";
 
 interface SessionSidebarProps {
   sortedSessions: Session[];
@@ -13,6 +15,14 @@ export function SessionSidebar({
   setSelectedSessionUuid,
   setActiveTab,
 }: SessionSidebarProps) {
+  const { movementConfigs } = useSettings();
+  const defaultConfigs = [
+    { key: "indigo", color: "indigo", label: "Control" },
+    { key: "rose", color: "rose", label: "Cognitivo" },
+    { key: "emerald", color: "emerald", label: "Fisiológico" },
+    { key: "amber", color: "amber", label: "Otro" }
+  ];
+  const configsToUse = movementConfigs.length > 0 ? movementConfigs : defaultConfigs;
   return (
     <div className="lg:col-span-3 bg-bg-card border border-brand-sand rounded-3xl p-5 shadow-sm space-y-4 max-h-[75vh] overflow-y-auto">
       <div>
@@ -35,14 +45,9 @@ export function SessionSidebar({
             const sessionNumber = sortedSessions.length - index;
 
             // Resolving tag colors
-            const colorClasses: Record<string, string> = {
-              indigo: "bg-brand-indigo/20 text-brand-indigo border-brand-indigo/35",
-              rose: "bg-rose-100 text-rose-800 border-rose-200",
-              emerald: "bg-emerald-100 text-emerald-800 border-emerald-200",
-              amber: "bg-amber-100 text-amber-800 border-amber-200",
-            };
-            const colorTag = session.colorTag || "indigo";
-            const resolvedColor = colorClasses[colorTag] || colorClasses.indigo;
+            const config = configsToUse.find(c => c.key === (session.colorTag || "indigo")) || configsToUse[0];
+            const resolvedColor = MOVEMENT_COLOR_STYLES[config.color]?.label || MOVEMENT_COLOR_STYLES.indigo.label;
+            const resolvedLabel = config.label;
 
             return (
               <button
@@ -84,10 +89,7 @@ export function SessionSidebar({
                   </span>
                   {session.colorTag && (
                     <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase ${resolvedColor}`}>
-                      {session.colorTag === "indigo" ? "Control" :
-                       session.colorTag === "rose" ? "Cognitivo" :
-                       session.colorTag === "emerald" ? "Fisiológico" :
-                       session.colorTag === "amber" ? "Otro" : session.colorTag}
+                      {resolvedLabel}
                     </span>
                   )}
                 </div>
