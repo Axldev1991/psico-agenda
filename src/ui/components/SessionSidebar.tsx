@@ -4,6 +4,7 @@ import { resolveMovementStyles } from "../utils/movement-styles";
 
 interface SessionSidebarProps {
   sortedSessions: Session[];
+  allSessions: Session[];
   selectedSessionUuid: string | null;
   setSelectedSessionUuid: (uuid: string | null) => void;
   setActiveTab: (tab: "timeline" | "ceci") => void;
@@ -11,6 +12,7 @@ interface SessionSidebarProps {
 
 export function SessionSidebar({
   sortedSessions,
+  allSessions,
   selectedSessionUuid,
   setSelectedSessionUuid,
   setActiveTab,
@@ -31,7 +33,7 @@ export function SessionSidebar({
       </div>
       
       {sortedSessions.length === 0 ? (
-        <p className="text-xs text-text-sub/70 italic py-4">No hay sesiones programadas.</p>
+        <p className="text-xs text-text-sub/70 italic py-4">No hay sesiones coincidentes.</p>
       ) : (
         <div className="space-y-2">
           {sortedSessions.map((session, index) => {
@@ -42,7 +44,9 @@ export function SessionSidebar({
               hour: "2-digit",
               minute: "2-digit",
             });
-            const sessionNumber = sortedSessions.length - index;
+            
+            const absoluteIndex = allSessions.findIndex(s => s.uuid === session.uuid);
+            const sessionNumber = absoluteIndex !== -1 ? allSessions.length - absoluteIndex : sortedSessions.length - index;
 
             // Resolving tag colors
             const config = configsToUse.find(c => c.key === (session.colorTag || "indigo")) || configsToUse[0];
