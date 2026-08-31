@@ -23,6 +23,8 @@ const {
   mockGetFileMetadata,
   mockGetMovementConfigs,
   mockSaveAllMovementConfigs,
+  mockGetPunctuationConfigs,
+  mockSaveAllPunctuationConfigs,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -42,6 +44,8 @@ const {
   mockGetFileMetadata: vi.fn(),
   mockGetMovementConfigs: vi.fn(),
   mockSaveAllMovementConfigs: vi.fn(),
+  mockGetPunctuationConfigs: vi.fn(),
+  mockSaveAllPunctuationConfigs: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -87,6 +91,8 @@ vi.mock('../db/dexie-settings.repository', () => {
     DexieSettingsRepository: class {
       getMovementConfigs = mockGetMovementConfigs;
       saveAllMovementConfigs = mockSaveAllMovementConfigs;
+      getPunctuationConfigs = mockGetPunctuationConfigs;
+      saveAllPunctuationConfigs = mockSaveAllPunctuationConfigs;
     }
   };
 });
@@ -98,6 +104,7 @@ describe('DriveSyncService', () => {
     vi.clearAllMocks();
     mockGetAllSessions.mockResolvedValue([]);
     mockGetMovementConfigs.mockResolvedValue([]);
+    mockGetPunctuationConfigs.mockResolvedValue([]);
     service = new DriveSyncService();
   });
 

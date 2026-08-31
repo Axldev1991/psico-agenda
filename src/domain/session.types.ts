@@ -24,3 +24,9 @@ export interface MovementConfig {
   color: string;            // indigo, rose, emerald, amber, sky, violet, etc.
   label: string;            // Control, Cognitivo, Fisiológico, Otro, etc.
 }
+
+export interface PunctuationConfig {
+  key: string;              // yellow, green, purple, orange, or custom ID
+  color: string;            // hex color code
+  label: string;            // Amarillo, Verde, Lavanda, Arena, etc.
+}

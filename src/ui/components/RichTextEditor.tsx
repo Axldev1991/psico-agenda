@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { useSettings } from "../hooks/useSettings";
 
 interface RichTextEditorProps {
   initialValue: string;
@@ -18,11 +19,20 @@ export function RichTextEditor({
   variant = "standard",
   onBlur,
 }: RichTextEditorProps) {
+  const { punctuationConfigs } = useSettings();
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!initialValue);
   const [customColor, setCustomColor] = useState("#fef08a");
   const [fontSize, setFontSize] = useState(13); // Tamaño de tipografía base en px
+
+  const defaultPunctuation = [
+    { key: "yellow", color: "#FEF08A", label: "Amarillo" },
+    { key: "green", color: "#BBF7D0", label: "Verde" },
+    { key: "purple", color: "#E9D5FF", label: "Lavanda" },
+    { key: "orange", color: "#FED7AA", label: "Arena" }
+  ];
+  const configsToUse = punctuationConfigs.length > 0 ? punctuationConfigs : defaultPunctuation;
 
   const insertTextAtCursor = (text: string) => {
     if (!editorRef.current) return;
@@ -77,13 +87,7 @@ export function RichTextEditor({
     }
   };
 
-  // Resaltadores calmos acordes al diseño de PSICO-AGENDA
-  const highlights = [
-    { name: "Amarillo", hex: "#fef08a", class: "bg-yellow-200" },
-    { name: "Verde", hex: "#bbf7d0", class: "bg-green-200" },
-    { name: "Lavanda", hex: "#e9d5ff", class: "bg-purple-200" },
-    { name: "Arena", hex: "#fed7aa", class: "bg-orange-200" },
-  ];
+  // Resaltadores cargados dinámicamente
 
   const isContinuous = variant === "continuous";
 
@@ -172,13 +176,14 @@ export function RichTextEditor({
 
             {/* Resaltadores de colores */}
             <div className="flex items-center gap-1.5">
-              {highlights.map((color) => (
+              {configsToUse.map((color) => (
                 <button
-                  key={color.name}
+                  key={color.key}
                   type="button"
-                  onClick={() => executeCommand("backColor", color.hex)}
-                  className={`h-5 w-5 rounded-full border border-brand-sand/50 cursor-pointer hover:scale-110 transition-transform ${color.class}`}
-                  title={`Resaltar en ${color.name}`}
+                  onClick={() => executeCommand("backColor", color.color)}
+                  style={{ backgroundColor: color.color }}
+                  className="h-5 w-5 rounded-full border border-brand-sand/50 cursor-pointer hover:scale-110 transition-transform"
+                  title={`Resaltar como: ${color.label}`}
                 />
               ))}
 

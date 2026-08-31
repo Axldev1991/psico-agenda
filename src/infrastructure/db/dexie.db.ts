@@ -1,6 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { Patient } from '../../domain/patient.types';
-import { Session, RecurrenceRule, MovementConfig } from '../../domain/session.types';
+import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from '../../domain/session.types';
 
 
 export class PsicoAgendaDatabase extends Dexie {
@@ -8,6 +8,7 @@ export class PsicoAgendaDatabase extends Dexie {
   sessions!: Table<Session>;
   recurrenceRules!: Table<RecurrenceRule>;
   movementConfigs!: Table<MovementConfig>;
+  punctuationConfigs!: Table<PunctuationConfig>;
 
   constructor() {
     super('PsicoAgendaDB');
@@ -44,6 +45,15 @@ export class PsicoAgendaDatabase extends Dexie {
       sessions: 'uuid, patientUuid, dateTime, status',
       recurrenceRules: 'patientUuid',
       movementConfigs: 'key'
+    });
+
+    // Versión 6: Personalización de puntuaciones (Resaltados del editor)
+    this.version(6).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid',
+      movementConfigs: 'key',
+      punctuationConfigs: 'key'
     });
   }
 }

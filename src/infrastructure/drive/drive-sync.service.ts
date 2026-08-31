@@ -2,7 +2,7 @@ import { GoogleDriveRepository } from "./google-drive.repository";
 import { DexiePatientRepository } from "../db/dexie-patient.repository";
 import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
-import { Session, RecurrenceRule, MovementConfig } from "../../domain/session.types";
+import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from "../../domain/session.types";
 import { driveLogger } from "./drive-logger";
 import { container } from "../container";
 
@@ -127,6 +127,7 @@ export class DriveSyncService {
     const localRecurrence = await sessionRepo.getRecurrenceRules();
     const settingsRepo = container.getSettingsRepository();
     const localSettings = await settingsRepo.getMovementConfigs();
+    const localPunctuation = await settingsRepo.getPunctuationConfigs();
 
     // 2. Descargar Datos de la Nube (index-db.json o migración desde backup viejo)
     driveLogger.log("info", "Descargando índice de base de datos de la nube...");
@@ -150,12 +151,14 @@ export class DriveSyncService {
     let remotePatients: Patient[] = [];
     let remoteRecurrence: RecurrenceRule[] = [];
     let remoteSettings: MovementConfig[] = [];
+    let remotePunctuation: PunctuationConfig[] = [];
  
     if (remoteIndexStr) {
       const indexData = JSON.parse(remoteIndexStr);
       remotePatients = indexData.patients || [];
       remoteRecurrence = indexData.recurrenceRules || [];
       remoteSettings = indexData.movementConfigs || [];
+      remotePunctuation = indexData.punctuationConfigs || [];
     } else if (isMigrating && remoteBackupData) {
       remotePatients = remoteBackupData.patients || [];
       remoteRecurrence = remoteBackupData.recurrenceRules || [];
@@ -299,11 +302,20 @@ export class DriveSyncService {
     remoteSettings.forEach(s => settingsMap.set(s.key, s));
     const mergedSettings = Array.from(settingsMap.values());
  
+    // Fusión de Configuración de Puntuaciones
+    const punctuationMap = new Map<string, PunctuationConfig>();
+    localPunctuation.forEach(p => punctuationMap.set(p.key, p));
+    remotePunctuation.forEach(p => punctuationMap.set(p.key, p));
+    const mergedPunctuation = Array.from(punctuationMap.values());
+ 
     // Escribir datos consolidados localmente
     await patientRepo.saveAll(mergedPatients);
     await sessionRepo.saveAllRecurrenceRules(mergedRecurrence);
     if (mergedSettings.length > 0) {
       await settingsRepo.saveAllMovementConfigs(mergedSettings);
+    }
+    if (mergedPunctuation.length > 0) {
+      await settingsRepo.saveAllPunctuationConfigs(mergedPunctuation);
     }
  
     // Crear index-db.json despojando las historias clínicas detalladas
@@ -316,6 +328,7 @@ export class DriveSyncService {
       patients: indexPatients,
       recurrenceRules: mergedRecurrence,
       movementConfigs: mergedSettings,
+      punctuationConfigs: mergedPunctuation,
       exportedAt: new Date().toISOString()
     };
 
