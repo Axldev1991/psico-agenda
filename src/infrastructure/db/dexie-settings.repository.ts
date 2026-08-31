@@ -27,18 +27,25 @@ export class DexieSettingsRepository implements ISettingsRepository {
     };
 
     if (configs.length === 0) {
-      // Inyectar valores por defecto si no existen en IndexedDB
       const defaultConfigs: MovementConfig[] = [
         { key: "indigo", color: "#6366F1", label: "Control" },
         { key: "rose", color: "#F43F5E", label: "Cognitivo" },
         { key: "emerald", color: "#10B981", label: "Fisiológico" },
         { key: "amber", color: "#F59E0B", label: "Otro" }
       ];
-      try {
-        await db.movementConfigs.bulkAdd(defaultConfigs);
-      } catch (e) {
-        console.warn("Falla menor al sembrar configuraciones por defecto:", e);
-      }
+      
+      // Deferir la escritura fuera de la transacción de solo lectura de useLiveQuery
+      setTimeout(async () => {
+        try {
+          const count = await db.movementConfigs.count();
+          if (count === 0) {
+            await db.movementConfigs.bulkAdd(defaultConfigs);
+          }
+        } catch (e) {
+          console.warn("Falla al sembrar configuraciones por defecto en segundo plano:", e);
+        }
+      }, 0);
+
       return defaultConfigs;
     }
 
@@ -53,7 +60,14 @@ export class DexieSettingsRepository implements ISettingsRepository {
     });
 
     if (modified) {
-      await this.saveAllMovementConfigs(resolvedConfigs);
+      // Deferir la escritura de la migración fuera del contexto de solo lectura
+      setTimeout(async () => {
+        try {
+          await this.saveAllMovementConfigs(resolvedConfigs);
+        } catch (e) {
+          console.warn("Falla al guardar la migración de colores en segundo plano:", e);
+        }
+      }, 0);
     }
 
     return resolvedConfigs;
