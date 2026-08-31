@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Session } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
-import { MOVEMENT_COLOR_STYLES } from "../utils/movement-styles";
+import { resolveMovementStyles } from "../utils/movement-styles";
 
 interface ActiveSessionHeaderProps {
   selectedSession: Session;
@@ -63,15 +63,14 @@ export function ActiveSessionHeader({
         <span className="text-[9px] text-text-sub font-bold mr-1">Movimientos:</span>
         {configsToUse.map((config) => {
           const isSelected = (selectedSession.colorTag || "indigo") === config.key;
-          const styles = MOVEMENT_COLOR_STYLES[config.color] || MOVEMENT_COLOR_STYLES.indigo;
+          const { baseStyle, activeStyle } = resolveMovementStyles(config.color);
           return (
             <button
               key={config.key}
               type="button"
               onClick={() => changeSessionColor(selectedSession.uuid, config.key)}
-              className={`text-[9px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer border ${
-                isSelected ? styles.active : styles.base
-              }`}
+              style={isSelected ? activeStyle : baseStyle}
+              className="text-[9px] font-bold px-2.5 py-0.5 rounded transition-all cursor-pointer border"
             >
               {config.label}
             </button>

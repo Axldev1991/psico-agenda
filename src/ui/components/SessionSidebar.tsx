@@ -1,6 +1,6 @@
 import { Session } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
-import { MOVEMENT_COLOR_STYLES } from "../utils/movement-styles";
+import { resolveMovementStyles } from "../utils/movement-styles";
 
 interface SessionSidebarProps {
   sortedSessions: Session[];
@@ -46,7 +46,7 @@ export function SessionSidebar({
 
             // Resolving tag colors
             const config = configsToUse.find(c => c.key === (session.colorTag || "indigo")) || configsToUse[0];
-            const resolvedColor = MOVEMENT_COLOR_STYLES[config.color]?.label || MOVEMENT_COLOR_STYLES.indigo.label;
+            const { labelStyle } = resolveMovementStyles(config.color);
             const resolvedLabel = config.label;
 
             return (
@@ -88,7 +88,10 @@ export function SessionSidebar({
                     {dateFormatted} hs
                   </span>
                   {session.colorTag && (
-                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase ${resolvedColor}`}>
+                    <span 
+                      className="text-[8px] font-bold px-1.5 py-0.5 rounded border uppercase"
+                      style={labelStyle}
+                    >
                       {resolvedLabel}
                     </span>
                   )}
