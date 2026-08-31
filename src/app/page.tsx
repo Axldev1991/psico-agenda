@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { driveLogger } from "../infrastructure/drive/drive-logger";
 import { usePatients } from "../ui/hooks/usePatients";
 import { useCalendar } from "../ui/hooks/useCalendar";
@@ -50,6 +50,37 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"calendar" | "patients" | "settings">("calendar");
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
+
+  // Lista de pacientes recientes
+  const [recentPatientUuids, setRecentPatientUuids] = useState<string[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("psico_agenda_recent_patients");
+    if (stored) {
+      try {
+        setRecentPatientUuids(JSON.parse(stored));
+      } catch (e) {
+        console.error("Error parsing recent patients:", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedPatientForDetail) {
+      setRecentPatientUuids((prev) => {
+        const filtered = prev.filter((uuid) => uuid !== selectedPatientForDetail.uuid);
+        const next = [selectedPatientForDetail.uuid, ...filtered].slice(0, 3);
+        localStorage.setItem("psico_agenda_recent_patients", JSON.stringify(next));
+        return next;
+      });
+    }
+  }, [selectedPatientForDetail]);
+
+  const recentPatients = useMemo(() => {
+    return recentPatientUuids
+      .map((uuid) => patients.find((p) => p.uuid === uuid))
+      .filter((p): p is Patient => !!p);
+  }, [recentPatientUuids, patients]);
 
   const handleNavigateToPatientDetail = (patientUuid: string) => {
     const patient = patients.find((p) => p.uuid === patientUuid);
@@ -216,6 +247,55 @@ export default function Home() {
               </span>
             </button>
           </nav>
+
+          {/* Pacientes Recientes */}
+          {recentPatients.length > 0 && (
+            <div className="p-3 border-t border-brand-sand/50 space-y-2">
+              <span className={`text-[10px] text-text-sub font-bold uppercase tracking-wider block px-3 ${isSidebarCollapsed ? "md:text-center md:px-0" : ""}`}>
+                {isSidebarCollapsed ? "Rec." : "Recientes"}
+              </span>
+              <div className={`space-y-1 ${isSidebarCollapsed ? "flex flex-col items-center animate-in fade-in" : "animate-in fade-in"}`}>
+                {recentPatients.map((p) => {
+                  const initials = p.fullName
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+                  
+                  if (isSidebarCollapsed) {
+                    return (
+                      <button
+                        key={p.uuid}
+                        onClick={() => {
+                          setSelectedPatientForDetail(p);
+                          setActiveTab("patients");
+                        }}
+                        className="h-8 w-8 rounded-full bg-brand-indigo/10 hover:bg-brand-indigo/25 text-brand-indigo text-xs font-bold flex items-center justify-center cursor-pointer transition-all border border-brand-indigo/20 shadow-sm"
+                        title={p.fullName}
+                      >
+                        {initials}
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={p.uuid}
+                      onClick={() => {
+                        setSelectedPatientForDetail(p);
+                        setActiveTab("patients");
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-text-sub hover:text-text-main hover:bg-brand-sand/20 transition-all cursor-pointer truncate"
+                      title={p.fullName}
+                    >
+                      {p.fullName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons inside Nav */}
           <div className="p-3 border-t border-brand-sand/50">
