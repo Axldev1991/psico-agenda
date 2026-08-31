@@ -162,7 +162,6 @@ export default function Home() {
             <button
               onClick={() => {
                 setActiveTab("calendar");
-                setSelectedPatientForDetail(null);
                 setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-title font-bold transition-all cursor-pointer ${
@@ -180,8 +179,10 @@ export default function Home() {
 
             <button
               onClick={() => {
+                if (activeTab === "patients") {
+                  setSelectedPatientForDetail(null);
+                }
                 setActiveTab("patients");
-                setSelectedPatientForDetail(null);
                 setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-title font-bold transition-all cursor-pointer ${
@@ -200,7 +201,6 @@ export default function Home() {
             <button
               onClick={() => {
                 setActiveTab("settings");
-                setSelectedPatientForDetail(null);
                 setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-title font-bold transition-all cursor-pointer ${
