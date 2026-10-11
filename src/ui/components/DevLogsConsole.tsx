@@ -4,11 +4,10 @@ import React, { useState, useEffect } from "react";
 import { driveLogger, LogEntry } from "../../infrastructure/drive/drive-logger";
 
 export function DevLogsConsole() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>(() => driveLogger.getLogs());
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
 
   useEffect(() => {
-    setLogs(driveLogger.getLogs());
     const unsubscribe = driveLogger.subscribe(() => {
       setLogs(driveLogger.getLogs());
     });
@@ -42,7 +41,7 @@ export function DevLogsConsole() {
   return (
     <div
       className={`fixed bottom-0 right-0 z-50 transition-all duration-300 ${
-        isConsoleOpen ? "w-full md:w-[600px] h-96" : "w-48 h-10"
+        isConsoleOpen ? "w-full md:w-150 h-96" : "w-48 h-10"
       } bg-[#1E1E1E] text-white border-t border-l border-brand-sand shadow-2xl rounded-tl-xl flex flex-col font-mono text-[11px]`}
     >
       <div

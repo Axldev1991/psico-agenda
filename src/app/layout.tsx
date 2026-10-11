@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   description: "Gestión integral de pacientes, turnos recurrentes e historias clínicas con soberanía absoluta de datos sobre Google Drive.",
   manifest: "/manifest.json",
   appleWebApp: {
-    capable: true,
     statusBarStyle: "default",
     title: "PSICO-AGENDA",
   },

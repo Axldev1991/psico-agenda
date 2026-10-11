@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     fs.appendFileSync(logFilePath, logLine, 'utf8');
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error procesando telemetria de logs:', error);
     return NextResponse.json({ error: 'Failed to write logs' }, { status: 500 });
   }

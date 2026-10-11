@@ -52,7 +52,7 @@ export function AppSidebar({
       <div className="flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-brand-sand h-16">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-blue flex items-center justify-center font-bold text-white shadow-sm shadow-brand-indigo/20 font-title text-lg">
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-linear-to-tr from-brand-indigo to-brand-blue flex items-center justify-center font-bold text-white shadow-sm shadow-brand-indigo/20 font-title text-lg">
               Ψ
             </div>
             <div

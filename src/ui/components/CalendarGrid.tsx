@@ -93,7 +93,7 @@ export function CalendarGrid({
           });
           if (!hasCancellation) return true;
         }
-      } catch (e) {
+      } catch {
         // Ignorar reglas malformadas
       }
     }
@@ -197,7 +197,7 @@ export function CalendarGrid({
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Detalle del Día Activo */}
         <div className="flex-1 space-y-4">
-          <div className="bg-bg-card border border-brand-sand rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col">
+          <div className="bg-bg-card border border-brand-sand rounded-2xl p-6 shadow-sm min-h-100 flex flex-col">
             {/* Cabecera del día de detalle */}
             <div className="border-b border-brand-sand/65 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>

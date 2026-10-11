@@ -1,24 +1,26 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 const STORAGE_KEY = "psico_agenda_recent_patients";
 const MAX_RECENT = 3;
 
-export function useRecentPatients() {
-  const [recentPatientUuids, setRecentPatientUuids] = useState<string[]>([]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setRecentPatientUuids(parsed);
-        }
+function getInitialRecentPatients(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
       }
-    } catch (e) {
-      console.error("Error reading recent patients from localStorage:", e);
     }
-  }, []);
+  } catch (e) {
+    console.error("Error reading recent patients from localStorage:", e);
+  }
+  return [];
+}
+
+export function useRecentPatients() {
+  const [recentPatientUuids, setRecentPatientUuids] = useState<string[]>(getInitialRecentPatients);
 
   const addRecentPatient = useCallback((uuid: string) => {
     if (!uuid) return;
