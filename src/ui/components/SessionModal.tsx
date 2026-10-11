@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
+import { Icon } from "./common/Icon";
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -23,6 +24,16 @@ interface SessionModalProps {
   }) => Promise<void>;
 }
 
+const WEEKDAY_NAMES = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+
 export function SessionModal({
   isOpen,
   onClose,
@@ -32,9 +43,9 @@ export function SessionModal({
 }: SessionModalProps) {
   const [selectedPatientUuid, setSelectedPatientUuid] = useState("");
   const [isRecurrent, setIsRecurrent] = useState(false);
-  const [sessionDate, setSessionDate] = useState(""); // YYYY-MM-DD
+  const [sessionDate, setSessionDate] = useState("");
   const [sessionTime, setSessionTime] = useState("16:00");
-  const [recurrenceDay, setRecurrenceDay] = useState("0"); // 0=Lunes, 1=Martes...
+  const [recurrenceDay, setRecurrenceDay] = useState("0");
 
   if (!isOpen) return null;
 
@@ -47,11 +58,10 @@ export function SessionModal({
         patientUuid: selectedPatientUuid,
         startDate: sessionDate,
         startTime: sessionTime,
-        durationMinutes: 50, // Duración por defecto (50 mins)
+        durationMinutes: 50,
         dayOfWeek: Number(recurrenceDay),
       });
     } else {
-      // Reconstruir dateTime ISO
       const isoDateTime = `${sessionDate}T${sessionTime}:00`;
       await onCreateManual({
         patientUuid: selectedPatientUuid,
@@ -60,7 +70,7 @@ export function SessionModal({
       });
     }
 
-    // Resetear formulario
+    // Reset form
     setSelectedPatientUuid("");
     setIsRecurrent(false);
     setSessionDate("");
@@ -70,28 +80,47 @@ export function SessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-bg-card border border-brand-sand rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-text-main/10 animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-brand-sand flex items-center justify-between">
-          <h3 className="font-title font-bold text-lg text-text-main">Programar Turno / Sesión</h3>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="session-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4"
+    >
+      <div className="bg-surface border border-line rounded-2xl max-w-lg w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
+        {/* Modal Header */}
+        <div className="p-5 border-b border-line flex items-center justify-between">
+          <h3 id="session-modal-title" className="font-serif font-medium text-lg text-ink">
+            Programar turno o sesión
+          </h3>
           <button
+            type="button"
             onClick={onClose}
-            className="text-text-sub hover:text-text-main text-xl font-bold cursor-pointer"
+            aria-label="Cerrar"
+            className="p-1.5 text-ink-sub hover:text-ink hover:bg-bg-base rounded-md transition-colors cursor-pointer"
           >
-            ×
+            <Icon name="x" size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Modal Form */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <p className="text-xs text-ink-sub">
+            Los campos marcados con <span className="text-primary font-bold">*</span> son obligatorios.
+          </p>
+
+          {/* Patient Selection */}
           <div>
-            <label className="text-xs text-text-sub font-semibold block mb-1">Seleccionar Paciente *</label>
+            <label htmlFor="modal-patient" className="text-xs font-semibold text-ink block mb-1">
+              Paciente <span className="text-primary font-bold">*</span>
+            </label>
             <select
+              id="modal-patient"
               required
               value={selectedPatientUuid}
               onChange={(e) => setSelectedPatientUuid(e.target.value)}
-              className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2.5 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
             >
-              <option value="">-- Seleccionar Paciente --</option>
+              <option value="">Seleccionar paciente</option>
               {patients.map((p) => (
                 <option key={p.uuid} value={p.uuid}>
                   {p.fullName}
@@ -100,80 +129,113 @@ export function SessionModal({
             </select>
           </div>
 
-          {/* Toggle de Recurrencia */}
-          <div className="bg-bg-base p-4 rounded-2xl border border-brand-sand space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-text-main font-bold">¿Es un turno recurrente?</label>
-              <input
-                type="checkbox"
-                checked={isRecurrent}
-                onChange={(e) => setIsRecurrent(e.target.checked)}
-                className="h-5 w-5 accent-brand-indigo rounded cursor-pointer"
-              />
+          {/* Recurrence Checkbox Card */}
+          <label className="flex items-start gap-3 p-3.5 rounded-xl border border-line bg-bg-base/60 cursor-pointer hover:bg-bg-base transition-colors">
+            <input
+              type="checkbox"
+              checked={isRecurrent}
+              onChange={(e) => setIsRecurrent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-primary rounded cursor-pointer"
+            />
+            <div className="text-xs">
+              <span className="font-semibold text-ink block">¿Es un turno recurrente?</span>
+              <span className="text-ink-sub mt-0.5 block leading-relaxed">
+                Los turnos recurrentes se cargan automáticamente todas las semanas, el mismo día y horario, durante todo el año.
+              </span>
             </div>
-            <span className="text-[10px] text-text-sub block leading-normal font-medium">
-              Los turnos recurrentes se cargarán automáticamente todas las semanas en el día y horario especificados durante todo el año.
-            </span>
-          </div>
+          </label>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Info Alert on Recurrence */}
+          {isRecurrent && (
+            <div
+              role="status"
+              className="flex items-center gap-2 p-3 bg-primary-tint/60 text-primary border border-primary/20 rounded-xl text-xs"
+            >
+              <Icon name="repeat" size={16} />
+              <span>
+                Se repetirá todos los {WEEKDAY_NAMES[Number(recurrenceDay)].toLowerCase()} a las {sessionTime}.
+              </span>
+            </div>
+          )}
+
+          {/* Date & Time Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">
-                {isRecurrent ? "Fecha de Inicio *" : "Fecha del Turno *"}
+              <label htmlFor="modal-date" className="text-xs font-semibold text-ink block mb-1">
+                {isRecurrent ? "Fecha de inicio *" : "Fecha del turno *"}
               </label>
               <input
+                id="modal-date"
                 type="date"
                 required
                 value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                onChange={(e) => {
+                  setSessionDate(e.target.value);
+                  if (e.target.value) {
+                    const parsed = new Date(e.target.value + "T00:00:00");
+                    const jsDay = parsed.getDay(); // 0=Domingo, 1=Lunes...
+                    // Convert to 0=Lunes... 6=Domingo
+                    const rDay = jsDay === 0 ? 6 : jsDay - 1;
+                    setRecurrenceDay(String(rDay));
+                  }
+                }}
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
+
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Hora *</label>
+              <label htmlFor="modal-time" className="text-xs font-semibold text-ink block mb-1">
+                Hora <span className="text-primary font-bold">*</span>
+              </label>
               <input
+                id="modal-time"
                 type="time"
                 required
                 value={sessionTime}
                 onChange={(e) => setSessionTime(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
+              <span className="text-[10px] text-ink-sub mt-1 block">
+                Formato de 24 horas, ej. 16:00.
+              </span>
             </div>
           </div>
 
-          {/* Selector de día para recurrencia */}
+          {/* Recurrence Day of Week */}
           {isRecurrent && (
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Día de la semana de atención *</label>
+              <label htmlFor="modal-day" className="text-xs font-semibold text-ink block mb-1">
+                Día semanal de atención <span className="text-primary font-bold">*</span>
+              </label>
               <select
+                id="modal-day"
                 value={recurrenceDay}
                 onChange={(e) => setRecurrenceDay(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2.5 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               >
-                <option value="0">Lunes</option>
-                <option value="1">Martes</option>
-                <option value="2">Miércoles</option>
-                <option value="3">Jueves</option>
-                <option value="4">Viernes</option>
-                <option value="5">Sábado</option>
-                <option value="6">Domingo</option>
+                {WEEKDAY_NAMES.map((name, idx) => (
+                  <option key={idx} value={String(idx)}>
+                    {name}
+                  </option>
+                ))}
               </select>
             </div>
           )}
 
-          <div className="pt-4 border-t border-brand-sand flex items-center justify-end gap-3">
+          {/* Modal Footer */}
+          <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="text-text-sub hover:text-text-main text-xs font-title font-bold px-4 py-2 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-semibold text-ink-sub hover:text-ink hover:bg-bg-base rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             >
-              Programar Turno
+              Programar turno
             </button>
           </div>
         </form>

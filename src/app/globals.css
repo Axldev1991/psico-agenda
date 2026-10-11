@@ -1,36 +1,79 @@
 @import "tailwindcss";
 
 @theme {
-  /* Vincular fuentes cargadas por Next.js */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-title: 'DM Sans', system-ui, -apple-system, sans-serif;
+  /* Tipografías oficiales (guía 02) */
+  --font-serif: var(--font-serif), 'Newsreader', Georgia, serif;
+  --font-sans: var(--font-sans), 'Public Sans', system-ui, -apple-system, sans-serif;
+  --font-title: var(--font-serif), 'Newsreader', Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Colores Principales del Sistema */
-  --color-brand-indigo: #6B7FBF;
-  --color-brand-blue: #8FA8D0;
-  --color-brand-sage: #7CB8A8;
-  --color-brand-mint: #A8C5B0;
-  --color-brand-lavender: #C4B5D4;
-  --color-brand-sand: #E8E0D8;
-  
-  /* Fondos Neutros */
-  --color-bg-base: #F5F3F0;
-  --color-bg-card: #FDFCFB;
-  
-  /* Textos Neutros */
-  --color-text-main: #4A4A5A;
-  --color-text-sub: #7A7A8A;
+  /* Neutros (guía 02) */
+  --color-ink: #1E2A32;
+  --color-ink-sub: #566670;
+  --color-line-control: #7B8A93;
+  --color-line: #D9E1E3;
+  --color-bg-base: #F5F7F7;
+  --color-surface: #FFFFFF;
+  --color-bg-card: #FFFFFF;
 
-  /* Estados Funcionales Desaturados */
-  --color-status-confirmed-dark: #5A9E7A;
-  --color-status-confirmed-light: #EAF6EF;
-  --color-status-pending-dark: #D4924A;
-  --color-status-pending-light: #FAF0E0;
-  --color-status-cancelled-dark: #C06060;
-  --color-status-cancelled-light: #FAEAEA;
-  --color-status-rescheduled-dark: #8FA8D0;
-  --color-status-rescheduled-light: #EDF2F9;
+  /* Marca - Petróleo (guía 02) */
+  --color-primary: #2C5F6B;
+  --color-primary-hover: #234C56;
+  --color-primary-tint: #E4EFF1;
+
+  /* Estados funcionales (guía 02) */
+  --color-ok: #2F6B4A;
+  --color-ok-tint: #E3F1E8;
+  --color-warn: #8A5A12;
+  --color-warn-tint: #FBF1DC;
+  --color-err: #9C3A3A;
+  --color-err-tint: #F7E4E4;
+
+  /* Paleta Cerrada de 8 Etiquetas Clínicas Accesibles (guía 02) */
+  --color-tag-pizarra: #3D4C56;
+  --color-tag-pizarra-tint: #E6EBED;
+  --color-tag-salvia: #2F6B4A;
+  --color-tag-salvia-tint: #E3F1E8;
+  --color-tag-azul: #2D4C85;
+  --color-tag-azul-tint: #E2E9F5;
+  --color-tag-violeta: #5A3E86;
+  --color-tag-violeta-tint: #ECE7F4;
+  --color-tag-ciruela: #86315F;
+  --color-tag-ciruela-tint: #F4E5EE;
+  --color-tag-petroleo: #2C5F6B;
+  --color-tag-petroleo-tint: #E4EFF1;
+  --color-tag-ambar: #8A5A12;
+  --color-tag-ambar-tint: #FBF1DC;
+  --color-tag-rojo: #9C3A3A;
+  --color-tag-rojo-tint: #F7E4E4;
+
+  /* Radios de borde (guía 02) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Sombras (guía 02) */
+  --shadow-1: 0 1px 2px rgba(30, 42, 50, 0.06);
+  --shadow-2: 0 12px 32px rgba(30, 42, 50, 0.14);
+
+  /* Aliases retrocompatibles para vistas existentes durante la migración */
+  --color-text-main: #1E2A32;
+  --color-text-sub: #566670;
+  --color-brand-indigo: #2C5F6B;
+  --color-brand-blue: #8FA8D0;
+  --color-brand-sage: #2F6B4A;
+  --color-brand-mint: #E3F1E8;
+  --color-brand-lavender: #ECE7F4;
+  --color-brand-sand: #D9E1E3;
+  --color-status-confirmed-dark: #2F6B4A;
+  --color-status-confirmed-light: #E3F1E8;
+  --color-status-pending-dark: #8A5A12;
+  --color-status-pending-light: #FBF1DC;
+  --color-status-cancelled-dark: #9C3A3A;
+  --color-status-cancelled-light: #F7E4E4;
+  --color-status-rescheduled-dark: #2D4C85;
+  --color-status-rescheduled-light: #E2E9F5;
 }
 
 /* Estilos modernos y limpios para los separadores de sesión de solo lectura en el editor */

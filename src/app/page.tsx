@@ -14,6 +14,8 @@ import { CalendarView } from "../ui/views/CalendarView";
 import { PatientsView } from "../ui/views/PatientsView";
 import { SettingsView } from "../ui/views/SettingsView";
 import { Patient } from "../domain/patient.types";
+import { Icon } from "../ui/components/common/Icon";
+import { BrandLogo } from "../ui/components/navigation/BrandLogo";
 
 function HomeContent() {
   const { patients, addPatient, updatePatient } = usePatients();
@@ -68,23 +70,33 @@ function HomeContent() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base text-text-main font-sans antialiased selection:bg-brand-indigo/20 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-bg-base text-ink font-sans antialiased selection:bg-primary-tint flex flex-col md:flex-row">
       {/* Mobile Top Header */}
-      <header className="md:hidden flex items-center justify-between px-4 h-16 bg-bg-card border-b border-brand-sand sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-linear-to-tr from-brand-indigo to-brand-blue flex items-center justify-center font-bold text-white shadow-sm shadow-brand-indigo/20 font-title text-lg">
-            Ψ
-          </div>
-          <span className="font-title font-bold text-base tracking-tight text-text-main">
-            PSICO-AGENDA
-          </span>
-        </div>
+      <header className="md:hidden flex items-center justify-between px-4 h-14 bg-surface border-b border-line sticky top-0 z-50">
         <button
+          type="button"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-text-main focus:outline-none hover:bg-brand-sand/35 rounded-lg"
-          aria-label="Toggle menu"
+          className="h-9 w-9 rounded-lg border border-line-control hover:bg-bg-base text-ink flex items-center justify-center transition-colors cursor-pointer"
+          aria-label={isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
         >
-          {isMobileMenuOpen ? "✕" : "☰"}
+          <Icon name={isMobileMenuOpen ? "x" : "menu"} size={18} />
+        </button>
+
+        <BrandLogo size="sm" />
+
+        <button
+          type="button"
+          onClick={() => setIsBlurred((prev) => !prev)}
+          aria-pressed={isBlurred}
+          className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
+            isBlurred
+              ? "bg-primary-tint text-primary border-primary/40"
+              : "bg-surface hover:bg-bg-base text-ink border-line-control"
+          }`}
+          aria-label={isBlurred ? "Revelar datos" : "Ocultar datos"}
+          title={isBlurred ? "Revelar datos" : "Ocultar datos"}
+        >
+          <Icon name={isBlurred ? "eye-off" : "eye"} size={18} />
         </button>
       </header>
 

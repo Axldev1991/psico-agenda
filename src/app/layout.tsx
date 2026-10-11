@@ -1,5 +1,20 @@
 import type { Metadata } from "next";
+import { Newsreader, Public_Sans } from "next/font/google";
 import "./globals.css";
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+  weight: ["500", "600"],
+});
+
+const publicSans = Public_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
 
 export const metadata: Metadata = {
   title: "PSICO-AGENDA | Sistema de Gestión Clínica",
@@ -19,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className="h-full antialiased font-sans"
+      className={`h-full antialiased font-sans ${newsreader.variable} ${publicSans.variable}`}
     >
       <body className="min-h-full flex flex-col bg-bg-base">{children}</body>
     </html>
