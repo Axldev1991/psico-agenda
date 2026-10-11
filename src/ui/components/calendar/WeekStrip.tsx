@@ -56,11 +56,11 @@ export function WeekStrip({
             aria-pressed={isSelected}
             className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col items-center justify-center relative cursor-pointer ${containerClass}`}
           >
-            <span className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-1 ${subTextClass}`}>
+            <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1 ${subTextClass}`}>
               {format(day, "eee", { locale: es })}
               {isTodayDay && (
                 <span
-                  className={`text-[8px] px-1 py-0.2 rounded font-bold uppercase tracking-tight ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tight ${
                     isSelected
                       ? "bg-surface/25 text-surface"
                       : "bg-primary-tint text-primary"
@@ -78,7 +78,7 @@ export function WeekStrip({
             <div className="flex gap-1 items-center mt-1 min-h-4">
               {holiday && (
                 <span
-                  className="text-[9px] px-1 bg-amber-500/20 text-amber-800 rounded font-bold"
+                  className="text-[11px] px-1.5 py-0.5 bg-amber-500/20 text-amber-800 rounded font-semibold"
                   title={holiday.name}
                 >
                   Feriado
@@ -86,7 +86,7 @@ export function WeekStrip({
               )}
               {count > 0 && (
                 <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${countClass}`}
+                  className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold ${countClass}`}
                 >
                   {count}
                 </span>

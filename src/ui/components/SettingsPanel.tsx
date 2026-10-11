@@ -138,7 +138,7 @@ export function SettingsPanel() {
         </summary>
 
         <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-[11px] text-ink-sub font-medium">
+          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-xs text-ink-sub font-semibold">
             <div className="col-span-5">Nombre del movimiento</div>
             <div className="col-span-2 text-center">Color</div>
             <div className="col-span-4 text-center">Vista previa</div>
@@ -163,7 +163,7 @@ export function SettingsPanel() {
             <button
               type="button"
               onClick={handleAddMovement}
-              className="w-full py-2 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-xs font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Icon name="plus" size={14} />
               <span>Agregar movimiento</span>
@@ -182,7 +182,7 @@ export function SettingsPanel() {
         </summary>
 
         <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-[11px] text-ink-sub font-medium">
+          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-xs text-ink-sub font-semibold">
             <div className="col-span-5">Nombre de la puntuación</div>
             <div className="col-span-2 text-center">Color</div>
             <div className="col-span-4 text-center">Vista previa</div>

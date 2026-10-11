@@ -41,7 +41,7 @@ export function PatientDetailHeader({
           </button>
 
           <div>
-            <span className="text-[10px] text-ink-sub font-semibold uppercase tracking-wider block">
+            <span className="text-xs text-ink-sub font-semibold uppercase tracking-wider block">
               Historial Clínico
             </span>
             <div className="flex items-center gap-2 mt-0.5">
@@ -53,7 +53,7 @@ export function PatientDetailHeader({
               </h1>
 
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded ${
                   isUnderage
                     ? "bg-primary-tint text-primary"
                     : "bg-bg-base text-ink-sub border border-line"
@@ -106,24 +106,24 @@ export function PatientDetailHeader({
       {/* Quick Personal Information Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 text-xs">
         <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
-          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+          <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Teléfono de contacto
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-mono font-medium"
+            className="text-ink block mt-1 font-mono font-medium text-sm"
           >
             {patient.phone || "—"}
           </span>
         </div>
 
         <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
-          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+          <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Correo electrónico
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-medium truncate"
+            className="text-ink block mt-1 font-medium truncate text-sm"
             title={patient.email}
           >
             {patient.email || "Sin correo"}
@@ -131,10 +131,10 @@ export function PatientDetailHeader({
         </div>
 
         <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
-          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+          <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Obra social o prepaga
           </span>
-          <span data-sensitive className="text-ink block mt-1 font-medium truncate">
+          <span data-sensitive className="text-ink block mt-1 font-medium truncate text-sm">
             {patient.healthInsurance
               ? `${patient.healthInsurance} ${
                   patient.affiliateNumber ? `(N° ${patient.affiliateNumber})` : ""
@@ -144,12 +144,12 @@ export function PatientDetailHeader({
         </div>
 
         <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
-          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+          <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Domicilio
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-medium truncate"
+            className="text-ink block mt-1 font-medium truncate text-sm"
             title={patient.address}
           >
             {patient.address || "—"}

@@ -25,7 +25,7 @@ export function RichTextEditor({
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!initialValue);
   const [customColor, setCustomColor] = useState("#fef08a");
-  const [fontSize, setFontSize] = useState(13); // Tamaño de tipografía base en px
+  const [fontSize, setFontSize] = useState(16); // Tamaño de tipografía base en px (piso accesible 16px)
 
   const defaultPunctuation = [
     { key: "yellow", color: "#FEF08A", label: "Amarillo" },
@@ -222,19 +222,19 @@ export function RichTextEditor({
             <div className="flex items-center gap-1 bg-surface border border-line rounded-xl p-0.5 shadow-xs">
               <button
                 type="button"
-                onClick={() => setFontSize((prev) => Math.max(9, prev - 1))}
-                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
+                onClick={() => setFontSize((prev) => Math.max(14, prev - 1))}
+                className="h-7 w-7 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
                 title="Achicar letra (Zoom Out)"
               >
                 A⁻
               </button>
-              <span className="text-[10px] font-mono font-semibold text-ink-muted min-w-7 text-center">
+              <span className="text-xs font-mono font-semibold text-ink-muted min-w-8 text-center">
                 {fontSize}px
               </span>
               <button
                 type="button"
-                onClick={() => setFontSize((prev) => Math.min(26, prev + 1))}
-                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
+                onClick={() => setFontSize((prev) => Math.min(32, prev + 1))}
+                className="h-7 w-7 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
                 title="Agrandar letra (Zoom In)"
               >
                 A⁺

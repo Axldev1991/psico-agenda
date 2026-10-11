@@ -229,7 +229,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                           Formato compatible nativo con Microsoft Word
                         </p>
                       </div>
-                      <span className="text-[10px] text-ink-muted/60 font-mono">
+                      <span className="text-xs text-ink-muted/80 font-mono font-medium">
                         Guardado automático en IndexedDB
                       </span>
                     </div>

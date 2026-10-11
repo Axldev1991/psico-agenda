@@ -115,7 +115,7 @@ export function MiniMonthCalendar({
         {["lu", "ma", "mi", "ju", "vi", "sá", "do"].map((dayName) => (
           <span
             key={dayName}
-            className="text-[10px] font-medium text-ink-sub uppercase tracking-wider"
+            className="text-xs font-semibold text-ink-sub uppercase tracking-wider"
           >
             {dayName}
           </span>

@@ -59,7 +59,7 @@ export function AppointmentCard({
         {/* Time display */}
         <div className="shrink-0 flex flex-col items-center justify-center font-mono text-xs text-ink-sub">
           <span className="font-semibold text-ink text-sm">{startTime}</span>
-          <span className="text-[10px] text-ink-sub">{endTime}</span>
+          <span className="text-xs text-ink-sub">{endTime}</span>
         </div>
 
         {/* State Bar */}
@@ -93,7 +93,7 @@ export function AppointmentCard({
             <Icon name="pin" size={13} />
             <span>Sesión individual · Presencial</span>
             {slot.holiday && (
-              <span className="text-warn text-[11px] font-medium ml-1">
+              <span className="text-warn text-xs font-medium ml-1">
                 (Feriado: {slot.holiday.name})
               </span>
             )}

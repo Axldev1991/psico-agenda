@@ -184,7 +184,7 @@ export function SessionModal({
             </div>
 
             <div>
-              <label htmlFor="modal-time" className="text-xs font-semibold text-ink block mb-1">
+              <label htmlFor="modal-time" className="text-sm font-semibold text-ink block mb-1">
                 Hora <span className="text-primary font-bold">*</span>
               </label>
               <input
@@ -195,7 +195,7 @@ export function SessionModal({
                 onChange={(e) => setSessionTime(e.target.value)}
                 className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
-              <span className="text-[10px] text-ink-sub mt-1 block">
+              <span className="text-xs text-ink-sub mt-1 block">
                 Formato de 24 horas, ej. 16:00.
               </span>
             </div>

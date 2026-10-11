@@ -67,7 +67,7 @@ export function PatientTable({
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 text-xs text-ink-sub">
                       <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-medium ${
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
                           isUnderage
                             ? "bg-primary-tint text-primary"
                             : "bg-bg-base text-ink-sub border border-line/60"
@@ -77,13 +77,13 @@ export function PatientTable({
                       </span>
 
                       {isInactive && (
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-line/40 text-ink-sub">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-line/40 text-ink-sub">
                           De alta
                         </span>
                       )}
 
                       {age !== null && (
-                        <span data-sensitive className="text-[11px] text-ink-sub">
+                        <span data-sensitive className="text-xs text-ink-sub">
                           · {age} años
                         </span>
                       )}
@@ -195,7 +195,7 @@ export function PatientTable({
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5 text-xs text-ink-sub">
                     <span
-                      className={`px-1.5 py-0.2 rounded text-[10px] font-medium ${
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${
                         isUnderage
                           ? "bg-primary-tint text-primary"
                           : "bg-bg-base text-ink-sub border border-line/60"
@@ -204,12 +204,12 @@ export function PatientTable({
                       {isUnderage ? "Infanto-juvenil" : "Adulto"}
                     </span>
                     {isInactive && (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-line/40 text-ink-sub">
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-line/40 text-ink-sub">
                         De alta
                       </span>
                     )}
                     {age !== null && (
-                      <span data-sensitive className="text-[11px] text-ink-sub">
+                      <span data-sensitive className="text-xs text-ink-sub">
                         · {age} años
                       </span>
                     )}

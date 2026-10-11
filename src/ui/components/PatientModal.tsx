@@ -307,7 +307,7 @@ export function PatientModal({
             </summary>
             <div className="p-4 space-y-3 border-t border-line bg-surface grid grid-cols-1 sm:grid-cols-2 gap-x-3.5 gap-y-3">
               <div className="sm:col-span-2">
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Convive con
                 </label>
                 <input
@@ -315,22 +315,22 @@ export function PatientModal({
                   value={ceciConviveCon}
                   onChange={(e) => setCeciConviveCon(e.target.value)}
                   placeholder="Ej: Pareja e hijos..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Familia (Estructura familiar)
                 </label>
                 <textarea
                   value={ceciFamilia}
                   onChange={(e) => setCeciFamilia(e.target.value)}
                   placeholder="Ej: Padres casados, un hermano..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary h-14"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Ocupación
                 </label>
                 <input
@@ -338,11 +338,11 @@ export function PatientModal({
                   value={ceciOcupacion}
                   onChange={(e) => setCeciOcupacion(e.target.value)}
                   placeholder="Ej: Docente..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Estudios
                 </label>
                 <input
@@ -350,33 +350,33 @@ export function PatientModal({
                   value={ceciEstudios}
                   onChange={(e) => setCeciEstudios(e.target.value)}
                   placeholder="Ej: Universitario completo..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Tratamientos anteriores
                 </label>
                 <textarea
                   value={ceciTratamientosAnteriores}
                   onChange={(e) => setCeciTratamientosAnteriores(e.target.value)}
                   placeholder="Ej: Terapia psicoanalítica en 2022..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary h-14"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Inicio de consulta
                 </label>
                 <input
                   type="date"
                   value={ceciInicioConsulta}
                   onChange={(e) => setCeciInicioConsulta(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Día y horario habitual
                 </label>
                 <input
@@ -384,11 +384,11 @@ export function PatientModal({
                   value={ceciDiaHorarioAtencion}
                   onChange={(e) => setCeciDiaHorarioAtencion(e.target.value)}
                   placeholder="Ej: Martes 15:00 hs..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Frecuencia sugerida
                 </label>
                 <input
@@ -396,18 +396,18 @@ export function PatientModal({
                   value={ceciFrecuenciaTratamiento}
                   onChange={(e) => setCeciFrecuenciaTratamiento(e.target.value)}
                   placeholder="Ej: Semanal..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                <label className="text-xs text-ink-sub font-semibold block mb-1">
                   Datos adicionales
                 </label>
                 <textarea
                   value={ceciDatosAdicionales}
                   onChange={(e) => setCeciDatosAdicionales(e.target.value)}
                   placeholder="Observaciones de ingreso..."
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink text-sm focus:outline-none focus:border-primary h-14"
                 />
               </div>
             </div>

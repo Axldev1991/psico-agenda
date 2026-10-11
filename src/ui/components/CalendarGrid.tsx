@@ -81,7 +81,7 @@ export function CalendarGrid({
           {/* Day Heading */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-line gap-2">
             <div>
-              <span className="text-[11px] font-semibold text-ink-sub uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-ink-sub uppercase tracking-wider block">
                 Turnos para el
               </span>
               <h2

@@ -66,7 +66,7 @@ export function DriveCard({
           <Icon name="alert" size={16} className="shrink-0 mt-0.5 text-warn" />
           <div className="leading-tight">
             <span className="font-semibold block text-ink">Drive sin conectar</span>
-            <span className="text-[11px] text-ink-sub">
+            <span className="text-xs text-ink-sub">
               Los turnos no se guardan hasta conectar tu cuenta.
             </span>
           </div>
@@ -114,7 +114,7 @@ export function DriveCard({
           />
           <div className="flex flex-col leading-tight overflow-hidden">
             <span className="text-xs font-semibold text-ink">Drive conectado</span>
-            <span className="text-[10px] text-ink-sub truncate">
+            <span className="text-xs text-ink-sub truncate">
               {syncStatus === "syncing"
                 ? "Sincronizando..."
                 : lastSynced

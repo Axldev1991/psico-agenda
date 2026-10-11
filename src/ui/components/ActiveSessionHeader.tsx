@@ -72,7 +72,7 @@ export function ActiveSessionHeader({
         </div>
 
         <span
-          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider self-start sm:self-auto ${
+          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider self-start sm:self-auto ${
             isCompleted
               ? "bg-ok-tint text-ok"
               : isCancelled
@@ -94,7 +94,7 @@ export function ActiveSessionHeader({
       <div className="flex items-center gap-2.5 w-full">
         <label
           htmlFor="session-topic-input"
-          className="text-[11px] text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
+          className="text-xs text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
         >
           Tema:
         </label>
@@ -109,7 +109,7 @@ export function ActiveSessionHeader({
             }
           }}
           placeholder="Escribí el tema o motivo de consulta..."
-          className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+          className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
         />
       </div>
 
@@ -117,7 +117,7 @@ export function ActiveSessionHeader({
 
       {/* Row 3: Movement pills */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 w-full">
-        <span className="text-[11px] text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
+        <span className="text-xs text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
           Movimiento:
         </span>
         <div className="flex flex-wrap gap-1.5 w-full">
@@ -138,7 +138,7 @@ export function ActiveSessionHeader({
                   color: tag.text,
                   borderColor: isSelected ? tag.text : "var(--line)",
                 }}
-                className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-all cursor-pointer border select-none ${
+                className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all cursor-pointer border select-none ${
                   isSelected ? "font-semibold shadow-2xs ring-1 ring-primary/20" : "hover:bg-bg-base text-ink-sub"
                 }`}
               >

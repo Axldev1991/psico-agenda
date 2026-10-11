@@ -37,7 +37,7 @@ export function SessionSidebar({
     >
       <div>
         <h3 className="font-semibold text-sm text-ink">Índice de sesiones</h3>
-        <p className="text-[11px] text-ink-sub mt-0.5">
+        <p className="text-xs text-ink-sub mt-0.5">
           Elegí una sesión para desplazarte a sus notas
         </p>
       </div>
@@ -90,11 +90,11 @@ export function SessionSidebar({
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-xs font-semibold">
+                  <span className="text-sm font-semibold">
                     Sesión N° {sessionNumber}
                   </span>
                   <span
-                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-full uppercase ${
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase ${
                       isCompleted
                         ? "bg-ok-tint text-ok"
                         : isCancelled
@@ -117,12 +117,12 @@ export function SessionSidebar({
                 )}
 
                 <div className="flex items-center justify-between mt-0.5">
-                  <span className="text-[10px] text-ink-sub font-mono">
+                  <span className="text-xs text-ink-sub font-mono">
                     {dateFormatted} hs
                   </span>
                   {session.colorTag && (
                     <span
-                      className="text-[9px] font-medium px-1.5 py-0.2 rounded border"
+                      className="text-[11px] font-medium px-2 py-0.5 rounded border"
                       style={{
                         backgroundColor: tag.bg,
                         color: tag.text,

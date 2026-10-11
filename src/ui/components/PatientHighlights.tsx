@@ -96,7 +96,7 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 self-start sm:self-auto select-none">
+          <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 self-start sm:self-auto select-none">
             Total destacados: {highlights.length}
           </span>
         </div>
@@ -108,10 +108,10 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar marcaciones por palabra clave o tipo de puntuación..."
-              className="w-full bg-sand-light/40 border border-line hover:border-line-focus focus:border-primary focus:bg-surface focus:outline-none pl-9 pr-4 py-2 rounded-xl text-xs font-medium text-ink placeholder:text-ink-muted/50 transition-all"
+              className="w-full bg-sand-light/40 border border-line hover:border-line-focus focus:border-primary focus:bg-surface focus:outline-none pl-9 pr-4 py-2.5 rounded-xl text-sm font-medium text-ink placeholder:text-ink-muted/50 transition-all"
             />
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
-              <Icon name="search" size={13} />
+              <Icon name="search" size={14} />
             </div>
           </div>
         )}
@@ -129,11 +129,11 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
                 style={resolveHighlightStyle(highlight.color)}
               >
                 <div className="flex-1 space-y-1.5">
-                  <blockquote className="text-xs font-medium text-ink italic leading-relaxed">
+                  <blockquote className="text-sm font-medium text-ink italic leading-relaxed">
                     "{highlight.text}"
                   </blockquote>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ink-muted font-medium">
-                    <span className="text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-md font-semibold text-[9px]">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted font-medium">
+                    <span className="text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-md font-semibold text-xs">
                       Puntuación: {puncLabel}
                     </span>
                     <span className="text-line">•</span>
@@ -145,10 +145,10 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
 
                 <button
                   onClick={() => onJumpToSession(highlight.sessionUuid)}
-                  className="bg-surface hover:bg-sand-light text-primary border border-line font-semibold text-[10px] px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-sm self-end md:self-auto inline-flex items-center gap-1.5"
+                  className="bg-surface hover:bg-sand-light text-primary border border-line font-semibold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-sm self-end md:self-auto inline-flex items-center gap-1.5"
                   type="button"
                 >
-                  <Icon name="eye" size={12} /> Ver en sesión
+                  <Icon name="eye" size={13} /> Ver en sesión
                 </button>
               </div>
             );

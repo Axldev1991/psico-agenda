@@ -97,7 +97,7 @@ export function DevLogsConsole() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-neutral-400">
+          <span className="text-xs text-neutral-400">
             {isExpanded ? "Minimizar" : "Expandir"}
           </span>
           <button
@@ -122,7 +122,7 @@ export function DevLogsConsole() {
               <button
                 type="button"
                 onClick={handleCopyAll}
-                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Icon name="download" size={12} />
                 <span>Copiar</span>
@@ -130,7 +130,7 @@ export function DevLogsConsole() {
               <button
                 type="button"
                 onClick={handleClear}
-                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-xs transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Icon name="x" size={12} />
                 <span>Limpiar</span>
@@ -142,7 +142,7 @@ export function DevLogsConsole() {
               type="button"
               onClick={handleSeed}
               disabled={seedState === "loading"}
-              className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-surface rounded text-[11px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-surface rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Icon name="plus" size={12} />
               <span>
@@ -175,14 +175,14 @@ export function DevLogsConsole() {
                 return (
                   <div
                     key={`${log.timestamp}-${idx}`}
-                    className="border-b border-neutral-800/60 pb-1.5 leading-relaxed text-[11px]"
+                    className="border-b border-neutral-800/60 pb-1.5 leading-relaxed text-xs"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-neutral-500">
                         {new Date(log.timestamp).toLocaleTimeString("es-AR")}
                       </span>
                       <span
-                        className={`uppercase font-bold text-[9px] px-1 rounded ${
+                        className={`uppercase font-bold text-xs px-1.5 py-0.2 rounded ${
                           colorMap[log.type] || "text-neutral-300"
                         }`}
                       >
@@ -192,7 +192,7 @@ export function DevLogsConsole() {
                     </div>
 
                     {log.details && (
-                      <pre className="mt-1 text-neutral-400 bg-black/40 p-1.5 rounded overflow-x-auto text-[10px]">
+                      <pre className="mt-1 text-neutral-400 bg-black/40 p-1.5 rounded overflow-x-auto text-xs">
                         {typeof log.details === "string"
                           ? log.details
                           : JSON.stringify(log.details, null, 2)}

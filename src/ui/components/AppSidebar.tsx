@@ -135,7 +135,7 @@ export function AppSidebar({
           <div className="p-3 border-t border-line space-y-2">
             <h4
               className={`text-xs font-semibold text-ink-sub px-3 ${
-                isSidebarCollapsed ? "md:text-center md:px-0 text-[10px]" : ""
+                isSidebarCollapsed ? "md:text-center md:px-0 text-xs" : ""
               }`}
             >
               {isSidebarCollapsed ? "Rec." : "Pacientes recientes"}

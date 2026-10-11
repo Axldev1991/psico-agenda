@@ -7,6 +7,22 @@
   --font-title: var(--font-serif), 'Newsreader', Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
+  /* Escala tipográfica accesible (Base estándar de 16px, excepción compacta de 14px) */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: calc(1.25 / 0.875);
+  --text-sm: 1rem;
+  --text-sm--line-height: calc(1.5 / 1);
+  --text-base: 1.0625rem;
+  --text-base--line-height: calc(1.625 / 1.0625);
+  --text-lg: 1.25rem;
+  --text-lg--line-height: calc(1.75 / 1.25);
+  --text-xl: 1.5rem;
+  --text-xl--line-height: calc(2 / 1.5);
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: calc(2.25 / 1.75);
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: calc(2.5 / 2.125);
+
   /* Neutros (guía 02) */
   --color-ink: #1E2A32;
   --color-ink-sub: #566670;
