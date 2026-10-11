@@ -75,7 +75,7 @@ export function WeekStrip({
               {format(day, "d")}
             </span>
 
-            <div className="flex gap-1 items-center mt-1 min-h-[16px]">
+            <div className="flex gap-1 items-center mt-1 min-h-4">
               {holiday && (
                 <span
                   className="text-[9px] px-1 bg-amber-500/20 text-amber-800 rounded font-bold"

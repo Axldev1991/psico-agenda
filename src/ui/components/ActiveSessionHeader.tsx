@@ -1,7 +1,9 @@
-import { useState } from "react";
+"use client";
+
+import React, { useState } from "react";
 import { Session } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
-import { resolveMovementStyles } from "../utils/movement-styles";
+import { resolveClinicalTag } from "../utils/clinical-tags";
 
 interface ActiveSessionHeaderProps {
   selectedSession: Session;
@@ -14,12 +16,13 @@ interface ActiveSessionHeaderProps {
 export function ActiveSessionHeader({
   selectedSession,
   selectedSessionNumber,
-  selectedSessionDateFormatted,
   changeSessionDescription,
   changeSessionColor,
 }: ActiveSessionHeaderProps) {
   const { movementConfigs } = useSettings();
-  const [localDescription, setLocalDescription] = useState(selectedSession.description || "");
+  const [localDescription, setLocalDescription] = useState(
+    selectedSession.description || ""
+  );
   const [lastSessionUuid, setLastSessionUuid] = useState(selectedSession.uuid);
 
   if (selectedSession.uuid !== lastSessionUuid) {
@@ -28,51 +31,75 @@ export function ActiveSessionHeader({
   }
 
   const defaultConfigs = [
-    { key: "indigo", color: "#6366F1", label: "Control" },
-    { key: "rose", color: "#F43F5E", label: "Cognitivo" },
-    { key: "emerald", color: "#10B981", label: "Fisiológico" },
-    { key: "amber", color: "#F59E0B", label: "Otro" }
+    { key: "indigo", color: "#2D4C85", label: "Control" },
+    { key: "rose", color: "#86315F", label: "Cognitivo" },
+    { key: "emerald", color: "#2F6B4A", label: "Fisiológico" },
+    { key: "amber", color: "#3D4C56", label: "Otro" },
   ];
-  const configsToUse = movementConfigs.length > 0 ? movementConfigs : defaultConfigs;
+  const configsToUse =
+    movementConfigs.length > 0 ? movementConfigs : defaultConfigs;
 
-  // Formatear fecha y hora de manera precisa y desglosada
   const dateObj = new Date(selectedSession.dateTime);
   const dayName = dateObj.toLocaleDateString("es-AR", { weekday: "long" });
-  const dateFormatted = dateObj.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
-  const timeFormatted = dateObj.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  const dateFormatted = dateObj.toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const timeFormatted = dateObj.toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const isCompleted = selectedSession.status === "completed";
+  const isCancelled = selectedSession.status === "cancelled";
 
   return (
-    <div className="bg-bg-card border border-brand-sand/65 border-l-4 border-l-brand-indigo rounded-3xl p-5 shadow-sm space-y-4 select-none animate-in fade-in duration-200">
-      {/* Fila 1: sesion n°: N°, Día: Horario: */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-text-main font-semibold">
-          <span className="font-title font-bold text-brand-indigo">Sesión N°:</span>
-          <span className="text-text-main">{selectedSessionNumber}</span>
-          <span className="text-brand-sand/60 mx-0.5">|</span>
-          <span className="font-title font-bold text-brand-indigo">Día:</span>
-          <span className="capitalize">{dayName}, {dateFormatted}</span>
-          <span className="text-brand-sand/60 mx-0.5">|</span>
-          <span className="font-title font-bold text-brand-indigo">Horario:</span>
-          <span>{timeFormatted} hs</span>
+    <div className="bg-surface border border-line border-l-4 border-l-primary rounded-2xl p-4 shadow-xs space-y-3 select-none">
+      {/* Row 1: Session number, Day, Time, Status */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink">
+          <span className="font-semibold text-primary">Sesión N°:</span>
+          <span className="font-mono font-medium">{selectedSessionNumber}</span>
+          <span className="text-line-control">|</span>
+          <span className="font-semibold text-ink">Día:</span>
+          <span className="capitalize text-ink-sub">
+            {dayName}, {dateFormatted}
+          </span>
+          <span className="text-line-control">|</span>
+          <span className="font-semibold text-ink">Horario:</span>
+          <span className="font-mono text-ink-sub">{timeFormatted} hs</span>
         </div>
 
-        <span className={`text-[9px] font-extrabold px-3 py-1 rounded-full border uppercase tracking-wider self-start sm:self-auto ${
-          selectedSession.status === "completed"
-            ? "bg-status-confirmed-light text-status-confirmed-dark border-status-confirmed-dark/20"
-            : selectedSession.status === "cancelled"
-            ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/20"
-            : "bg-brand-sand/35 text-text-sub border-brand-sand/60"
-        }`}>
-          {selectedSession.status === "completed" ? "Atendido" : selectedSession.status === "cancelled" ? "Cancelado" : "Programado"}
+        <span
+          className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider self-start sm:self-auto ${
+            isCompleted
+              ? "bg-ok-tint text-ok"
+              : isCancelled
+              ? "bg-line/60 text-ink-sub line-through"
+              : "bg-warn-tint text-warn"
+          }`}
+        >
+          {isCompleted
+            ? "Atendido"
+            : isCancelled
+            ? "Cancelado"
+            : "Programado"}
         </span>
       </div>
 
-      <div className="border-t border-brand-sand/30" />
+      <div className="border-t border-line/60" />
 
-      {/* Fila 2: Tema */}
+      {/* Row 2: Topic input */}
       <div className="flex items-center gap-2.5 w-full">
-        <span className="text-[10px] text-text-sub font-bold uppercase tracking-wider whitespace-nowrap min-w-[85px]">Tema:</span>
+        <label
+          htmlFor="session-topic-input"
+          className="text-[11px] text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
+        >
+          Tema:
+        </label>
         <input
+          id="session-topic-input"
           type="text"
           value={localDescription}
           onChange={(e) => setLocalDescription(e.target.value)}
@@ -81,27 +108,39 @@ export function ActiveSessionHeader({
               changeSessionDescription(selectedSession.uuid, localDescription);
             }
           }}
-          placeholder="Escribí el tema de consulta..."
-          className="w-full bg-bg-base/30 border border-brand-sand/40 hover:border-brand-sand/70 focus:border-brand-indigo focus:bg-white focus:outline-none px-3.5 py-1.5 text-xs font-semibold text-text-main rounded-xl transition-all"
+          placeholder="Escribí el tema o motivo de consulta..."
+          className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
         />
       </div>
 
-      <div className="border-t border-brand-sand/30" />
+      <div className="border-t border-line/60" />
 
-      {/* Fila 3: Movimientos */}
+      {/* Row 3: Movement pills */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 w-full">
-        <span className="text-[10px] text-text-sub font-bold uppercase tracking-wider whitespace-nowrap min-w-[85px] pt-1.5">Movimientos:</span>
-        <div className="flex flex-wrap gap-1.5 pr-1 w-full">
+        <span className="text-[11px] text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
+          Movimiento:
+        </span>
+        <div className="flex flex-wrap gap-1.5 w-full">
           {configsToUse.map((config) => {
-            const isSelected = (selectedSession.colorTag || "indigo") === config.key;
-            const { baseStyle, activeStyle } = resolveMovementStyles(config.color);
+            const isSelected =
+              (selectedSession.colorTag || "indigo") === config.key;
+            const tag = resolveClinicalTag(config.color);
+
             return (
               <button
                 key={config.key}
                 type="button"
-                onClick={() => changeSessionColor(selectedSession.uuid, config.key)}
-                style={isSelected ? activeStyle : baseStyle}
-                className="text-[9px] font-bold px-3 py-1 rounded-xl transition-all cursor-pointer border select-none hover:scale-105 active:scale-95"
+                onClick={() =>
+                  changeSessionColor(selectedSession.uuid, config.key)
+                }
+                style={{
+                  backgroundColor: isSelected ? tag.bg : "transparent",
+                  color: tag.text,
+                  borderColor: isSelected ? tag.text : "var(--line)",
+                }}
+                className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-all cursor-pointer border select-none ${
+                  isSelected ? "font-semibold shadow-2xs ring-1 ring-primary/20" : "hover:bg-bg-base text-ink-sub"
+                }`}
               >
                 {config.label}
               </button>

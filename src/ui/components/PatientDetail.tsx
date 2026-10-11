@@ -13,6 +13,7 @@ import { PatientDetailHeader } from "./patient-detail/PatientDetailHeader";
 import { PatientArchivedNotice } from "./patient-detail/PatientArchivedNotice";
 import { PatientSearchFilters } from "./patient-detail/PatientSearchFilters";
 import { SyncStatusBadge } from "./patient-detail/SyncStatusBadge";
+import { Icon } from "./common/Icon";
 
 interface PatientDetailProps {
   patient: Patient;
@@ -175,26 +176,28 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
             {/* Panel Derecho: Gran Editor Clínico Word-Like con Pestañas */}
             <div className="lg:col-span-9 space-y-4">
               {/* Tabs */}
-              <div className="flex border-b border-brand-sand bg-bg-card p-1 rounded-t-3xl gap-4 px-6 pt-3">
+              <div className="flex border-b border-line bg-surface p-1 rounded-t-3xl gap-4 px-6 pt-3 shadow-xs">
                 <button
                   onClick={() => setActiveTab("timeline")}
-                  className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+                  className={`pb-2.5 text-xs font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === "timeline"
-                      ? "border-brand-indigo text-brand-indigo"
-                      : "border-transparent text-text-sub hover:text-text-main"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-ink-muted hover:text-ink"
                   }`}
                 >
-                  📖 Expediente Continuo
+                  <Icon name="file" size={13} />
+                  <span>Expediente Continuo</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("ceci")}
-                  className={`pb-2.5 text-xs font-title font-bold transition-all border-b-2 cursor-pointer ${
+                  className={`pb-2.5 text-xs font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === "ceci"
-                      ? "border-brand-indigo text-brand-indigo"
-                      : "border-transparent text-text-sub hover:text-text-main"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-ink-muted hover:text-ink"
                   }`}
                 >
-                  📋 Ficha CECI
+                  <Icon name="folder" size={13} />
+                  <span>Ficha CECI</span>
                 </button>
               </div>
 
@@ -215,18 +218,18 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
 
                   <div
                     ref={editorContainerRef}
-                    className="bg-white border border-brand-sand rounded-b-3xl p-6 md:p-8 shadow-md max-h-[75vh] overflow-y-auto space-y-4"
+                    className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[75vh] overflow-y-auto space-y-4"
                   >
-                    <div className="border-b border-brand-sand pb-4 flex items-center justify-between">
+                    <div className="border-b border-line pb-4 flex items-center justify-between">
                       <div>
-                        <h3 className="font-title font-bold text-base text-text-main">
+                        <h3 className="font-serif font-bold text-base text-ink">
                           Expediente Clínico Unificado
                         </h3>
-                        <p className="text-[10px] text-text-sub font-semibold mt-0.5">
+                        <p className="text-xs text-ink-muted mt-0.5">
                           Formato compatible nativo con Microsoft Word
                         </p>
                       </div>
-                      <span className="text-[10px] text-text-sub/50 font-semibold italic">
+                      <span className="text-[10px] text-ink-muted/60 font-mono">
                         Guardado automático en IndexedDB
                       </span>
                     </div>
@@ -250,7 +253,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                         />
                       </div>
                     ) : (
-                      <div className="text-center py-16 text-xs text-text-sub/70 font-semibold bg-bg-base/10 rounded-2xl border border-dashed border-brand-sand/60">
+                      <div className="text-center py-16 text-xs text-ink-muted font-medium bg-sand-light/30 rounded-2xl border border-dashed border-line">
                         No se encontraron sesiones que coincidan con los filtros de búsqueda.
                       </div>
                     )}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSettings } from "../hooks/useSettings";
+import { Icon } from "./common/Icon";
 
 interface RichTextEditorProps {
   initialValue: string;
@@ -96,22 +97,22 @@ export function RichTextEditor({
       className={`transition-all duration-300 ${
         isContinuous
           ? isFocused
-            ? "border border-brand-indigo/60 rounded-xl bg-bg-card shadow-sm"
+            ? "border border-primary/60 rounded-xl bg-surface shadow-sm"
             : "border border-transparent bg-transparent"
-          : `border rounded-2xl overflow-hidden bg-bg-card ${
-              isFocused ? "border-brand-indigo ring-1 ring-brand-indigo" : "border-brand-sand/70"
+          : `border rounded-2xl overflow-hidden bg-surface ${
+              isFocused ? "border-primary ring-1 ring-primary/20 shadow-sm" : "border-line"
             }`
       }`}
     >
       {/* Barra de Herramientas Word-Like minimalista (se oculta en modo continuo si no está enfocado) */}
       {(!isContinuous || isFocused) && (
-        <div className="bg-bg-base/70 border-b border-brand-sand px-3 py-2 flex flex-wrap items-center justify-between gap-2 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-sand-light/40 border-b border-line px-3 py-2 flex flex-wrap items-center justify-between gap-2 animate-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-1.5">
             {/* Botón Negrita */}
             <button
               type="button"
               onClick={() => executeCommand("bold")}
-              className="h-8 w-8 rounded-lg hover:bg-brand-sand/40 text-text-main font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
+              className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Negrita (Ctrl+B)"
             >
               B
@@ -121,7 +122,7 @@ export function RichTextEditor({
             <button
               type="button"
               onClick={() => executeCommand("italic")}
-              className="h-8 w-8 rounded-lg hover:bg-brand-sand/40 text-text-main italic flex items-center justify-center cursor-pointer transition-colors text-xs"
+              className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink italic flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Cursiva (Ctrl+I)"
             >
               I
@@ -131,7 +132,7 @@ export function RichTextEditor({
             <button
               type="button"
               onClick={() => executeCommand("underline")}
-              className="h-8 w-8 rounded-lg hover:bg-brand-sand/40 text-text-main underline flex items-center justify-center cursor-pointer transition-colors text-xs"
+              className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink underline flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Subrayado (Ctrl+U)"
             >
               U
@@ -143,12 +144,12 @@ export function RichTextEditor({
                 type="button"
                 onClick={isSpeechSupported ? toggleListening : undefined}
                 disabled={!isSpeechSupported}
-                className={`h-8 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-300 text-xs border font-bold ${
+                className={`h-8 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-300 text-xs border font-medium ${
                   !isSpeechSupported
-                    ? "opacity-35 cursor-not-allowed bg-transparent text-text-sub border-transparent"
+                    ? "opacity-35 cursor-not-allowed bg-transparent text-ink-muted border-transparent"
                     : isListening
-                    ? "bg-status-cancelled-light text-status-cancelled-dark border-status-cancelled-dark/45 shadow-sm cursor-pointer"
-                    : "bg-transparent hover:bg-brand-sand/40 text-text-main border-transparent cursor-pointer"
+                    ? "bg-danger/10 text-danger border-danger/30 shadow-sm cursor-pointer"
+                    : "bg-transparent hover:bg-sand-light text-ink border-transparent cursor-pointer"
                 }`}
                 title={
                   !isSpeechSupported
@@ -158,21 +159,21 @@ export function RichTextEditor({
                     : "Dictar evolución pos-sesión (Dictado por Voz)"
                 }
               >
-                <span className={isListening ? "animate-pulse" : ""}>🎙️</span>
+                <Icon name="mic" size={14} className={isListening ? "animate-pulse text-danger" : "text-ink-muted"} />
                 {isListening && (
-                  <span className="text-[9px] uppercase font-title tracking-wider animate-pulse font-extrabold">
+                  <span className="text-[9px] uppercase font-mono tracking-wider animate-pulse font-bold">
                     Grabando...
                   </span>
                 )}
               </button>
               {speechError && (
-                <span className="text-[9px] font-bold text-status-cancelled-dark bg-status-cancelled-light border border-status-cancelled-dark/20 px-2 py-1 rounded-lg animate-fade-in" title={speechError}>
-                  ⚠️ {speechError}
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-danger bg-danger/10 border border-danger/20 px-2 py-1 rounded-lg animate-fade-in" title={speechError}>
+                  <Icon name="alert" size={11} /> {speechError}
                 </span>
               )}
             </div>
 
-            <div className="h-4 w-px bg-brand-sand mx-1" />
+            <div className="h-4 w-px bg-line mx-1" />
 
             {/* Resaltadores de colores */}
             <div className="flex items-center gap-1.5">
@@ -182,7 +183,7 @@ export function RichTextEditor({
                   type="button"
                   onClick={() => executeCommand("backColor", color.color)}
                   style={{ backgroundColor: color.color }}
-                  className="h-5 w-5 rounded-full border border-brand-sand/50 cursor-pointer hover:scale-110 transition-transform"
+                  className="h-5 w-5 rounded-full border border-line cursor-pointer hover:scale-110 transition-transform shadow-xs"
                   title={`Resaltar como: ${color.label}`}
                 />
               ))}
@@ -199,42 +200,41 @@ export function RichTextEditor({
                   className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 />
                 <div 
-                  className="h-5 w-5 rounded-full border border-brand-sand/70 flex items-center justify-center shadow-inner"
+                  className="h-5 w-5 rounded-full border border-line flex items-center justify-center shadow-inner"
                   style={{ backgroundColor: customColor }}
                 />
-                <span className="absolute -bottom-1 -right-1 text-[8px] bg-white rounded-full px-0.5 border border-brand-sand shadow-sm pointer-events-none">🎨</span>
               </div>
 
               {/* Botón Limpiar Resaltador */}
               <button
                 type="button"
                 onClick={() => executeCommand("backColor", "transparent")}
-                className="h-6 w-6 rounded-lg hover:bg-brand-sand/40 text-text-sub hover:text-status-cancelled-dark flex items-center justify-center cursor-pointer transition-colors text-xs ml-1"
+                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted hover:text-danger flex items-center justify-center cursor-pointer transition-colors text-xs ml-1"
                 title="Quitar Resaltador"
               >
-                🚫
+                <Icon name="x" size={12} />
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Zoom de letra */}
-            <div className="flex items-center gap-1 bg-bg-base border border-brand-sand/60 rounded-xl p-0.5 shadow-sm">
+            <div className="flex items-center gap-1 bg-surface border border-line rounded-xl p-0.5 shadow-xs">
               <button
                 type="button"
                 onClick={() => setFontSize((prev) => Math.max(9, prev - 1))}
-                className="h-6 w-6 rounded-lg hover:bg-brand-sand/40 text-text-sub font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
+                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
                 title="Achicar letra (Zoom Out)"
               >
                 A⁻
               </button>
-              <span className="text-[10px] font-mono font-bold text-text-sub min-w-[28px] text-center">
+              <span className="text-[10px] font-mono font-semibold text-ink-muted min-w-7 text-center">
                 {fontSize}px
               </span>
               <button
                 type="button"
                 onClick={() => setFontSize((prev) => Math.min(26, prev + 1))}
-                className="h-6 w-6 rounded-lg hover:bg-brand-sand/40 text-text-sub font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
+                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-[10px]"
                 title="Agrandar letra (Zoom In)"
               >
                 A⁺
@@ -244,10 +244,10 @@ export function RichTextEditor({
             <button
               type="button"
               onClick={() => executeCommand("removeFormat")}
-              className="text-[10px] text-text-sub hover:text-text-main font-title font-bold px-2 py-1 rounded hover:bg-brand-sand/30 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 text-[10px] text-ink-muted hover:text-ink font-semibold px-2 py-1 rounded hover:bg-sand-light transition-all cursor-pointer"
               title="Limpiar todos los estilos de la selección"
             >
-              🧹 Limpiar Formato
+              <Icon name="trash" size={11} /> Limpiar Formato
             </button>
           </div>
         </div>
@@ -266,10 +266,10 @@ export function RichTextEditor({
             if (onBlur) onBlur();
           }}
           onInput={triggerChange}
-           className={`w-full overflow-y-auto overflow-x-hidden break-words text-text-main focus:outline-none font-sans leading-relaxed whitespace-pre-wrap select-text cursor-text ${
+           className={`w-full overflow-y-auto overflow-x-hidden wrap-break-word text-ink focus:outline-none font-sans leading-relaxed whitespace-pre-wrap select-text cursor-text ${
             isContinuous 
-              ? "p-2 min-h-[40px] max-h-[800px]" 
-              : "p-4 min-h-[150px] max-h-[400px]"
+              ? "p-2 min-h-10 max-h-200" 
+              : "p-4 min-h-37.5 max-h-100"
           }`}
           style={{
             minHeight: isContinuous ? "40px" : "150px",
@@ -280,7 +280,7 @@ export function RichTextEditor({
         {/* Placeholder dinámico */}
         {isEmpty && (
           <div 
-            className={`absolute inset-0 text-text-sub/40 pointer-events-none font-sans ${
+            className={`absolute inset-0 text-ink-muted/40 pointer-events-none font-sans ${
               isContinuous ? "p-2" : "p-4"
             }`}
             style={{ fontSize: `${fontSize}px` }}

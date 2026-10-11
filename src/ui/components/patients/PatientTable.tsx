@@ -100,7 +100,7 @@ export function PatientTable({
                     </div>
                     <div
                       data-sensitive
-                      className="text-xs text-ink-sub truncate max-w-[200px]"
+                      className="text-xs text-ink-sub truncate max-w-50"
                     >
                       {patient.email || "Sin correo"}
                     </div>
@@ -110,7 +110,7 @@ export function PatientTable({
                         className="text-xs text-ink-sub flex items-center gap-1 mt-0.5"
                       >
                         <Icon name="pin" size={12} />
-                        <span className="truncate max-w-[180px]">
+                        <span className="truncate max-w-45">
                           {patient.address}
                         </span>
                       </div>

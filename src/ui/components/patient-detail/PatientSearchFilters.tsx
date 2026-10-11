@@ -2,6 +2,7 @@
 
 import React from "react";
 import { MovementConfig, PunctuationConfig } from "../../../domain/session.types";
+import { Icon } from "../common/Icon";
 
 interface PatientSearchFiltersProps {
   searchQuery: string;
@@ -31,46 +32,53 @@ export function PatientSearchFilters({
   );
 
   return (
-    <div className="bg-bg-card border border-brand-sand rounded-3xl p-5 shadow-sm space-y-3.5">
-      <div className="flex flex-col lg:flex-row gap-3">
-        <div className="flex-1">
+    <div className="bg-surface border border-line rounded-2xl p-4 shadow-xs space-y-3">
+      <div className="flex flex-col lg:flex-row gap-2.5">
+        <div className="relative flex-1">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-sub">
+            <Icon name="search" size={15} />
+          </span>
           <input
-            type="text"
+            type="search"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="Buscar por palabra, frase o tema en el expediente..."
-            className="w-full bg-bg-base/30 border border-brand-sand/40 hover:border-brand-sand/70 focus:border-brand-indigo focus:bg-white focus:outline-none px-4 py-2 text-xs font-semibold text-text-main rounded-2xl transition-all"
+            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
+
+        <div className="flex flex-wrap items-center gap-2.5">
           <select
             value={selectedMovementFilter}
             onChange={(e) => onMovementFilterChange(e.target.value)}
-            className="bg-bg-base/30 border border-brand-sand/40 hover:border-brand-sand/70 focus:border-brand-indigo focus:bg-white focus:outline-none px-3.5 py-2 text-xs font-semibold text-text-main rounded-2xl transition-all cursor-pointer min-w-44"
+            className="bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
           >
             <option value="">Todos los movimientos</option>
             {movementConfigs.map((m) => (
-              <option key={m.key} value={m.key}>{m.label}</option>
+              <option key={m.key} value={m.key}>
+                {m.label}
+              </option>
             ))}
           </select>
 
           <select
             value={selectedPunctuationFilter}
             onChange={(e) => onPunctuationFilterChange(e.target.value)}
-            className="bg-bg-base/30 border border-brand-sand/40 hover:border-brand-sand/70 focus:border-brand-indigo focus:bg-white focus:outline-none px-3.5 py-2 text-xs font-semibold text-text-main rounded-2xl transition-all cursor-pointer min-w-44"
+            className="bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
           >
             <option value="">Todas las puntuaciones</option>
             {punctuationConfigs.map((p) => (
-              <option key={p.key} value={p.key}>{p.label}</option>
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
             ))}
           </select>
 
           {hasActiveFilters && (
             <button
-              onClick={onClearFilters}
-              className="text-xs text-brand-indigo hover:text-brand-indigo/80 font-bold transition-colors cursor-pointer whitespace-nowrap px-1"
               type="button"
+              onClick={onClearFilters}
+              className="text-xs text-primary hover:text-primary-hover font-semibold transition-colors cursor-pointer whitespace-nowrap px-1"
             >
               Limpiar filtros
             </button>

@@ -4,6 +4,7 @@ import React from "react";
 import { Patient } from "../../../domain/patient.types";
 import { calculateAge } from "../../../domain/patient.utils";
 import { exportFullHistoryToWord } from "../../../infrastructure/export/docx-exporter";
+import { Icon } from "../common/Icon";
 
 interface PatientDetailHeaderProps {
   patient: Patient;
@@ -11,82 +12,150 @@ interface PatientDetailHeaderProps {
   onEdit: (patient: Patient) => void;
 }
 
-export function PatientDetailHeader({ patient, onBack, onEdit }: PatientDetailHeaderProps) {
+const currencyFormatter = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  maximumFractionDigits: 0,
+});
+
+export function PatientDetailHeader({
+  patient,
+  onBack,
+  onEdit,
+}: PatientDetailHeaderProps) {
+  const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
+  const isUnderage = patient.type === "underage";
+
   return (
-    <div className="bg-bg-card border border-brand-sand rounded-3xl p-6 shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-brand-sand/50 pb-6">
-        <div className="flex items-center gap-4">
+    <header className="bg-surface border border-line rounded-2xl p-5 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-line pb-5">
+        <div className="flex items-center gap-3.5">
           <button
+            type="button"
             onClick={onBack}
-            className="h-10 w-10 rounded-xl bg-bg-base border border-brand-sand hover:bg-brand-sand/20 text-brand-indigo flex items-center justify-center font-bold transition-all cursor-pointer shadow-sm text-sm"
-            title="Volver al Fichero"
+            className="h-9 w-9 rounded-lg bg-bg-base border border-line hover:bg-line/40 text-ink flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+            title="Volver al fichero de pacientes"
+            aria-label="Volver al fichero de pacientes"
           >
-            ←
+            <Icon name="chev-l" size={16} />
           </button>
+
           <div>
-            <span className="text-[10px] text-text-sub font-bold uppercase tracking-wider block">Historial Clínico</span>
+            <span className="text-[10px] text-ink-sub font-semibold uppercase tracking-wider block">
+              Historial Clínico
+            </span>
             <div className="flex items-center gap-2 mt-0.5">
-              <h2 className="font-title font-bold text-2xl text-text-main">{patient.fullName}</h2>
-              {patient.type && (
-                <span className={`text-[10px] font-title font-bold px-2.5 py-0.5 rounded-full ${
-                  patient.type === "adult"
-                    ? "bg-brand-indigo/10 text-brand-indigo border border-brand-indigo/20"
-                    : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                }`}>
-                  {patient.type === "adult" ? "Adulto" : "Infanto-Juvenil"}
-                </span>
-              )}
-              {patient.birthDate && (
-                <span className="text-sm text-text-sub font-semibold">
-                  ({calculateAge(patient.birthDate)} años)
+              <h1
+                data-sensitive
+                className="font-serif font-medium text-2xl text-ink tracking-tight"
+              >
+                {patient.fullName}
+              </h1>
+
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                  isUnderage
+                    ? "bg-primary-tint text-primary"
+                    : "bg-bg-base text-ink-sub border border-line"
+                }`}
+              >
+                {isUnderage ? "Infanto-juvenil" : "Adulto"}
+              </span>
+
+              {age !== null && (
+                <span data-sensitive className="text-xs text-ink-sub font-medium">
+                  · {age} años
                 </span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs font-bold bg-brand-lavender/30 text-text-main border border-brand-lavender/40 px-3 py-1.5 rounded-xl shadow-sm select-none">
-            Arancel: ${patient.sessionPrice.toLocaleString("es-AR")} ARS
+
+        {/* Header Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span
+            data-sensitive
+            className="font-mono text-xs font-semibold bg-bg-base text-ink border border-line px-3 py-1.5 rounded-lg select-none"
+          >
+            Arancel: {currencyFormatter.format(patient.sessionPrice)}
           </span>
+
           <button
+            type="button"
             onClick={() => onEdit(patient)}
-            className="bg-bg-base hover:bg-brand-sand/20 border border-brand-sand text-brand-indigo font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-base hover:bg-line/40 border border-line text-ink text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Editar datos personales de la ficha del paciente"
           >
-            ✏️ Editar Ficha
+            <Icon name="file" size={14} />
+            <span>Editar ficha</span>
           </button>
+
           <button
+            type="button"
             disabled={patient.isHistoryLoaded === false}
             onClick={() => exportFullHistoryToWord(patient)}
-            className="bg-brand-indigo hover:bg-brand-indigo/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Exportar todo el historial clínico a un único Word (.doc)"
           >
-            📥 Exportar Historial Completo
+            <Icon name="download" size={14} />
+            <span>Exportar historial</span>
           </button>
         </div>
       </div>
 
-      {/* Detalles Rápidos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 text-xs font-medium">
-        <div className="bg-bg-base/50 p-3 rounded-2xl border border-brand-sand/30">
-          <span className="text-text-sub block text-[10px] uppercase font-bold tracking-wider">Teléfono de Contacto</span>
-          <span className="text-text-main block mt-1 text-sm font-semibold">{patient.phone || "—"}</span>
-        </div>
-        <div className="bg-bg-base/50 p-3 rounded-2xl border border-brand-sand/30">
-          <span className="text-text-sub block text-[10px] uppercase font-bold tracking-wider">Correo Electrónico</span>
-          <span className="text-text-main block mt-1 text-sm font-semibold truncate" title={patient.email}>{patient.email || "Sin correo"}</span>
-        </div>
-        <div className="bg-bg-base/50 p-3 rounded-2xl border border-brand-sand/30">
-          <span className="text-text-sub block text-[10px] uppercase font-bold tracking-wider">Obra Social / Prepaga</span>
-          <span className="text-text-main block mt-1 text-sm font-semibold">
-            {patient.healthInsurance ? `${patient.healthInsurance} (N° ${patient.affiliateNumber || "—"})` : "Particular"}
+      {/* Quick Personal Information Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 text-xs">
+        <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
+          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+            Teléfono de contacto
+          </span>
+          <span
+            data-sensitive
+            className="text-ink block mt-1 font-mono font-medium"
+          >
+            {patient.phone || "—"}
           </span>
         </div>
-        <div className="bg-bg-base/50 p-3 rounded-2xl border border-brand-sand/30">
-          <span className="text-text-sub block text-[10px] uppercase font-bold tracking-wider">Dirección Física</span>
-          <span className="text-text-main block mt-1 text-sm font-semibold truncate" title={patient.address}>{patient.address || "—"}</span>
+
+        <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
+          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+            Correo electrónico
+          </span>
+          <span
+            data-sensitive
+            className="text-ink block mt-1 font-medium truncate"
+            title={patient.email}
+          >
+            {patient.email || "Sin correo"}
+          </span>
+        </div>
+
+        <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
+          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+            Obra social o prepaga
+          </span>
+          <span data-sensitive className="text-ink block mt-1 font-medium truncate">
+            {patient.healthInsurance
+              ? `${patient.healthInsurance} ${
+                  patient.affiliateNumber ? `(N° ${patient.affiliateNumber})` : ""
+                }`
+              : "Particular"}
+          </span>
+        </div>
+
+        <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
+          <span className="text-ink-sub block text-[10px] uppercase font-semibold tracking-wider">
+            Domicilio
+          </span>
+          <span
+            data-sensitive
+            className="text-ink block mt-1 font-medium truncate"
+            title={patient.address}
+          >
+            {patient.address || "—"}
+          </span>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

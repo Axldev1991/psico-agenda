@@ -45,7 +45,7 @@ export function MovementRow({
       {/* Preview tag */}
       <div className="col-span-1 sm:col-span-4 flex justify-center items-center">
         <span
-          className="px-2.5 py-0.5 rounded-full text-xs font-medium select-none truncate max-w-[160px] border"
+          className="px-2.5 py-0.5 rounded-full text-xs font-medium select-none truncate max-w-40 border"
           style={{
             backgroundColor: clinicalTag.bg,
             color: clinicalTag.text,

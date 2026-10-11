@@ -83,7 +83,7 @@ export function DevLogsConsole() {
     <aside
       aria-label="Consola de desarrollo"
       className={`fixed bottom-0 right-0 z-50 transition-all duration-200 ${
-        isExpanded ? "w-full md:w-[600px] h-96" : "w-64 h-10"
+        isExpanded ? "w-full md:w-150 h-96" : "w-64 h-10"
       } bg-[#182026] text-neutral-200 border-t border-l border-neutral-700 shadow-2xl rounded-tl-xl flex flex-col font-mono text-xs`}
     >
       {/* Console Top Header */}

@@ -3,8 +3,9 @@
 import { useState, useMemo } from "react";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
-import { extractHighlights, HighlightedSnippet } from "../../domain/patient.utils";
+import { extractHighlights } from "../../domain/patient.utils";
 import { useSettings } from "../hooks/useSettings";
+import { Icon } from "./common/Icon";
 
 interface PatientHighlightsProps {
   patient: Patient;
@@ -72,7 +73,7 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
     }
 
     return {
-      borderLeft: `5px solid ${border}`,
+      borderLeft: `4px solid ${border}`,
       backgroundColor: bg,
     };
   };
@@ -80,29 +81,39 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Buscador e Info */}
-      <div className="bg-bg-card border border-brand-sand rounded-3xl p-5 shadow-sm space-y-3">
+      <div className="bg-surface border border-line rounded-3xl p-5 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="font-title font-bold text-base text-text-main">
-              ⭐ Trazabilidad de Puntuaciones
-            </h3>
-            <p className="text-[10px] text-text-sub font-semibold mt-0.5">
-              Visualizá e indexá todos los textos resaltados dentro de las evoluciones clínicas de este paciente.
-            </p>
+          <div className="flex items-start gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary mt-0.5">
+              <Icon name="file" size={16} />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-ink">
+                Trazabilidad de Puntuaciones
+              </h3>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Visualizá e indexá todos los textos resaltados dentro de las evoluciones clínicas de este paciente.
+              </p>
+            </div>
           </div>
-          <span className="text-[10px] font-bold bg-brand-indigo/10 text-brand-indigo px-2.5 py-1 rounded-full border border-brand-indigo/20 self-start sm:self-auto select-none">
+          <span className="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 self-start sm:self-auto select-none">
             Total destacados: {highlights.length}
           </span>
         </div>
 
         {highlights.length > 0 && (
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar marcaciones por palabra clave o tipo de puntuación..."
-            className="w-full bg-bg-base/40 border border-brand-sand/60 hover:border-brand-sand focus:border-brand-indigo focus:bg-white focus:outline-none px-4 py-2.5 rounded-2xl text-xs font-semibold text-text-main transition-all"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar marcaciones por palabra clave o tipo de puntuación..."
+              className="w-full bg-sand-light/40 border border-line hover:border-line-focus focus:border-primary focus:bg-surface focus:outline-none pl-9 pr-4 py-2 rounded-xl text-xs font-medium text-ink placeholder:text-ink-muted/50 transition-all"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
+              <Icon name="search" size={13} />
+            </div>
+          </div>
         )}
       </div>
 
@@ -114,44 +125,46 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
             return (
               <div
                 key={`${highlight.sessionUuid}-${index}`}
-                className="bg-bg-card border border-brand-sand/60 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 transition-shadow hover:shadow-md"
+                className="bg-surface border border-line rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 transition-shadow hover:shadow-sm"
                 style={resolveHighlightStyle(highlight.color)}
               >
                 <div className="flex-1 space-y-1.5">
-                  <blockquote className="text-xs font-semibold text-text-main italic leading-relaxed">
+                  <blockquote className="text-xs font-medium text-ink italic leading-relaxed">
                     "{highlight.text}"
                   </blockquote>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-text-sub font-bold">
-                    <span className="text-brand-indigo uppercase tracking-wider bg-brand-indigo/5 px-2 py-0.5 rounded-md">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ink-muted font-medium">
+                    <span className="text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-md font-semibold text-[9px]">
                       Puntuación: {puncLabel}
                     </span>
-                    <span className="text-brand-sand/60">•</span>
+                    <span className="text-line">•</span>
                     <span>Sesión N° {highlight.sessionNumber}</span>
-                    <span className="text-brand-sand/60">•</span>
+                    <span className="text-line">•</span>
                     <span>{highlight.sessionDate} hs</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => onJumpToSession(highlight.sessionUuid)}
-                  className="bg-white hover:bg-brand-sand/15 text-brand-indigo border border-brand-sand/40 font-title font-bold text-[10px] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm hover:shadow self-end md:self-auto flex items-center gap-1"
+                  className="bg-surface hover:bg-sand-light text-primary border border-line font-semibold text-[10px] px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-sm self-end md:self-auto inline-flex items-center gap-1.5"
                   type="button"
                 >
-                  <span>👁️</span> Ver en sesión
+                  <Icon name="eye" size={12} /> Ver en sesión
                 </button>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="bg-bg-card border border-brand-sand rounded-3xl p-8 text-center space-y-2">
-          <span className="text-3xl block">⭐</span>
-          <h4 className="font-title font-bold text-xs text-text-main">
+        <div className="bg-surface border border-line rounded-3xl p-8 text-center space-y-2">
+          <div className="w-10 h-10 rounded-2xl bg-sand-light flex items-center justify-center mx-auto text-ink-muted">
+            <Icon name="file" size={20} />
+          </div>
+          <h4 className="font-serif font-bold text-sm text-ink">
             {highlights.length === 0 
               ? "Sin marcaciones registradas" 
               : "No se encontraron marcaciones que coincidan con la búsqueda"}
           </h4>
-          <p className="text-[10px] text-text-sub font-medium max-w-sm mx-auto leading-relaxed">
+          <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
             {highlights.length === 0 
               ? "Para destacar conceptos clave, objetivos o alertas, seleccioná texto en las evoluciones y aplicales un resaltador de color en la barra de herramientas del editor." 
               : "Probá con otra palabra clave o borrá el filtro de búsqueda."}
