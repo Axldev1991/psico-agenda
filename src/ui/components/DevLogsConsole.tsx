@@ -2,10 +2,35 @@
 
 import React, { useState, useEffect } from "react";
 import { driveLogger, LogEntry } from "../../infrastructure/drive/drive-logger";
+import { seedDemoData } from "../../infrastructure/db/seed";
+import { Icon } from "./common/Icon";
 
 export function DevLogsConsole() {
   const [logs, setLogs] = useState<LogEntry[]>(() => driveLogger.getLogs());
-  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [isDevVisible, setIsDevVisible] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [seedState, setSeedState] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  useEffect(() => {
+    // 1. Check if ?dev=1 or ?dev=true is in URL
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("dev")) {
+        setIsDevVisible(true);
+      }
+    }
+
+    // 2. Keyboard shortcut Ctrl + Alt + D
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setIsDevVisible((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = driveLogger.subscribe(() => {
@@ -13,6 +38,8 @@ export function DevLogsConsole() {
     });
     return () => unsubscribe();
   }, []);
+
+  if (!isDevVisible) return null;
 
   const handleCopyAll = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -38,82 +65,134 @@ export function DevLogsConsole() {
     driveLogger.clear();
   };
 
+  const handleSeed = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSeedState("loading");
+    try {
+      await seedDemoData();
+      setSeedState("success");
+      setTimeout(() => setSeedState("idle"), 2500);
+    } catch (err) {
+      console.error(err);
+      setSeedState("error");
+      setTimeout(() => setSeedState("idle"), 2500);
+    }
+  };
+
   return (
-    <div
-      className={`fixed bottom-0 right-0 z-50 transition-all duration-300 ${
-        isConsoleOpen ? "w-full md:w-150 h-96" : "w-48 h-10"
-      } bg-[#1E1E1E] text-white border-t border-l border-brand-sand shadow-2xl rounded-tl-xl flex flex-col font-mono text-[11px]`}
+    <aside
+      aria-label="Consola de desarrollo"
+      className={`fixed bottom-0 right-0 z-50 transition-all duration-200 ${
+        isExpanded ? "w-full md:w-[600px] h-96" : "w-64 h-10"
+      } bg-[#182026] text-neutral-200 border-t border-l border-neutral-700 shadow-2xl rounded-tl-xl flex flex-col font-mono text-xs`}
     >
+      {/* Console Top Header */}
       <div
-        onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-        className="h-10 px-4 flex items-center justify-between cursor-pointer border-b border-neutral-700 bg-neutral-900 rounded-tl-xl hover:bg-neutral-800 transition-colors select-none"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="h-10 px-3.5 flex items-center justify-between cursor-pointer border-b border-neutral-700/80 bg-[#12181D] rounded-tl-xl hover:bg-[#1A2228] transition-colors select-none"
       >
-        <span className="font-bold flex items-center gap-2">
-          ⚙️ Consola Dev ({logs.length} logs)
-        </span>
-        <span className="text-[10px] text-text-sub font-bold">
-          {isConsoleOpen ? "▼ Minimizar" : "▲ Expandir"}
-        </span>
+        <div className="flex items-center gap-2 text-neutral-300 font-semibold">
+          <Icon name="terminal" size={15} />
+          <span>Consola Dev ({logs.length})</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-neutral-400">
+            {isExpanded ? "Minimizar" : "Expandir"}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDevVisible(false);
+            }}
+            title="Cerrar consola (Ctrl+Alt+D para reabrir)"
+            className="p-1 hover:text-white rounded hover:bg-neutral-800 transition-colors"
+          >
+            <Icon name="x" size={13} />
+          </button>
+        </div>
       </div>
 
-      {isConsoleOpen && (
+      {isExpanded && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex justify-between items-center bg-neutral-950 px-3 py-1.5 border-b border-neutral-800">
-            <span className="text-[9px] text-neutral-400 font-bold">
-              LOGS DE GOOGLE DRIVE API
-            </span>
-            <div className="flex gap-2">
+          {/* Action Toolbar */}
+          <div className="p-2 border-b border-neutral-800 flex items-center justify-between bg-[#151D23] gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={handleCopyAll}
-                className="bg-brand-indigo/20 hover:bg-brand-indigo/40 text-brand-indigo border border-brand-indigo/30 px-2 py-0.5 rounded text-[10px] cursor-pointer font-bold transition-colors"
-                title="Copiar todos los logs al portapapeles"
+                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
               >
-                📋 Copiar Todo
+                <Icon name="download" size={12} />
+                <span>Copiar</span>
               </button>
               <button
+                type="button"
                 onClick={handleClear}
-                className="bg-status-cancelled-light hover:bg-status-cancelled-light/80 text-status-cancelled-dark border border-status-cancelled-dark/30 px-2 py-0.5 rounded text-[10px] cursor-pointer font-bold transition-colors"
+                className="px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
               >
-                🗑️ Limpiar
+                <Icon name="x" size={12} />
+                <span>Limpiar</span>
               </button>
             </div>
+
+            {/* Seed Demo Action Button */}
+            <button
+              type="button"
+              onClick={handleSeed}
+              disabled={seedState === "loading"}
+              className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-surface rounded text-[11px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Icon name="plus" size={12} />
+              <span>
+                {seedState === "loading"
+                  ? "Sembrando..."
+                  : seedState === "success"
+                  ? "¡Sembrado!"
+                  : seedState === "error"
+                  ? "Error"
+                  : "Cargar Demo"}
+              </span>
+            </button>
           </div>
 
-          <div className="flex-1 p-3 overflow-y-auto space-y-2 bg-[#121212]">
+          {/* Log Stream Output */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 select-text bg-[#0E1317]">
             {logs.length === 0 ? (
-              <div className="text-neutral-500 text-center py-8">
-                No hay logs registrados en esta sesión.
+              <div className="text-neutral-500 italic p-2 text-center">
+                Sin registros activos en esta sesión.
               </div>
             ) : (
-              logs.map((log, index) => {
-                let colorClass = "text-neutral-300";
-                if (log.type === "request") colorClass = "text-yellow-200";
-                else if (log.type === "response") colorClass = "text-green-300";
-                else if (log.type === "error") colorClass = "text-red-400 font-bold";
+              logs.map((log, idx) => {
+                const colorMap: Record<LogEntry["type"], string> = {
+                  info: "text-blue-400",
+                  request: "text-amber-400",
+                  response: "text-emerald-400",
+                  error: "text-rose-400 font-semibold",
+                };
 
                 return (
-                  <div key={index} className="border-b border-neutral-900 pb-1.5 last:border-0">
-                    <div className="flex items-start gap-2">
-                      <span className="text-neutral-600 shrink-0 select-none">
-                        [{log.timestamp}]
+                  <div
+                    key={`${log.timestamp}-${idx}`}
+                    className="border-b border-neutral-800/60 pb-1.5 leading-relaxed text-[11px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">
+                        {new Date(log.timestamp).toLocaleTimeString("es-AR")}
                       </span>
                       <span
-                        className={`shrink-0 select-none px-1 rounded text-[9px] uppercase font-bold ${
-                          log.type === "request"
-                            ? "bg-yellow-950/40 text-yellow-300 border border-yellow-800/30"
-                            : log.type === "response"
-                            ? "bg-green-950/40 text-green-300 border border-green-800/30"
-                            : log.type === "error"
-                            ? "bg-red-950/40 text-red-300 border border-red-800/30"
-                            : "bg-neutral-800 text-neutral-300"
+                        className={`uppercase font-bold text-[9px] px-1 rounded ${
+                          colorMap[log.type] || "text-neutral-300"
                         }`}
                       >
                         {log.type}
                       </span>
-                      <span className={`break-all ${colorClass}`}>{log.message}</span>
+                      <span className="text-neutral-200">{log.message}</span>
                     </div>
+
                     {log.details && (
-                      <pre className="mt-1 ml-16 p-1.5 bg-neutral-950 rounded text-[9px] text-neutral-400 overflow-x-auto max-w-full whitespace-pre-wrap">
+                      <pre className="mt-1 text-neutral-400 bg-black/40 p-1.5 rounded overflow-x-auto text-[10px]">
                         {typeof log.details === "string"
                           ? log.details
                           : JSON.stringify(log.details, null, 2)}
@@ -126,6 +205,6 @@ export function DevLogsConsole() {
           </div>
         </div>
       )}
-    </div>
+    </aside>
   );
 }

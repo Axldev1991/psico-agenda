@@ -38,6 +38,28 @@ function HomeContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
 
+  // Inactivity auto-blur: shield sensitive records after 5 minutes of no input
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutos
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsBlurred(true);
+      }, INACTIVITY_MS);
+    };
+
+    const events = ["mousedown", "mousemove", "keydown", "touchstart", "scroll"];
+    events.forEach((evt) => window.addEventListener(evt, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+    };
+  }, []);
+
   // Sync recent patient on selection
   useEffect(() => {
     if (selectedPatientForDetail?.uuid) {

@@ -7,6 +7,7 @@ import {
   parseISO, 
   addWeeks, 
   subWeeks,
+  isSameDay,
 } from 'date-fns';
 import { container } from '../../infrastructure/container';
 import { Session, RecurrenceRule } from '../../domain/session.types';
@@ -19,12 +20,42 @@ export type { CalendarSlot };
 const sessionRepo = container.getSessionRepository();
 const patientRepo = container.getPatientRepository();
 
+const BA_TIMEZONE = 'America/Argentina/Buenos_Aires';
+
+function getBuenosAiresDate(): Date {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: BA_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = formatter.format(new Date()).split('-').map(Number);
+    const now = new Date();
+    return new Date(parts[0], parts[1] - 1, parts[2], now.getHours(), now.getMinutes(), now.getSeconds());
+  } catch {
+    return new Date();
+  }
+}
+
 export function useCalendar() {
-  // Estado para la fecha base del calendario (por defecto, hoy)
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Estado para la fecha base del calendario (en zona horaria de Buenos Aires)
+  const [currentDate, setCurrentDate] = useState(() => getBuenosAiresDate());
   
   // Estado local para los feriados de este año
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+
+  // Recalcular día ante cambio de visibilidad de pestaña (ej. pasar la medianoche)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        const todayBa = getBuenosAiresDate();
+        setCurrentDate((prev) => (isSameDay(prev, new Date()) ? todayBa : prev));
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   // Calcular intervalo de la semana (Lunes a Domingo)
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -67,7 +98,7 @@ export function useCalendar() {
   
   const nextWeek = () => setCurrentDate(prev => addWeeks(prev, 1));
   const prevWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
-  const goToToday = () => setCurrentDate(new Date());
+  const goToToday = () => setCurrentDate(getBuenosAiresDate());
 
   const addManualSession = async (sessionData: {
     patientUuid: string;

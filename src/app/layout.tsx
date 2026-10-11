@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Public_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -18,12 +18,19 @@ const publicSans = Public_Sans({
 
 export const metadata: Metadata = {
   title: "PSICO-AGENDA | Sistema de Gestión Clínica",
-  description: "Gestión integral de pacientes, turnos recurrentes e historias clínicas con soberanía absoluta de datos sobre Google Drive.",
+  description:
+    "Gestión integral de pacientes, turnos recurrentes e historias clínicas con soberanía absoluta de datos sobre Google Drive.",
   manifest: "/manifest.json",
   appleWebApp: {
     statusBarStyle: "default",
     title: "PSICO-AGENDA",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="es-AR"
       className={`h-full antialiased font-sans ${newsreader.variable} ${publicSans.variable}`}
     >
       <body className="min-h-full flex flex-col bg-bg-base">{children}</body>
