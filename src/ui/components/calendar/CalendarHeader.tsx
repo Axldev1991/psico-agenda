@@ -32,7 +32,7 @@ export function CalendarHeader({
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-line">
       <div>
         <h1 className="text-3xl font-serif font-medium text-ink tracking-tight">Agenda</h1>
-        <p className="text-xs md:text-sm text-ink-sub mt-0.5 capitalize">{rangeLabel}</p>
+        <p className="text-sm text-ink-sub mt-0.5 capitalize">{rangeLabel}</p>
       </div>
 
       <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
@@ -53,7 +53,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={onGoToToday}
-            className="px-3 py-1 text-xs font-semibold text-ink hover:bg-bg-base rounded-md transition-colors cursor-pointer"
+            className="px-3 py-1 text-sm font-semibold text-ink hover:bg-bg-base rounded-md transition-colors cursor-pointer"
           >
             Hoy
           </button>
@@ -71,7 +71,7 @@ export function CalendarHeader({
         <button
           type="button"
           onClick={onOpenSessionModal}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
         >
           <Icon name="plus" size={16} />
           <span>Programar turno</span>

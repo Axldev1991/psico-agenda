@@ -43,7 +43,7 @@ export function PatientSearchFilters({
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="Buscar por palabra, frase o tema en el expediente..."
-            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-base text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
@@ -51,7 +51,7 @@ export function PatientSearchFilters({
           <select
             value={selectedMovementFilter}
             onChange={(e) => onMovementFilterChange(e.target.value)}
-            className="bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
+            className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
           >
             <option value="">Todos los movimientos</option>
             {movementConfigs.map((m) => (
@@ -64,7 +64,7 @@ export function PatientSearchFilters({
           <select
             value={selectedPunctuationFilter}
             onChange={(e) => onPunctuationFilterChange(e.target.value)}
-            className="bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
+            className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
           >
             <option value="">Todas las puntuaciones</option>
             {punctuationConfigs.map((p) => (
@@ -78,7 +78,7 @@ export function PatientSearchFilters({
             <button
               type="button"
               onClick={onClearFilters}
-              className="text-xs text-primary hover:text-primary-hover font-semibold transition-colors cursor-pointer whitespace-nowrap px-1"
+              className="text-sm text-primary hover:text-primary-hover font-semibold transition-colors cursor-pointer whitespace-nowrap px-1"
             >
               Limpiar filtros
             </button>

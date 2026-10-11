@@ -36,14 +36,14 @@ export function SessionSidebar({
       className="lg:col-span-3 bg-surface border border-line rounded-2xl p-4 shadow-xs space-y-3 max-h-[75vh] overflow-y-auto"
     >
       <div>
-        <h3 className="font-semibold text-sm text-ink">Índice de sesiones</h3>
-        <p className="text-xs text-ink-sub mt-0.5">
+        <h3 className="font-semibold text-base text-ink">Índice de sesiones</h3>
+        <p className="text-sm text-ink-sub mt-0.5">
           Elegí una sesión para desplazarte a sus notas
         </p>
       </div>
 
       {sortedSessions.length === 0 ? (
-        <p className="text-xs text-ink-sub/70 italic py-4">
+        <p className="text-sm text-ink-sub/70 italic py-4">
           No hay sesiones registradas.
         </p>
       ) : (
@@ -90,7 +90,7 @@ export function SessionSidebar({
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-sm font-semibold">
+                  <span className="text-base font-semibold">
                     Sesión N° {sessionNumber}
                   </span>
                   <span
@@ -111,13 +111,13 @@ export function SessionSidebar({
                 </div>
 
                 {session.description && (
-                  <p className="text-xs text-ink-sub line-clamp-1">
+                  <p className="text-sm text-ink-sub line-clamp-1">
                     {session.description}
                   </p>
                 )}
 
                 <div className="flex items-center justify-between mt-0.5">
-                  <span className="text-xs text-ink-sub font-mono">
+                  <span className="text-sm text-ink-sub font-mono">
                     {dateFormatted} hs
                   </span>
                   {session.colorTag && (

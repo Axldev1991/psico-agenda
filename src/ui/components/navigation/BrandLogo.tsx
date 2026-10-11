@@ -27,7 +27,7 @@ export function BrandLogo({
           <span className="font-serif font-semibold text-ink text-base tracking-tight">
             Psico-Agenda
           </span>
-          <span className="font-sans text-xs text-ink-sub">
+          <span className="font-sans text-sm text-ink-sub">
             Gestión clínica
           </span>
         </div>

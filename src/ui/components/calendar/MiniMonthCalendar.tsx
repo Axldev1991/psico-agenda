@@ -96,7 +96,7 @@ export function MiniMonthCalendar({
         >
           <Icon name="chev-l" size={15} />
         </button>
-        <span className="text-xs font-semibold text-ink capitalize">
+        <span className="text-sm font-semibold text-ink capitalize">
           {format(viewMonth, "MMMM 'de' yyyy", { locale: es })}
         </span>
         <button
@@ -150,7 +150,7 @@ export function MiniMonthCalendar({
               key={idx}
               type="button"
               onClick={() => onSelectDate(day)}
-              className={`h-7 w-full flex flex-col items-center justify-center relative rounded-md text-xs transition-colors cursor-pointer ${cellBgClass}`}
+              className={`h-7 w-full flex flex-col items-center justify-center relative rounded-md text-sm transition-colors cursor-pointer ${cellBgClass}`}
             >
               <span className={textClass}>{format(day, "d")}</span>
               {hasSession && (

@@ -19,12 +19,12 @@ export function PatientEmptyState({
       <div className="p-3 bg-bg-base text-ink-sub rounded-xl mb-3">
         <Icon name={hasQuery ? "search" : "folder"} size={26} />
       </div>
-      <h3 className="text-base font-semibold text-ink">
+      <h3 className="text-lg font-semibold text-ink">
         {hasQuery
           ? `No encontramos pacientes con "${searchTerm.trim()}"`
           : "No hay pacientes en esta lista"}
       </h3>
-      <p className="text-xs text-ink-sub mt-1 max-w-sm">
+      <p className="text-base text-ink-sub mt-1 max-w-sm">
         {hasQuery
           ? "Revisá cómo está escrito el nombre o probá buscar en la pestaña “Todos”."
           : "Cuando registres nuevos pacientes o cambies su estado clínico, van a aparecer acá."}
@@ -34,9 +34,9 @@ export function PatientEmptyState({
         <button
           type="button"
           onClick={onOpenPatientModal}
-          className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-base font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
         >
-          <Icon name="plus" size={15} />
+          <Icon name="plus" size={16} />
           <span>Crear tu primer paciente</span>
         </button>
       )}

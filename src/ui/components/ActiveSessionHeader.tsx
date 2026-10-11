@@ -58,7 +58,7 @@ export function ActiveSessionHeader({
     <div className="bg-surface border border-line border-l-4 border-l-primary rounded-2xl p-4 shadow-xs space-y-3 select-none">
       {/* Row 1: Session number, Day, Time, Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
           <span className="font-semibold text-primary">Sesión N°:</span>
           <span className="font-mono font-medium">{selectedSessionNumber}</span>
           <span className="text-line-control">|</span>
@@ -94,7 +94,7 @@ export function ActiveSessionHeader({
       <div className="flex items-center gap-2.5 w-full">
         <label
           htmlFor="session-topic-input"
-          className="text-xs text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
+          className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
         >
           Tema:
         </label>
@@ -109,7 +109,7 @@ export function ActiveSessionHeader({
             }
           }}
           placeholder="Escribí el tema o motivo de consulta..."
-          className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+          className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
         />
       </div>
 
@@ -117,7 +117,7 @@ export function ActiveSessionHeader({
 
       {/* Row 3: Movement pills */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 w-full">
-        <span className="text-xs text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
+        <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
           Movimiento:
         </span>
         <div className="flex flex-wrap gap-1.5 w-full">

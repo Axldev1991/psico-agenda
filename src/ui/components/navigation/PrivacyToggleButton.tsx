@@ -22,7 +22,7 @@ export function PrivacyToggleButton({
       onClick={onToggle}
       aria-pressed={isBlurred}
       title={isBlurred ? "Datos difuminados (clic para revelar)" : "Ocultar datos de pacientes"}
-      className={`rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 font-sans text-xs font-medium ${
+      className={`rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 font-sans text-sm font-semibold ${
         isBlurred
           ? "bg-primary-tint text-primary border border-primary/40 shadow-xs"
           : "bg-surface hover:bg-bg-base text-ink border border-line-control"

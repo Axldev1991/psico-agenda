@@ -134,7 +134,7 @@ export function AppSidebar({
         {recentPatients.length > 0 && (
           <div className="p-3 border-t border-line space-y-2">
             <h4
-              className={`text-xs font-semibold text-ink-sub px-3 ${
+              className={`text-sm font-semibold text-ink-sub px-3 ${
                 isSidebarCollapsed ? "md:text-center md:px-0 text-xs" : ""
               }`}
             >
@@ -178,7 +178,7 @@ export function AppSidebar({
                       setSelectedPatientForDetail(p);
                       setActiveTab("patients");
                     }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs text-ink hover:text-primary hover:bg-primary-tint/60 transition-colors cursor-pointer truncate ${
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm text-ink hover:text-primary hover:bg-primary-tint/60 transition-colors cursor-pointer truncate ${
                       isBlurred ? "blur-xs select-none" : ""
                     }`}
                     title={p.fullName}

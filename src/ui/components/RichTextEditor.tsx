@@ -223,18 +223,18 @@ export function RichTextEditor({
               <button
                 type="button"
                 onClick={() => setFontSize((prev) => Math.max(14, prev - 1))}
-                className="h-7 w-7 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
+                className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-sm"
                 title="Achicar letra (Zoom Out)"
               >
                 A⁻
               </button>
-              <span className="text-xs font-mono font-semibold text-ink-muted min-w-8 text-center">
+              <span className="text-sm font-mono font-semibold text-ink min-w-9 text-center">
                 {fontSize}px
               </span>
               <button
                 type="button"
                 onClick={() => setFontSize((prev) => Math.min(32, prev + 1))}
-                className="h-7 w-7 rounded-lg hover:bg-sand-light text-ink-muted font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
+                className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-sm"
                 title="Agrandar letra (Zoom In)"
               >
                 A⁺

@@ -35,7 +35,7 @@ export function PatientListHeader({
         <h2 className="text-xl font-serif font-medium text-ink tracking-tight">
           Fichero de pacientes
         </h2>
-        <p className="text-xs text-ink-sub mt-0.5">{subtitle}</p>
+        <p className="text-sm text-ink-sub mt-0.5">{subtitle}</p>
       </div>
 
       <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -43,14 +43,14 @@ export function PatientListHeader({
         <label className="relative flex-1 sm:w-64">
           <span className="sr-only">Buscar paciente</span>
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-ink-sub">
-            <Icon name="search" size={15} />
+            <Icon name="search" size={16} />
           </span>
           <input
             type="search"
             placeholder="Buscar paciente..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg pl-9 pr-3 py-2 text-base text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary transition-colors"
           />
         </label>
 
@@ -58,9 +58,9 @@ export function PatientListHeader({
         <button
           type="button"
           onClick={onOpenPatientModal}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-base font-semibold rounded-lg shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
         >
-          <Icon name="plus" size={15} />
+          <Icon name="plus" size={16} />
           <span>Nuevo paciente</span>
         </button>
       </div>

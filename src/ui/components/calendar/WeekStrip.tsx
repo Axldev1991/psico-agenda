@@ -56,7 +56,7 @@ export function WeekStrip({
             aria-pressed={isSelected}
             className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col items-center justify-center relative cursor-pointer ${containerClass}`}
           >
-            <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1 ${subTextClass}`}>
+            <span className={`text-sm font-semibold uppercase tracking-wider flex items-center gap-1 ${subTextClass}`}>
               {format(day, "eee", { locale: es })}
               {isTodayDay && (
                 <span

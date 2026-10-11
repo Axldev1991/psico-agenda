@@ -61,12 +61,12 @@ export function DriveCard({
     }
 
     return (
-      <div className="bg-warn-tint border border-warn/30 rounded-xl p-3 text-xs space-y-2">
+      <div className="bg-warn-tint border border-warn/30 rounded-xl p-3 text-sm space-y-2">
         <div className="flex items-start gap-2 text-warn">
           <Icon name="alert" size={16} className="shrink-0 mt-0.5 text-warn" />
           <div className="leading-tight">
             <span className="font-semibold block text-ink">Drive sin conectar</span>
-            <span className="text-xs text-ink-sub">
+            <span className="text-sm text-ink-sub">
               Los turnos no se guardan hasta conectar tu cuenta.
             </span>
           </div>
@@ -74,7 +74,7 @@ export function DriveCard({
         <button
           onClick={onConnect}
           disabled={loading}
-          className="w-full bg-white hover:bg-surface border border-line-control text-ink text-xs font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          className="w-full bg-white hover:bg-surface border border-line-control text-ink text-sm font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
         >
           <Icon name="cloud" size={14} />
           <span>Conectar Drive</span>
@@ -113,8 +113,8 @@ export function DriveCard({
             aria-hidden="true"
           />
           <div className="flex flex-col leading-tight overflow-hidden">
-            <span className="text-xs font-semibold text-ink">Drive conectado</span>
-            <span className="text-xs text-ink-sub truncate">
+            <span className="text-sm font-semibold text-ink">Drive conectado</span>
+            <span className="text-sm text-ink-sub truncate">
               {syncStatus === "syncing"
                 ? "Sincronizando..."
                 : lastSynced
@@ -130,7 +130,7 @@ export function DriveCard({
             type="button"
             onClick={onSync}
             disabled={loading}
-            className="flex-1 bg-surface hover:bg-primary-tint border border-line-control hover:border-primary text-ink text-xs font-medium py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="flex-1 bg-surface hover:bg-primary-tint border border-line-control hover:border-primary text-ink text-sm font-medium py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <Icon
               name="refresh"
@@ -167,7 +167,7 @@ export function DriveCard({
               setIsMenuOpen(false);
               onPreloadOffline();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-ink hover:bg-primary-tint flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm font-medium text-ink hover:bg-primary-tint flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Icon name="download" size={15} className="text-ink-sub" />
             <span>Descargar copia sin conexión</span>
@@ -180,7 +180,7 @@ export function DriveCard({
               setIsMenuOpen(false);
               onDownloadLogs();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-ink hover:bg-primary-tint flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm font-medium text-ink hover:bg-primary-tint flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Icon name="list" size={15} className="text-ink-sub" />
             <span>Ver registros de sincronización</span>
@@ -195,7 +195,7 @@ export function DriveCard({
               setIsMenuOpen(false);
               onDisconnect();
             }}
-            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium text-err hover:bg-err-tint flex items-center gap-2 transition-colors cursor-pointer"
+            className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm font-medium text-err hover:bg-err-tint flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Icon name="logout" size={15} className="text-err" />
             <span>Desconectar Drive</span>

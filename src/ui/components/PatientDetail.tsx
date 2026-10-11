@@ -179,7 +179,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
               <div className="flex border-b border-line bg-surface p-1 rounded-t-3xl gap-4 px-6 pt-3 shadow-xs">
                 <button
                   onClick={() => setActiveTab("timeline")}
-                  className={`pb-2.5 text-xs font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
+                  className={`pb-2.5 text-base font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === "timeline"
                       ? "border-primary text-primary"
                       : "border-transparent text-ink-muted hover:text-ink"
@@ -190,7 +190,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                 </button>
                 <button
                   onClick={() => setActiveTab("ceci")}
-                  className={`pb-2.5 text-xs font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
+                  className={`pb-2.5 text-base font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === "ceci"
                       ? "border-primary text-primary"
                       : "border-transparent text-ink-muted hover:text-ink"
@@ -225,11 +225,11 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                         <h3 className="font-serif font-bold text-base text-ink">
                           Expediente Clínico Unificado
                         </h3>
-                        <p className="text-xs text-ink-muted mt-0.5">
+                        <p className="text-sm text-ink-sub mt-0.5">
                           Formato compatible nativo con Microsoft Word
                         </p>
                       </div>
-                      <span className="text-xs text-ink-muted/80 font-mono font-medium">
+                      <span className="text-sm text-ink-sub/80 font-mono font-medium">
                         Guardado automático en IndexedDB
                       </span>
                     </div>
@@ -253,7 +253,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                         />
                       </div>
                     ) : (
-                      <div className="text-center py-16 text-xs text-ink-muted font-medium bg-sand-light/30 rounded-2xl border border-dashed border-line">
+                      <div className="text-center py-16 text-base text-ink-sub font-medium bg-bg-base/50 rounded-2xl border border-dashed border-line">
                         No se encontraron sesiones que coincidan con los filtros de búsqueda.
                       </div>
                     )}

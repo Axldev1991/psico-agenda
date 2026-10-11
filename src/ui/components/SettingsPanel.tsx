@@ -120,7 +120,7 @@ export function SettingsPanel() {
         <h1 className="font-serif font-medium text-2xl text-ink tracking-tight">
           Configuración de la clínica
         </h1>
-        <p className="text-xs text-ink-sub mt-1">
+        <p className="text-sm text-ink-sub mt-1">
           Ajustá los nombres y colores de los movimientos clínicos y de las puntuaciones (resaltados del editor de sesiones).
         </p>
       </header>
@@ -138,7 +138,7 @@ export function SettingsPanel() {
         </summary>
 
         <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-xs text-ink-sub font-semibold">
+          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
             <div className="col-span-5">Nombre del movimiento</div>
             <div className="col-span-2 text-center">Color</div>
             <div className="col-span-4 text-center">Vista previa</div>
@@ -182,7 +182,7 @@ export function SettingsPanel() {
         </summary>
 
         <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-xs text-ink-sub font-semibold">
+          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
             <div className="col-span-5">Nombre de la puntuación</div>
             <div className="col-span-2 text-center">Color</div>
             <div className="col-span-4 text-center">Vista previa</div>
@@ -207,7 +207,7 @@ export function SettingsPanel() {
             <button
               type="button"
               onClick={handleAddPunctuation}
-              className="w-full py-2 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-xs font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full py-2 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Icon name="plus" size={14} />
               <span>Agregar puntuación</span>
@@ -222,7 +222,7 @@ export function SettingsPanel() {
           type="button"
           onClick={handleSave}
           disabled={saveStatus === "saving"}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
         >
           {saveStatus === "saving" ? (
             <>

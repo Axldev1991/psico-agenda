@@ -15,14 +15,14 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
         <h3 className="font-semibold text-sm text-ink">
           Ficha del paciente (CECI)
         </h3>
-        <p className="text-xs text-ink-sub mt-0.5">
+        <p className="text-sm text-ink-sub mt-0.5">
           Marco clínico y variables diagnósticas estructuradas
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label htmlFor="ceci-convive" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-convive" className="text-sm font-semibold text-ink block mb-1.5">
             Convive con
           </label>
           <input
@@ -31,12 +31,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciConviveCon || ""}
             onChange={(e) => handleCeciChange("ceciConviveCon", e.target.value)}
             placeholder="Ej: Pareja e hijos, o padres y hermanos..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="ceci-familia" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-familia" className="text-sm font-semibold text-ink block mb-1.5">
             Familia (Estructura familiar)
           </label>
           <textarea
@@ -44,12 +44,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciFamilia || ""}
             onChange={(e) => handleCeciChange("ceciFamilia", e.target.value)}
             placeholder="Describí la composición y dinámica familiar..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
           />
         </div>
 
         <div>
-          <label htmlFor="ceci-ocupacion" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-ocupacion" className="text-sm font-semibold text-ink block mb-1.5">
             Ocupación
           </label>
           <input
@@ -58,12 +58,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciOcupacion || ""}
             onChange={(e) => handleCeciChange("ceciOcupacion", e.target.value)}
             placeholder="Ej: Docente, Diseñador..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div>
-          <label htmlFor="ceci-estudios" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-estudios" className="text-sm font-semibold text-ink block mb-1.5">
             Estudios
           </label>
           <input
@@ -72,12 +72,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciEstudios || ""}
             onChange={(e) => handleCeciChange("ceciEstudios", e.target.value)}
             placeholder="Ej: Universitario completo..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="ceci-tratamientos" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-tratamientos" className="text-sm font-semibold text-ink block mb-1.5">
             Tratamientos anteriores
           </label>
           <textarea
@@ -85,12 +85,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciTratamientosAnteriores || ""}
             onChange={(e) => handleCeciChange("ceciTratamientosAnteriores", e.target.value)}
             placeholder="Detalle de tratamientos psicológicos o psiquiátricos previos..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
           />
         </div>
 
         <div>
-          <label htmlFor="ceci-inicio" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-inicio" className="text-sm font-semibold text-ink block mb-1.5">
             Inicio de consulta
           </label>
           <input
@@ -98,12 +98,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             type="date"
             value={patient.ceciInicioConsulta || ""}
             onChange={(e) => handleCeciChange("ceciInicioConsulta", e.target.value)}
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div>
-          <label htmlFor="ceci-horario" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-horario" className="text-sm font-semibold text-ink block mb-1.5">
             Día y horario habitual
           </label>
           <input
@@ -112,12 +112,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciDiaHorarioAtencion || ""}
             onChange={(e) => handleCeciChange("ceciDiaHorarioAtencion", e.target.value)}
             placeholder="Ej: Miércoles 16:00 hs..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div>
-          <label htmlFor="ceci-frecuencia" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-frecuencia" className="text-sm font-semibold text-ink block mb-1.5">
             Frecuencia del tratamiento
           </label>
           <input
@@ -126,12 +126,12 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciFrecuenciaTratamiento || ""}
             onChange={(e) => handleCeciChange("ceciFrecuenciaTratamiento", e.target.value)}
             placeholder="Ej: Semanal, Quincenal..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label htmlFor="ceci-adicionales" className="text-xs font-semibold text-ink block mb-1">
+          <label htmlFor="ceci-adicionales" className="text-sm font-semibold text-ink block mb-1.5">
             Datos adicionales y observaciones
           </label>
           <textarea
@@ -139,7 +139,7 @@ export function CeciForm({ patient, handleCeciChange }: CeciFormProps) {
             value={patient.ceciDatosAdicionales || ""}
             onChange={(e) => handleCeciChange("ceciDatosAdicionales", e.target.value)}
             placeholder="Notas adicionales relevantes para la admisión o evolución..."
-            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
+            className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors h-24"
           />
         </div>
       </div>

@@ -41,7 +41,7 @@ export function PatientStatusTabs({
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChangeTab(tab.key)}
-            className={`pb-2.5 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               isActive
                 ? "border-primary text-primary"
                 : "border-transparent text-ink-sub hover:text-ink"

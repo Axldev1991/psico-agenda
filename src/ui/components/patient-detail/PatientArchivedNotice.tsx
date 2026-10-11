@@ -22,7 +22,7 @@ export function PatientArchivedNotice({
           <h3 className="font-semibold text-ink text-base">
             Descargando expediente completo de Drive...
           </h3>
-          <p className="text-xs text-ink-sub">
+          <p className="text-sm text-ink-sub">
             Sincronizando evolución clínica y sesiones previas.
           </p>
         </div>
@@ -34,11 +34,11 @@ export function PatientArchivedNotice({
           <h3 className="font-serif font-medium text-lg text-err">
             No se pudo descargar el historial clínico
           </h3>
-          <p className="text-xs text-ink-sub max-w-md mx-auto">{downloadError}</p>
+          <p className="text-sm text-ink-sub max-w-md mx-auto">{downloadError}</p>
           <button
             type="button"
             onClick={onRetryDownload}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer mt-2"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer mt-2"
           >
             <Icon name="refresh" size={14} />
             <span>Reintentar descarga</span>
@@ -52,11 +52,11 @@ export function PatientArchivedNotice({
           <h3 className="font-serif font-medium text-lg text-ink">
             Historial clínico archivado
           </h3>
-          <p className="text-xs text-ink-sub max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-ink-sub max-w-md mx-auto leading-relaxed">
             Este expediente fue archivado localmente para optimizar el almacenamiento del navegador.
             Conectá tu cuenta de Google Drive para descargarlo.
           </p>
-          <div className="bg-bg-base/70 border border-line rounded-xl p-3 text-xs text-ink-sub max-w-sm mx-auto">
+          <div className="bg-bg-base/70 border border-line rounded-xl p-3 text-sm text-ink-sub max-w-sm mx-auto">
             {typeof window !== "undefined" && navigator.onLine
               ? "Conexión detectada. Iniciá sesión en Drive desde la barra lateral."
               : "Sin conexión a internet detectada."}

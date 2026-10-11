@@ -91,7 +91,7 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
               <h3 className="font-serif font-bold text-base text-ink">
                 Trazabilidad de Puntuaciones
               </h3>
-              <p className="text-xs text-ink-muted mt-0.5">
+              <p className="text-sm text-ink-sub mt-0.5">
                 Visualizá e indexá todos los textos resaltados dentro de las evoluciones clínicas de este paciente.
               </p>
             </div>
@@ -129,10 +129,10 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
                 style={resolveHighlightStyle(highlight.color)}
               >
                 <div className="flex-1 space-y-1.5">
-                  <blockquote className="text-sm font-medium text-ink italic leading-relaxed">
+                  <blockquote className="text-base font-medium text-ink italic leading-relaxed">
                     "{highlight.text}"
                   </blockquote>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted font-medium">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-sub font-medium">
                     <span className="text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-md font-semibold text-xs">
                       Puntuación: {puncLabel}
                     </span>
@@ -145,7 +145,7 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
 
                 <button
                   onClick={() => onJumpToSession(highlight.sessionUuid)}
-                  className="bg-surface hover:bg-sand-light text-primary border border-line font-semibold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-sm self-end md:self-auto inline-flex items-center gap-1.5"
+                  className="bg-surface hover:bg-sand-light text-primary border border-line font-semibold text-sm px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs hover:shadow-sm self-end md:self-auto inline-flex items-center gap-1.5"
                   type="button"
                 >
                   <Icon name="eye" size={13} /> Ver en sesión
@@ -164,7 +164,7 @@ export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: 
               ? "Sin marcaciones registradas" 
               : "No se encontraron marcaciones que coincidan con la búsqueda"}
           </h4>
-          <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
+          <p className="text-sm text-ink-sub max-w-sm mx-auto leading-relaxed">
             {highlights.length === 0 
               ? "Para destacar conceptos clave, objetivos o alertas, seleccioná texto en las evoluciones y aplicales un resaltador de color en la barra de herramientas del editor." 
               : "Probá con otra palabra clave o borrá el filtro de búsqueda."}

@@ -33,7 +33,7 @@ export function MovementRow({
           value={label}
           onChange={(e) => onLabelChange(e.target.value)}
           placeholder="Nombre del movimiento"
-          className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
+          className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary transition-colors"
         />
       </div>
 

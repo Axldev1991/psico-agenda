@@ -104,13 +104,13 @@ export function SessionModal({
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-xs text-ink-sub">
+          <p className="text-sm text-ink-sub">
             Los campos marcados con <span className="text-primary font-bold">*</span> son obligatorios.
           </p>
 
           {/* Patient Selection */}
           <div>
-            <label htmlFor="modal-patient" className="text-xs font-semibold text-ink block mb-1">
+            <label htmlFor="modal-patient" className="text-sm font-semibold text-ink block mb-1.5">
               Paciente <span className="text-primary font-bold">*</span>
             </label>
             <select
@@ -118,7 +118,7 @@ export function SessionModal({
               required
               value={selectedPatientUuid}
               onChange={(e) => setSelectedPatientUuid(e.target.value)}
-              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
+              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
             >
               <option value="">Seleccionar paciente</option>
               {patients.map((p) => (
@@ -137,7 +137,7 @@ export function SessionModal({
               onChange={(e) => setIsRecurrent(e.target.checked)}
               className="mt-0.5 h-4 w-4 accent-primary rounded cursor-pointer"
             />
-            <div className="text-xs">
+            <div className="text-sm">
               <span className="font-semibold text-ink block">¿Es un turno recurrente?</span>
               <span className="text-ink-sub mt-0.5 block leading-relaxed">
                 Los turnos recurrentes se cargan automáticamente todas las semanas, el mismo día y horario, durante todo el año.
@@ -149,7 +149,7 @@ export function SessionModal({
           {isRecurrent && (
             <div
               role="status"
-              className="flex items-center gap-2 p-3 bg-primary-tint/60 text-primary border border-primary/20 rounded-xl text-xs"
+              className="flex items-center gap-2 p-3 bg-primary-tint/60 text-primary border border-primary/20 rounded-xl text-sm"
             >
               <Icon name="repeat" size={16} />
               <span>
@@ -161,7 +161,7 @@ export function SessionModal({
           {/* Date & Time Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label htmlFor="modal-date" className="text-xs font-semibold text-ink block mb-1">
+              <label htmlFor="modal-date" className="text-sm font-semibold text-ink block mb-1.5">
                 {isRecurrent ? "Fecha de inicio *" : "Fecha del turno *"}
               </label>
               <input
@@ -179,7 +179,7 @@ export function SessionModal({
                     setRecurrenceDay(String(rDay));
                   }
                 }}
-                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
               />
             </div>
 
@@ -193,9 +193,9 @@ export function SessionModal({
                 required
                 value={sessionTime}
                 onChange={(e) => setSessionTime(e.target.value)}
-                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
               />
-              <span className="text-xs text-ink-sub mt-1 block">
+              <span className="text-sm text-ink-sub mt-1 block">
                 Formato de 24 horas, ej. 16:00.
               </span>
             </div>
@@ -204,14 +204,14 @@ export function SessionModal({
           {/* Recurrence Day of Week */}
           {isRecurrent && (
             <div>
-              <label htmlFor="modal-day" className="text-xs font-semibold text-ink block mb-1">
+              <label htmlFor="modal-day" className="text-sm font-semibold text-ink block mb-1.5">
                 Día semanal de atención <span className="text-primary font-bold">*</span>
               </label>
               <select
                 id="modal-day"
                 value={recurrenceDay}
                 onChange={(e) => setRecurrenceDay(e.target.value)}
-                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
               >
                 {WEEKDAY_NAMES.map((name, idx) => (
                   <option key={idx} value={String(idx)}>
@@ -227,13 +227,13 @@ export function SessionModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 text-xs font-semibold text-ink-sub hover:text-ink hover:bg-bg-base rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold text-ink-sub hover:text-ink hover:bg-bg-base rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               Programar turno
             </button>

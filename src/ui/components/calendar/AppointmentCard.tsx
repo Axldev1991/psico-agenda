@@ -58,8 +58,8 @@ export function AppointmentCard({
       <div className="flex items-start sm:items-center gap-3.5 min-w-0">
         {/* Time display */}
         <div className="shrink-0 flex flex-col items-center justify-center font-mono text-xs text-ink-sub">
-          <span className="font-semibold text-ink text-sm">{startTime}</span>
-          <span className="text-xs text-ink-sub">{endTime}</span>
+          <span className="font-semibold text-ink text-base">{startTime}</span>
+          <span className="text-sm text-ink-sub">{endTime}</span>
         </div>
 
         {/* State Bar */}
@@ -73,7 +73,7 @@ export function AppointmentCard({
           <div className="flex items-center gap-2">
             <h4
               data-sensitive
-              className={`font-semibold text-sm text-ink truncate ${
+              className={`font-semibold text-base text-ink truncate ${
                 isCancelled ? "line-through text-ink-sub" : ""
               }`}
             >
@@ -89,11 +89,11 @@ export function AppointmentCard({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-ink-sub mt-0.5">
+          <div className="flex items-center gap-1.5 text-sm text-ink-sub mt-0.5">
             <Icon name="pin" size={13} />
             <span>Sesión individual · Presencial</span>
             {slot.holiday && (
-              <span className="text-warn text-xs font-medium ml-1">
+              <span className="text-warn text-sm font-medium ml-1">
                 (Feriado: {slot.holiday.name})
               </span>
             )}
@@ -116,7 +116,7 @@ export function AppointmentCard({
           <button
             type="button"
             onClick={() => onNavigateToPatientDetail(slot.patientUuid)}
-            className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-xs flex items-center gap-1"
+            className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-sm flex items-center gap-1"
             title="Ver ficha del paciente"
           >
             <Icon name="file" size={15} />
@@ -128,7 +128,7 @@ export function AppointmentCard({
             value={slot.status}
             onChange={(e) => onUpdateStatus(slot, e.target.value as any)}
             aria-label="Cambiar estado del turno"
-            className="text-xs bg-bg-base border border-line rounded-lg px-2 py-1 text-ink focus:outline-none focus:border-primary cursor-pointer transition-colors"
+            className="text-sm bg-bg-base border border-line rounded-lg px-2.5 py-1.5 text-ink focus:outline-none focus:border-primary cursor-pointer transition-colors"
           >
             <option value="scheduled">Agendado</option>
             <option value="completed">Atendido</option>

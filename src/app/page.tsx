@@ -142,7 +142,7 @@ function HomeContent() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         {errorMessage && (
-          <div className="bg-status-cancelled-light border-b border-status-cancelled-dark/20 text-status-cancelled-dark px-4 py-2.5 text-xs flex items-center justify-between">
+          <div className="bg-status-cancelled-light border-b border-status-cancelled-dark/20 text-status-cancelled-dark px-4 py-2.5 text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span>⚠️</span>
               <span className="font-semibold">{errorMessage}</span>

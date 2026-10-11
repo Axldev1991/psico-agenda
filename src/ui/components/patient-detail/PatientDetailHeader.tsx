@@ -41,7 +41,7 @@ export function PatientDetailHeader({
           </button>
 
           <div>
-            <span className="text-xs text-ink-sub font-semibold uppercase tracking-wider block">
+            <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider block">
               Historial Clínico
             </span>
             <div className="flex items-center gap-2 mt-0.5">
@@ -63,7 +63,7 @@ export function PatientDetailHeader({
               </span>
 
               {age !== null && (
-                <span data-sensitive className="text-xs text-ink-sub font-medium">
+                <span data-sensitive className="text-sm text-ink-sub font-medium">
                   · {age} años
                 </span>
               )}
@@ -75,7 +75,7 @@ export function PatientDetailHeader({
         <div className="flex flex-wrap items-center gap-2.5">
           <span
             data-sensitive
-            className="font-mono text-xs font-semibold bg-bg-base text-ink border border-line px-3 py-1.5 rounded-lg select-none"
+            className="font-mono text-sm font-semibold bg-bg-base text-ink border border-line px-3 py-1.5 rounded-lg select-none"
           >
             Arancel: {currencyFormatter.format(patient.sessionPrice)}
           </span>
@@ -83,7 +83,7 @@ export function PatientDetailHeader({
           <button
             type="button"
             onClick={() => onEdit(patient)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-base hover:bg-line/40 border border-line text-ink text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-base hover:bg-line/40 border border-line text-ink text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Editar datos personales de la ficha del paciente"
           >
             <Icon name="file" size={14} />
@@ -94,7 +94,7 @@ export function PatientDetailHeader({
             type="button"
             disabled={patient.isHistoryLoaded === false}
             onClick={() => exportFullHistoryToWord(patient)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Exportar todo el historial clínico a un único Word (.doc)"
           >
             <Icon name="download" size={14} />
@@ -104,14 +104,14 @@ export function PatientDetailHeader({
       </div>
 
       {/* Quick Personal Information Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 text-sm">
         <div className="bg-bg-base/60 p-3 rounded-xl border border-line">
           <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Teléfono de contacto
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-mono font-medium text-sm"
+            className="text-ink block mt-1 font-mono font-medium text-base"
           >
             {patient.phone || "—"}
           </span>
@@ -123,7 +123,7 @@ export function PatientDetailHeader({
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-medium truncate text-sm"
+            className="text-ink block mt-1 font-medium truncate text-base"
             title={patient.email}
           >
             {patient.email || "Sin correo"}
@@ -134,7 +134,7 @@ export function PatientDetailHeader({
           <span className="text-ink-sub block text-xs uppercase font-semibold tracking-wider">
             Obra social o prepaga
           </span>
-          <span data-sensitive className="text-ink block mt-1 font-medium truncate text-sm">
+          <span data-sensitive className="text-ink block mt-1 font-medium truncate text-base">
             {patient.healthInsurance
               ? `${patient.healthInsurance} ${
                   patient.affiliateNumber ? `(N° ${patient.affiliateNumber})` : ""
@@ -149,7 +149,7 @@ export function PatientDetailHeader({
           </span>
           <span
             data-sensitive
-            className="text-ink block mt-1 font-medium truncate text-sm"
+            className="text-ink block mt-1 font-medium truncate text-base"
             title={patient.address}
           >
             {patient.address || "—"}
