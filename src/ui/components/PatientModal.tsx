@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Patient } from "../../domain/patient.types";
+import { Icon } from "./common/Icon";
 
 interface PatientModalProps {
   isOpen: boolean;
@@ -25,9 +26,9 @@ export function PatientModal({
   const [healthInsurance, setHealthInsurance] = useState("");
   const [affiliateNumber, setAffiliateNumber] = useState("");
   const [sessionPrice, setSessionPrice] = useState("20000");
-  const [type, setType] = useState<'adult' | 'underage'>("adult");
+  const [type, setType] = useState<"adult" | "underage">("adult");
   const [birthDate, setBirthDate] = useState("");
-  const [status, setStatus] = useState<'active' | 'inactive'>("active");
+  const [status, setStatus] = useState<"active" | "inactive">("active");
   const [ceciConviveCon, setCeciConviveCon] = useState("");
   const [ceciFamilia, setCeciFamilia] = useState("");
   const [ceciOcupacion, setCeciOcupacion] = useState("");
@@ -116,270 +117,316 @@ export function PatientModal({
       await onCreate(patientData);
     }
 
-    // Resetear formulario
-    setFullName("");
-    setEmail("");
-    setPhone("");
-    setAddress("");
-    setHealthInsurance("");
-    setAffiliateNumber("");
-    setSessionPrice("20000");
-    setType("adult");
-    setBirthDate("");
-    setStatus("active");
-    setCeciConviveCon("");
-    setCeciFamilia("");
-    setCeciOcupacion("");
-    setCeciEstudios("");
-    setCeciTratamientosAnteriores("");
-    setCeciInicioConsulta("");
-    setCeciDiaHorarioAtencion("");
-    setCeciFrecuenciaTratamiento("");
-    setCeciDatosAdicionales("");
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-bg-card border border-brand-sand rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl shadow-text-main/10 animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-brand-sand flex items-center justify-between">
-          <h3 className="font-title font-bold text-lg text-text-main">
-            {patientToEdit ? "Editar Ficha de Paciente" : "Registrar Nuevo Paciente"}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="patient-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4 overflow-y-auto"
+    >
+      <div className="bg-surface border border-line rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-xl animate-in fade-in zoom-in-95 duration-150 my-auto">
+        {/* Header */}
+        <div className="p-5 border-b border-line flex items-center justify-between shrink-0">
+          <h3 id="patient-modal-title" className="font-serif font-medium text-lg text-ink">
+            {patientToEdit ? "Editar ficha de paciente" : "Registrar nuevo paciente"}
           </h3>
           <button
+            type="button"
             onClick={onClose}
-            className="text-text-sub hover:text-text-main text-xl font-bold cursor-pointer"
+            aria-label="Cerrar"
+            className="p-1.5 text-ink-sub hover:text-ink hover:bg-bg-base rounded-md transition-colors cursor-pointer"
           >
-            ×
+            <Icon name="x" size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form Body (Scrollable) */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto flex-1">
+          <p className="text-xs text-ink-sub">
+            Los campos con <span className="text-primary font-bold">*</span> son obligatorios.
+          </p>
+
           <div>
-            <label className="text-xs text-text-sub font-semibold block mb-1">Nombre Completo *</label>
+            <label htmlFor="p-name" className="text-xs font-semibold text-ink block mb-1">
+              Nombre completo <span className="text-primary font-bold">*</span>
+            </label>
             <input
+              id="p-name"
               type="text"
               required
-              placeholder="Ej: Juan Perez"
+              placeholder="Ej: Lucía Martínez"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Teléfono</label>
+              <label htmlFor="p-phone" className="text-xs font-semibold text-ink block mb-1">
+                Teléfono
+              </label>
               <input
+                id="p-phone"
                 type="text"
-                placeholder="Ej: 11 1234-5678"
+                placeholder="Ej: +54 11 5555-0143"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Email</label>
+              <label htmlFor="p-email" className="text-xs font-semibold text-ink block mb-1">
+                Correo electrónico
+              </label>
               <input
+                id="p-email"
                 type="email"
-                placeholder="Ej: paciente@email.com"
+                placeholder="Ej: paciente@correo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-text-sub font-semibold block mb-1">Domicilio</label>
+            <label htmlFor="p-addr" className="text-xs font-semibold text-ink block mb-1">
+              Domicilio
+            </label>
             <input
+              id="p-addr"
               type="text"
               placeholder="Ej: Av. Santa Fe 1234, CABA"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Obra Social / Prepaga</label>
+              <label htmlFor="p-insurance" className="text-xs font-semibold text-ink block mb-1">
+                Obra social o prepaga
+              </label>
               <input
+                id="p-insurance"
                 type="text"
-                placeholder="Ej: OSDE"
+                placeholder="Ej: OSDE, Swiss Medical"
                 value={healthInsurance}
                 onChange={(e) => setHealthInsurance(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Número de Afiliado</label>
+              <label htmlFor="p-affiliate" className="text-xs font-semibold text-ink block mb-1">
+                Número de afiliado / Credencial
+              </label>
               <input
+                id="p-affiliate"
                 type="text"
                 placeholder="Ej: 123456/01"
                 value={affiliateNumber}
                 onChange={(e) => setAffiliateNumber(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink placeholder:text-ink-sub/60 focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Tipo de Paciente *</label>
+              <label htmlFor="p-type" className="text-xs font-semibold text-ink block mb-1">
+                Grupo de atención <span className="text-primary font-bold">*</span>
+              </label>
               <select
+                id="p-type"
                 value={type}
-                onChange={(e) => setType(e.target.value as 'adult' | 'underage')}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                onChange={(e) => setType(e.target.value as "adult" | "underage")}
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               >
                 <option value="adult">Adulto</option>
-                <option value="underage">Infanto-Juvenil</option>
+                <option value="underage">Infanto-juvenil</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Fecha de Nacimiento</label>
+              <label htmlFor="p-birth" className="text-xs font-semibold text-ink block mb-1">
+                Fecha de nacimiento
+              </label>
               <input
+                id="p-birth"
                 type="date"
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Estado de Tratamiento *</label>
+              <label htmlFor="p-status" className="text-xs font-semibold text-ink block mb-1">
+                Estado de tratamiento <span className="text-primary font-bold">*</span>
+              </label>
               <select
+                id="p-status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as 'active' | 'inactive')}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               >
-                <option value="active">En Tratamiento</option>
-                <option value="inactive">De Alta / Inactivo</option>
+                <option value="active">En tratamiento</option>
+                <option value="inactive">De alta</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-text-sub font-semibold block mb-1">Costo Acordado de la Sesión (ARS) *</label>
+              <label htmlFor="p-fee" className="text-xs font-semibold text-ink block mb-1">
+                Costo de sesión (ARS) <span className="text-primary font-bold">*</span>
+              </label>
               <input
+                id="p-fee"
                 type="number"
                 required
-                placeholder="Ej: 20000"
+                min="1"
+                placeholder="20000"
                 value={sessionPrice}
                 onChange={(e) => setSessionPrice(e.target.value)}
-                className="w-full bg-bg-base border border-brand-sand rounded-xl px-4 py-2 text-text-main placeholder:text-text-sub/40 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo transition-all text-sm cursor-pointer"
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:border-primary text-sm cursor-pointer transition-colors"
               />
             </div>
           </div>
 
-          <details className="group border border-brand-sand rounded-xl bg-bg-base/40 overflow-hidden">
-            <summary className="text-xs font-title font-bold text-text-main px-4 py-2.5 bg-brand-sand/15 cursor-pointer select-none flex items-center justify-between">
-              <span>📋 Datos Ficha CECI (Opcional)</span>
-              <span className="text-[10px] text-text-sub transition-transform group-open:rotate-180">▼</span>
+          {/* Ficha CECI Opcional */}
+          <details className="group border border-line rounded-xl bg-bg-base/40 overflow-hidden">
+            <summary className="text-xs font-semibold text-ink px-4 py-2.5 bg-bg-base cursor-pointer select-none flex items-center justify-between">
+              <span>Datos clínicos adicionales (Ficha CECI)</span>
+              <span className="text-ink-sub transition-transform group-open:rotate-180">
+                <Icon name="chev-d" size={14} />
+              </span>
             </summary>
-            <div className="p-4 space-y-3 border-t border-brand-sand/50 bg-bg-card grid grid-cols-2 gap-x-4 gap-y-3">
-              <div className="col-span-2">
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Convive Con</label>
+            <div className="p-4 space-y-3 border-t border-line bg-surface grid grid-cols-1 sm:grid-cols-2 gap-x-3.5 gap-y-3">
+              <div className="sm:col-span-2">
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Convive con
+                </label>
                 <input
                   type="text"
                   value={ceciConviveCon}
                   onChange={(e) => setCeciConviveCon(e.target.value)}
-                  placeholder="Ej: Padres y hermanos..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  placeholder="Ej: Pareja e hijos..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Familia (Estructura familiar)</label>
+              <div className="sm:col-span-2">
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Familia (Estructura familiar)
+                </label>
                 <textarea
                   value={ceciFamilia}
                   onChange={(e) => setCeciFamilia(e.target.value)}
-                  placeholder="Ej: Padres casados, un hermano de 14 años..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer h-12"
+                  placeholder="Ej: Padres casados, un hermano..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Ocupación</label>
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Ocupación
+                </label>
                 <input
                   type="text"
                   value={ceciOcupacion}
                   onChange={(e) => setCeciOcupacion(e.target.value)}
-                  placeholder="Ej: Diseñador, Estudiante..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  placeholder="Ej: Docente..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Estudios</label>
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Estudios
+                </label>
                 <input
                   type="text"
                   value={ceciEstudios}
                   onChange={(e) => setCeciEstudios(e.target.value)}
-                  placeholder="Ej: Secundario Completo..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  placeholder="Ej: Universitario completo..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Tratamientos Anteriores</label>
+              <div className="sm:col-span-2">
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Tratamientos anteriores
+                </label>
                 <textarea
                   value={ceciTratamientosAnteriores}
                   onChange={(e) => setCeciTratamientosAnteriores(e.target.value)}
-                  placeholder="Ej: Psicólogo cognitivo en 2024..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer h-12"
+                  placeholder="Ej: Terapia psicoanalítica en 2022..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Inicio de Consulta</label>
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Inicio de consulta
+                </label>
                 <input
                   type="date"
                   value={ceciInicioConsulta}
                   onChange={(e) => setCeciInicioConsulta(e.target.value)}
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Día y Horario</label>
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Día y horario habitual
+                </label>
                 <input
                   type="text"
                   value={ceciDiaHorarioAtencion}
                   onChange={(e) => setCeciDiaHorarioAtencion(e.target.value)}
-                  placeholder="Ej: Lunes 16:30 hs..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  placeholder="Ej: Martes 15:00 hs..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Frecuencia</label>
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Frecuencia sugerida
+                </label>
                 <input
                   type="text"
                   value={ceciFrecuenciaTratamiento}
                   onChange={(e) => setCeciFrecuenciaTratamiento(e.target.value)}
-                  placeholder="Ej: Semanal, Quincenal..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer"
+                  placeholder="Ej: Semanal..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-[10px] text-text-sub font-semibold block mb-0.5">Datos Adicionales</label>
+              <div className="sm:col-span-2">
+                <label className="text-[11px] text-ink-sub font-semibold block mb-0.5">
+                  Datos adicionales
+                </label>
                 <textarea
                   value={ceciDatosAdicionales}
                   onChange={(e) => setCeciDatosAdicionales(e.target.value)}
-                  placeholder="Información adicional relevante..."
-                  className="w-full bg-bg-base border border-brand-sand rounded-lg px-3 py-1.5 text-text-main placeholder:text-text-sub/30 focus:outline-none focus:border-brand-indigo text-xs cursor-pointer h-12"
+                  placeholder="Observaciones de ingreso..."
+                  className="w-full bg-surface border border-line rounded-lg px-3 py-1.5 text-ink text-xs focus:outline-none focus:border-primary h-12"
                 />
               </div>
             </div>
           </details>
 
-          <div className="pt-4 border-t border-brand-sand flex items-center justify-end gap-3">
+          {/* Footer */}
+          <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="text-text-sub hover:text-text-main text-xs font-title font-bold px-4 py-2 transition-all cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-semibold text-ink-sub hover:text-ink hover:bg-bg-base rounded-lg transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="bg-brand-indigo hover:bg-brand-indigo/90 text-white font-title font-bold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-surface text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             >
-              Guardar Paciente
+              Guardar paciente
             </button>
           </div>
         </form>
