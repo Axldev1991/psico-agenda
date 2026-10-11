@@ -17,6 +17,26 @@ interface PatientDetailProps {
   onEdit: (patient: Patient) => void;
 }
 
+const defaultPunctuation = [
+  { key: "yellow", color: "#FEF08A", label: "Amarillo" },
+  { key: "green", color: "#BBF7D0", label: "Verde" },
+  { key: "purple", color: "#E9D5FF", label: "Lavanda" },
+  { key: "orange", color: "#FED7AA", label: "Arena" }
+];
+
+function rgbToHex(rgbStr: string): string {
+  const match = rgbStr.match(/\d+/g);
+  if (!match) return rgbStr;
+  const r = parseInt(match[0], 10);
+  const g = parseInt(match[1], 10);
+  const b = parseInt(match[2], 10);
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+function cleanHtmlText(html: string): string {
+  return html.replace(/<[^>]*>/g, " ");
+}
+
 export function PatientDetail({ patient: initialPatient, onBack, onEdit }: PatientDetailProps) {
   const {
     patient,
@@ -48,26 +68,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
   const [selectedMovementFilter, setSelectedMovementFilter] = useState("");
   const [selectedPunctuationFilter, setSelectedPunctuationFilter] = useState("");
 
-  const defaultPunctuation = [
-    { key: "yellow", color: "#FEF08A", label: "Amarillo" },
-    { key: "green", color: "#BBF7D0", label: "Verde" },
-    { key: "purple", color: "#E9D5FF", label: "Lavanda" },
-    { key: "orange", color: "#FED7AA", label: "Arena" }
-  ];
   const configsToUse = punctuationConfigs.length > 0 ? punctuationConfigs : defaultPunctuation;
-
-  const rgbToHex = (rgbStr: string) => {
-    const match = rgbStr.match(/\d+/g);
-    if (!match) return rgbStr;
-    const r = parseInt(match[0]);
-    const g = parseInt(match[1]);
-    const b = parseInt(match[2]);
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-  };
-
-  const cleanHtmlText = (html: string) => {
-    return html.replace(/<[^>]*>/g, " ");
-  };
 
   // Filtrado de sesiones reactivo
   const filteredSessions = useMemo(() => {
