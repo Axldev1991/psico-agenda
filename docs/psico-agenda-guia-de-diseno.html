@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Psico-Agenda · Guía de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ Tokens ============ */
+:root{
+  --ink:#1E2A32;
+  --ink-2:#566670;
+  --bg:#F5F7F7;
+  --surface:#FFFFFF;
+  --line:#D9E1E3;
+  --line-strong:#7B8A93;
+
+  --primary:#2C5F6B;
+  --primary-hover:#234C56;
+  --primary-tint:#E4EFF1;
+
+  --ok:#2F6B4A;   --ok-tint:#E3F1E8;   --ok-line:#B9D8C6;
+  --warn:#8A5A12; --warn-tint:#FBF1DC; --warn-line:#E8D2A3;
+  --err:#9C3A3A;  --err-tint:#F7E4E4;  --err-line:#E3BDBD;
+
+  --serif:'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans:'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(30,42,50,.06);
+  --sh-2:0 12px 32px rgba(30,42,50,.14);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p,ul,ol,dl,dd,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+.icon{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.icon--sm{width:16px;height:16px}
+
+/* ============ Estructura de la guía ============ */
+.guide{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.toc{position:sticky;top:0;height:100vh;overflow:auto;padding:28px 20px;background:var(--surface);border-right:1px solid var(--line)}
+.toc .brand{margin-bottom:28px}
+.toc a{display:block;padding:6px 10px;border-radius:var(--r-sm);color:var(--ink-2);font-size:14px;text-decoration:none}
+.toc a:hover{background:var(--primary-tint);color:var(--ink)}
+.toc .toc-sep{margin:14px 10px 6px;font-size:13px;color:var(--ink-2);font-weight:600}
+main{padding:64px clamp(20px,5vw,64px) 120px;max-width:1080px}
+@media (max-width:900px){
+  .guide{grid-template-columns:1fr}
+  .toc{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:20px}
+  .toc ul{display:flex;flex-wrap:wrap;gap:4px}
+  .toc .toc-sep{display:none}
+  main{padding-top:40px}
+}
+
+.cover h1{font:500 clamp(34px,5vw,52px)/1.1 var(--serif);letter-spacing:-.01em;max-width:18ch}
+.cover p{margin-top:20px;max-width:62ch;color:var(--ink-2);font-size:18px;line-height:1.6}
+.cover .meta{margin-top:24px;font-size:14px;color:var(--ink-2)}
+
+.sec{margin-top:72px;padding-top:56px;border-top:1px solid var(--line)}
+.sec h2{font:500 32px/1.2 var(--serif);letter-spacing:-.005em}
+.sec .lead{margin-top:12px;max-width:66ch;color:var(--ink-2)}
+.sec h3{margin:40px 0 4px;font:600 17px/1.4 var(--sans)}
+.sec h3 + .desc{margin-bottom:16px}
+.desc{max-width:66ch;color:var(--ink-2);font-size:15px}
+.stage{margin-top:16px;padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.stage--bg{background:var(--bg)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.cap{margin-top:12px;font-size:14px;color:var(--ink-2);max-width:72ch}
+.cap strong{color:var(--ink);font-weight:600}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+pre.code{margin:16px 0 0;padding:16px 18px;background:#EDF2F2;border:1px solid var(--line);border-radius:var(--r-md);overflow-x:auto;font:13px/1.65 var(--mono);color:var(--ink)}
+
+/* Principios */
+.principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:28px 40px;margin-top:28px}
+.principles dt{font:600 17px/1.4 var(--sans)}
+.principles dd{margin-top:6px;color:var(--ink-2);font-size:15px}
+
+/* Color */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.swatch{display:flex;flex-direction:column;text-align:left;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;cursor:pointer}
+.swatch:hover{border-color:var(--line-strong)}
+.swatch .chip{height:76px;border-bottom:1px solid var(--line)}
+.swatch .info{padding:12px 14px 14px}
+.swatch .name{display:block;font-weight:600;font-size:15px}
+.swatch .hex{display:block;margin-top:2px;font:500 13px var(--sans);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.swatch .role{display:block;margin-top:8px;font-size:13px;color:var(--ink-2);line-height:1.45}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{padding:10px 12px;text-align:left;font-weight:600;border-bottom:1px solid var(--line-strong)}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sample{display:inline-block;padding:3px 10px;border-radius:var(--r-sm);font-weight:500;font-size:14px}
+.table-wrap{overflow-x:auto;margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+
+/* Tipografía */
+.type-spec{display:grid;grid-template-columns:minmax(0,1fr) 1fr;gap:24px}
+@media (max-width:760px){.type-spec{grid-template-columns:1fr}}
+.face{padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.face .big{font-size:76px;line-height:1;margin-bottom:12px}
+.face--serif .big{font-family:var(--serif);font-weight:500}
+.face--sans .big{font-family:var(--sans);font-weight:500}
+.face h3{margin:0}
+.face p{margin-top:8px;color:var(--ink-2);font-size:15px}
+.scale{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.scale-row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:20px;align-items:baseline;padding:16px 24px;border-bottom:1px solid var(--line)}
+.scale-row:last-child{border-bottom:0}
+.scale-row .k{font-size:13px;color:var(--ink-2)}
+.scale-row .k b{display:block;color:var(--ink);font-weight:600;font-size:14px}
+@media (max-width:620px){.scale-row{grid-template-columns:1fr;gap:4px}}
+.t-display{font:500 36px/1.15 var(--serif)}
+.t-h1{font:500 28px/1.2 var(--serif)}
+.t-h2{font:600 22px/1.3 var(--serif)}
+.t-h3{font:600 17px/1.4 var(--sans)}
+.t-body{font:400 15px/1.6 var(--sans)}
+.t-small{font:400 13px/1.5 var(--sans)}
+.t-num{font:500 15px/1.4 var(--sans);font-variant-numeric:tabular-nums}
+
+/* Espaciado / formas */
+.space-row{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.space-box{text-align:center;font-size:13px;color:var(--ink-2)}
+.space-box i{display:block;margin:0 auto 8px;background:var(--primary);opacity:.85;border-radius:2px}
+.shape{width:112px;height:72px;display:grid;place-items:center;background:var(--primary-tint);border:1px solid var(--primary);font-size:13px;color:var(--primary);font-weight:500}
+.elev{width:160px;height:84px;display:grid;place-items:center;background:var(--surface);border-radius:var(--r-md);font-size:13px;color:var(--ink-2);text-align:center;padding:8px}
+
+/* Iconos */
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.icon-cell{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);font-size:14px}
+.icon-cell small{display:block;color:var(--ink-2);font-size:12px;line-height:1.3}
+.icon-cell .icon{width:22px;height:22px;color:var(--primary)}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:1px solid transparent;border-radius:var(--r-md);background:transparent;color:var(--ink);font:500 15px/1 var(--sans);cursor:pointer;text-decoration:none;transition:background-color .15s,border-color .15s,color .15s}
+.btn--primary{background:var(--primary);color:#fff}
+.btn--primary:hover{background:var(--primary-hover)}
+.btn--secondary{background:var(--surface);color:var(--primary);border-color:var(--primary)}
+.btn--secondary:hover{background:var(--primary-tint)}
+.btn--ghost:hover{background:var(--primary-tint)}
+.btn--danger{background:var(--surface);color:var(--err);border-color:var(--err)}
+.btn--danger:hover{background:var(--err-tint)}
+.btn--toggle{background:var(--surface);border-color:var(--line-strong);color:var(--ink)}
+.btn--toggle:hover{background:var(--primary-tint)}
+.btn--toggle[aria-pressed="true"]{background:var(--primary-tint);border-color:var(--primary);color:var(--primary)}
+.btn--sm{min-height:32px;padding:0 12px;font-size:14px}
+.btn[disabled]{background:#E7ECED;border-color:transparent;color:#66757F;cursor:not-allowed}
+.icon-btn{display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid transparent;border-radius:var(--r-md);background:transparent;color:var(--ink);cursor:pointer}
+.icon-btn:hover{background:var(--primary-tint)}
+.seg{display:inline-flex}
+.seg > *{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);min-height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:500 15px var(--sans);margin-left:-1px}
+.seg > *:first-child{margin-left:0;border-radius:var(--r-md) 0 0 var(--r-md)}
+.seg > *:last-child{border-radius:0 var(--r-md) var(--r-md) 0}
+.seg > *:hover{background:var(--primary-tint)}
+.seg > *:focus-visible{position:relative;z-index:1}
+.seg .only-icon{padding:0 10px}
+.btn-table td:first-child{width:170px;color:var(--ink-2);font-size:14px}
+
+/* Marca */
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none}
+.brand-mark{width:32px;height:32px;border-radius:var(--r-md);display:grid;place-items:center;background:var(--primary);color:#fff;font:600 19px/1 var(--serif)}
+.brand-name{font:600 18px/1.1 var(--serif);letter-spacing:.005em}
+.brand-name small{display:block;margin-top:3px;font:400 12px/1 var(--sans);color:var(--ink-2);letter-spacing:0}
+.brand--lg .brand-mark{width:56px;height:56px;font-size:32px;border-radius:var(--r-lg)}
+.brand--lg .brand-name{font-size:28px}
+.brand--lg .brand-name small{font-size:14px;margin-top:6px}
+
+/* Navegación */
+.nav{display:grid;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;min-height:40px;padding:0 12px;border-radius:var(--r-md);color:var(--ink-2);font:500 15px var(--sans);text-decoration:none}
+.nav a:hover{background:var(--bg);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--primary-tint);color:var(--primary);font-weight:600}
+.drive{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);font-size:13px;line-height:1.45}
+.drive .dot{width:8px;height:8px;margin-top:6px;border-radius:50%;background:var(--ok);flex:none}
+.drive b{display:block;font-weight:600;font-size:14px}
+.drive span{color:var(--ink-2)}
+.mobilebar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);max-width:420px}
+
+/* Semana y calendario */
+.weekhead{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.weekhead h1,.weekhead .wk-title{font:500 26px/1.2 var(--serif)}
+.weekhead .wk-sub{font-size:14px;color:var(--ink-2);margin-top:2px}
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.day{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 12px;border:1px solid transparent;border-radius:var(--r-md);background:transparent;color:var(--ink);cursor:pointer}
+.day span{font-size:13px;color:var(--ink-2)}
+.day b{font:600 18px/1 var(--sans);font-variant-numeric:tabular-nums}
+.day:hover{background:var(--primary-tint)}
+.day[aria-current="date"]{border-color:var(--primary)}
+.day[aria-current="date"] b{color:var(--primary)}
+.day.has::after{content:"";position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:var(--primary)}
+.day[aria-pressed="true"]{background:var(--primary);border-color:var(--primary)}
+.day[aria-pressed="true"] span,.day[aria-pressed="true"] b{color:#fff}
+.day[aria-pressed="true"].has::after{background:#fff}
+.cal{width:100%;max-width:280px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-head h4{font:600 15px var(--sans)}
+.cal-head .icon-btn{width:32px;height:32px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-grid .wd{padding:6px 0;font-size:12px;color:var(--ink-2)}
+.cal-d{position:relative;min-height:36px;border:1px solid transparent;border-radius:var(--r-md);background:transparent;font:500 14px var(--sans);font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer}
+.cal-d.out{color:var(--ink-2);font-weight:400}
+.cal-d:hover{background:var(--primary-tint)}
+.cal-d[aria-current="date"]{border-color:var(--primary);color:var(--primary);font-weight:600}
+.cal-d.has::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--primary)}
+.cal-d[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#fff}
+.cal-d[aria-pressed="true"].has::after{background:#fff}
+
+/* Turnos */
+.agenda-list{display:grid;gap:8px}
+.list-title{font:600 17px/1.3 var(--sans);margin-bottom:12px}
+.appt{display:grid;grid-template-columns:64px 4px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
+.appt .when{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;line-height:1.3}
+.appt .when span{display:block;font-weight:400;font-size:13px;color:var(--ink-2)}
+.appt .bar{align-self:stretch;width:4px;border-radius:2px;background:var(--ok)}
+.appt .bar.warn{background:var(--warn)}
+.appt .bar.off{background:var(--line-strong)}
+.appt .who{font-weight:600;font-size:15px;line-height:1.35}
+.appt .what{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:13px;color:var(--ink-2)}
+.appt.is-cancelled .who{text-decoration:line-through;color:var(--ink-2)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:var(--r-pill);font:500 13px/1.4 var(--sans);white-space:nowrap}
+.badge--ok{background:var(--ok-tint);color:var(--ok)}
+.badge--warn{background:var(--warn-tint);color:var(--warn)}
+.badge--off{background:#E9EEEF;color:var(--ink-2)}
+.empty{display:grid;justify-items:center;gap:8px;padding:40px 20px;text-align:center;background:var(--surface);border:1px dashed var(--line-strong);border-radius:var(--r-lg)}
+.empty .ic{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--primary-tint);color:var(--primary)}
+.empty .ic .icon{width:24px;height:24px}
+.empty h4{font:600 17px var(--sans)}
+.empty p{max-width:36ch;font-size:14px;color:var(--ink-2)}
+.empty .btn{margin-top:8px}
+
+/* Privacidad */
+[data-sensitive]{transition:filter .2s}
+body.is-private [data-sensitive]{filter:blur(6px);user-select:none}
+
+/* Formulario */
+.modal{max-width:560px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-2)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line)}
+.modal-head h4{font:600 22px/1.3 var(--serif)}
+.modal-body{display:grid;gap:18px;padding:24px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:16px 24px;border-top:1px solid var(--line);background:var(--bg);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+.field{display:grid;gap:6px;align-content:start}
+.field > label,.field > .label{font:500 14px/1.3 var(--sans)}
+.input,.select,.textarea{width:100%;min-height:40px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);font:400 15px/1.4 var(--sans);color:var(--ink)}
+.textarea{min-height:88px;resize:vertical}
+.input::placeholder,.textarea::placeholder{color:var(--ink-2)}
+.input:focus-visible,.select:focus-visible,.textarea:focus-visible{outline:2px solid var(--primary);outline-offset:1px;border-color:var(--primary)}
+.input[aria-invalid="true"]{border-color:var(--err)}
+.hint{font-size:13px;color:var(--ink-2)}
+.err-msg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--err)}
+.opts{display:flex}
+.opt{position:relative;flex:1}
+.opt input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.opt span{display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid var(--line-strong);margin-left:-1px;background:var(--surface);font-size:15px;font-weight:500}
+.opt:first-child span{margin-left:0;border-radius:var(--r-md) 0 0 var(--r-md)}
+.opt:last-child span{border-radius:0 var(--r-md) var(--r-md) 0}
+.opt input:checked + span{background:var(--primary-tint);border-color:var(--primary);color:var(--primary);position:relative;z-index:1}
+.opt input:focus-visible + span{outline:2px solid var(--primary);outline-offset:2px;z-index:2}
+
+/* Mensajes */
+.alert{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid;border-radius:var(--r-md);font-size:14px;line-height:1.5}
+.alert .icon{margin-top:1px}
+.alert b{display:block;font-weight:600}
+.alert .btn{margin-top:8px}
+.alert--info{background:var(--primary-tint);border-color:#BCD6DB;color:var(--primary)}
+.alert--ok{background:var(--ok-tint);border-color:var(--ok-line);color:var(--ok)}
+.alert--warn{background:var(--warn-tint);border-color:var(--warn-line);color:var(--warn)}
+.alert--err{background:var(--err-tint);border-color:var(--err-line);color:var(--err)}
+.alert .body{color:var(--ink)}
+.stack{display:grid;gap:12px}
+.toast{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;background:var(--ink);color:#fff;border-radius:var(--r-md);box-shadow:var(--sh-2);font-size:14px}
+.toast .icon{color:#9FD3B4}
+
+/* Consola */
+details.dev{max-width:720px;border-radius:var(--r-md);overflow:hidden;border:1px solid #2B3A45}
+details.dev summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--ink);color:#E6ECEE;font:500 13px var(--sans);cursor:pointer;list-style:none}
+details.dev summary::-webkit-details-marker{display:none}
+details.dev summary .l{display:inline-flex;align-items:center;gap:8px}
+details.dev .log{padding:12px 14px;background:#16212A;color:#C9D6DB;font:13px/1.7 var(--mono)}
+details.dev .log .t{color:#8CA0AB}
+details.dev .log .e{color:#F1A8A8}
+details[open].dev .chev{transform:rotate(180deg)}
+
+/* Pantalla completa */
+.frame{container-type:inline-size;margin-top:16px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--bg);box-shadow:var(--sh-1)}
+.app{display:grid;grid-template-columns:208px minmax(0,1fr);min-height:660px}
+.app-side{display:flex;flex-direction:column;gap:24px;padding:18px 12px;background:var(--surface);border-right:1px solid var(--line)}
+.app-side .brand{padding:0 8px}
+.app-side .grow{flex:1}
+.app-main{display:grid;gap:20px;align-content:start;padding:16px 24px 28px}
+.app-top{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:40px}
+.app-top .menu-btn{display:none;margin-right:auto}
+.app-body{display:grid;grid-template-columns:minmax(0,1fr) 264px;gap:28px;align-items:start}
+.app-body .cal-wrap{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+@container (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .app-side{display:none}
+  .app-top .menu-btn{display:inline-grid}
+  .app-body{grid-template-columns:1fr}
+  .app-body .cal-wrap{order:-1}
+  .app-main{padding:12px 16px 24px}
+}
+@container (max-width:520px){
+  .appt{grid-template-columns:56px 4px minmax(0,1fr)}
+  .appt .badge{grid-column:3;justify-self:start}
+}
+
+/* Pendientes */
+.fixes{margin-top:28px;display:grid;gap:16px}
+.fix{padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.fix header{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.fix h3{margin:0;font:600 18px/1.4 var(--sans)}
+.fix .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px 28px;margin-top:14px}
+.fix .cols h4{font:600 14px/1.4 var(--sans);margin-bottom:4px}
+.fix .cols p,.fix .cols li{font-size:14px;color:var(--ink-2);line-height:1.55}
+.fix .cols ul{display:grid;gap:4px;padding-left:18px;list-style:disc}
+.fix .demo{margin-top:16px;padding:16px;background:var(--bg);border-radius:var(--r-md)}
+.fix .before{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fix .before .btn,.fix .before .pill{font-size:14px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);font-size:14px}
+.arrow{color:var(--ink-2)}
+.livedate{font:600 15px var(--sans);color:var(--primary)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#copied{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);opacity:0;pointer-events:none;transition:opacity .2s}
+#copied.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- Sprite de íconos (trazo 1.75 px, currentColor) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="17" cy="18" r="2.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H7a5 5 0 1 1 1.3-9.8A6 6 0 0 1 19.6 11a4 4 0 0 1-2.1 8z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M6.6 7.6A15.6 15.6 0 0 0 2.5 12S6 18 12 18c1.6 0 3-.4 4.3-1M10 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-2.6 3.4"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.800 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 13a8 8 0 0 0 14.500 4"/><path d="M20 4v5h-5M4 20v-5h5"/></symbol>
+</svg>
+
+<div class="guide">
+
+  <!-- ============ Índice ============ -->
+  <nav class="toc" aria-label="Índice de la guía">
+    <a class="brand" href="#top" aria-label="Psico-Agenda, inicio de la guía">
+      <span class="brand-mark" aria-hidden="true">Ψ</span>
+      <span class="brand-name">Psico-Agenda<small>Guía de diseño</small></span>
+    </a>
+    <ul>
+      <li class="toc-sep">Fundamentos</li>
+      <li><a href="#principios">Principios</a></li>
+      <li><a href="#color">Color</a></li>
+      <li><a href="#tipografia">Tipografía</a></li>
+      <li><a href="#formas">Espaciado y formas</a></li>
+      <li><a href="#iconos">Íconos</a></li>
+      <li class="toc-sep">Componentes</li>
+      <li><a href="#botones">Botones</a></li>
+      <li><a href="#navegacion">Marca y navegación</a></li>
+      <li><a href="#semana">Semana y calendario</a></li>
+      <li><a href="#turnos">Turnos y estado vacío</a></li>
+      <li><a href="#formulario">Formulario de turno</a></li>
+      <li><a href="#drive">Drive y privacidad</a></li>
+      <li><a href="#mensajes">Mensajes</a></li>
+      <li><a href="#consola">Consola de desarrollo</a></li>
+      <li class="toc-sep">Conjunto</li>
+      <li><a href="#pantalla">Pantalla de ejemplo</a></li>
+      <li><a href="#pendientes">Pendientes de la revisión</a></li>
+    </ul>
+  </nav>
+
+  <main id="top">
+
+    <header class="cover">
+      <h1>Guía de diseño de Psico-Agenda</h1>
+      <p>Un sistema visual sobrio para una herramienta de trabajo clínico: calmo a la vista durante toda la jornada, claro al leer una agenda y cuidadoso con los datos de cada paciente.</p>
+      <p class="meta">Todos los nombres de pacientes de esta guía son ficticios. Hacé clic en cualquier color para copiar su código.</p>
+    </header>
+
+    <!-- ============ Principios ============ -->
+    <section class="sec" id="principios">
+      <h2>Principios</h2>
+      <p class="lead">Cuatro decisiones que ordenan el resto del sistema.</p>
+      <dl class="principles">
+        <div><dt>Sobrio antes que decorativo</dt><dd>Fondos fríos y neutros, un solo color de marca y sin ilustraciones. El color se reserva para lo que requiere atención.</dd></div>
+        <div><dt>Los datos clínicos se protegen por defecto</dt><dd>Ocultar datos es una acción siempre a mano, no un ajuste escondido. Todo texto con información de pacientes se puede difuminar.</dd></div>
+        <div><dt>Un solo camino para cada acción</dt><dd>Programar un turno tiene un único botón principal por pantalla. Las acciones de naturaleza distinta no comparten lugar.</dd></div>
+        <div><dt>Legible durante una jornada larga</dt><dd>Contraste mínimo AA en todo el texto, horarios con cifras tabulares y áreas táctiles de al menos 40 px.</dd></div>
+      </dl>
+    </section>
+
+    <!-- ============ Color ============ -->
+    <section class="sec" id="color">
+      <h2>Color</h2>
+      <p class="lead">Una base de grises azulados y un único color de marca, un verde petróleo profundo. Los colores de estado son apagados a propósito: informan sin alarmar.</p>
+
+      <h3>Neutros</h3>
+      <p class="desc">Estructura, texto y superficies.</p>
+      <div class="swatches">
+        <button class="swatch" data-copy="#1E2A32"><span class="chip" style="background:#1E2A32"></span><span class="info"><span class="name">Pizarra</span><span class="hex">#1E2A32</span><span class="role">Texto principal y títulos.</span></span></button>
+        <button class="swatch" data-copy="#566670"><span class="chip" style="background:#566670"></span><span class="info"><span class="name">Pizarra suave</span><span class="hex">#566670</span><span class="role">Texto secundario, ayudas y etiquetas.</span></span></button>
+        <button class="swatch" data-copy="#7B8A93"><span class="chip" style="background:#7B8A93"></span><span class="info"><span class="name">Borde de control</span><span class="hex">#7B8A93</span><span class="role">Bordes de campos y botones. Contraste 3,6:1.</span></span></button>
+        <button class="swatch" data-copy="#D9E1E3"><span class="chip" style="background:#D9E1E3"></span><span class="info"><span class="name">Línea</span><span class="hex">#D9E1E3</span><span class="role">Divisores y bordes de tarjetas. Solo decorativo.</span></span></button>
+        <button class="swatch" data-copy="#F5F7F7"><span class="chip" style="background:#F5F7F7"></span><span class="info"><span class="name">Fondo</span><span class="hex">#F5F7F7</span><span class="role">Fondo general de la aplicación.</span></span></button>
+        <button class="swatch" data-copy="#FFFFFF"><span class="chip" style="background:#FFFFFF"></span><span class="info"><span class="name">Superficie</span><span class="hex">#FFFFFF</span><span class="role">Tarjetas, barra lateral y formularios.</span></span></button>
+      </div>
+
+      <h3>Marca</h3>
+      <p class="desc">Un solo color para acciones, selección y foco.</p>
+      <div class="swatches">
+        <button class="swatch" data-copy="#2C5F6B"><span class="chip" style="background:#2C5F6B"></span><span class="info"><span class="name">Petróleo</span><span class="hex">#2C5F6B</span><span class="role">Botón principal, día seleccionado, foco.</span></span></button>
+        <button class="swatch" data-copy="#234C56"><span class="chip" style="background:#234C56"></span><span class="info"><span class="name">Petróleo oscuro</span><span class="hex">#234C56</span><span class="role">Botón principal al pasar el cursor.</span></span></button>
+        <button class="swatch" data-copy="#E4EFF1"><span class="chip" style="background:#E4EFF1"></span><span class="info"><span class="name">Petróleo tenue</span><span class="hex">#E4EFF1</span><span class="role">Elemento activo en navegación y hover.</span></span></button>
+      </div>
+
+      <h3>Estados</h3>
+      <p class="desc">Cada estado tiene un color de texto y un fondo tenue. Siempre se acompañan de ícono o texto, nunca solo de color.</p>
+      <div class="swatches">
+        <button class="swatch" data-copy="#2F6B4A"><span class="chip" style="background:linear-gradient(90deg,#2F6B4A 50%,#E3F1E8 50%)"></span><span class="info"><span class="name">Éxito</span><span class="hex">#2F6B4A · #E3F1E8</span><span class="role">Turno confirmado, Drive sincronizado.</span></span></button>
+        <button class="swatch" data-copy="#8A5A12"><span class="chip" style="background:linear-gradient(90deg,#8A5A12 50%,#FBF1DC 50%)"></span><span class="info"><span class="name">Atención</span><span class="hex">#8A5A12 · #FBF1DC</span><span class="role">Turno por confirmar, Drive sin conectar.</span></span></button>
+        <button class="swatch" data-copy="#9C3A3A"><span class="chip" style="background:linear-gradient(90deg,#9C3A3A 50%,#F7E4E4 50%)"></span><span class="info"><span class="name">Error</span><span class="hex">#9C3A3A · #F7E4E4</span><span class="role">Validaciones y fallas al guardar.</span></span></button>
+      </div>
+
+      <h3>Contraste verificado</h3>
+      <p class="desc">Relaciones calculadas según WCAG 2.1. El texto necesita 4,5:1; los bordes de controles, 3:1.</p>
+      <div class="table-wrap">
+        <table class="t">
+          <thead><tr><th>Combinación</th><th>Muestra</th><th>Relación</th><th>Resultado</th></tr></thead>
+          <tbody>
+            <tr><td>Pizarra sobre superficie</td><td><span class="sample" style="background:#fff;color:#1E2A32;border:1px solid var(--line)">Texto</span></td><td class="num">14,7:1</td><td>AAA</td></tr>
+            <tr><td>Pizarra suave sobre fondo</td><td><span class="sample" style="background:#F5F7F7;color:#566670">Texto</span></td><td class="num">5,5:1</td><td>AA</td></tr>
+            <tr><td>Blanco sobre petróleo</td><td><span class="sample" style="background:#2C5F6B;color:#fff">Texto</span></td><td class="num">7,1:1</td><td>AAA</td></tr>
+            <tr><td>Petróleo sobre petróleo tenue</td><td><span class="sample" style="background:#E4EFF1;color:#2C5F6B">Texto</span></td><td class="num">6,1:1</td><td>AA</td></tr>
+            <tr><td>Éxito sobre su fondo</td><td><span class="sample" style="background:#E3F1E8;color:#2F6B4A">Texto</span></td><td class="num">5,4:1</td><td>AA</td></tr>
+            <tr><td>Atención sobre su fondo</td><td><span class="sample" style="background:#FBF1DC;color:#8A5A12">Texto</span></td><td class="num">5,3:1</td><td>AA</td></tr>
+            <tr><td>Error sobre su fondo</td><td><span class="sample" style="background:#F7E4E4;color:#9C3A3A">Texto</span></td><td class="num">5,6:1</td><td>AA</td></tr>
+            <tr><td>Borde de control sobre superficie</td><td><span class="sample" style="background:#fff;border:2px solid #7B8A93">Campo</span></td><td class="num">3,6:1</td><td>Cumple para componentes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap"><strong>Importante:</strong> la línea decorativa (#D9E1E3) tiene solo 1,3:1. Sirve para separar tarjetas, pero no para delimitar campos de formulario ni botones.</p>
+    </section>
+
+    <!-- ============ Tipografía ============ -->
+    <section class="sec" id="tipografia">
+      <h2>Tipografía</h2>
+      <p class="lead">Una serif para títulos, que aporta calidez y criterio profesional, y una sans para la interfaz, pensada para leer rápido y con cifras alineadas.</p>
+
+      <div class="type-spec" style="margin-top:24px">
+        <div class="face face--serif">
+          <div class="big" aria-hidden="true">Aa</div>
+          <h3>Newsreader</h3>
+          <p>Títulos de pantalla, semana, formularios y marca. Pesos 500 y 600. Fallback: Georgia.</p>
+        </div>
+        <div class="face face--sans">
+          <div class="big" aria-hidden="true">Aa</div>
+          <h3>Public Sans</h3>
+          <p>Navegación, botones, campos, listas y texto corrido. Pesos 400, 500 y 600. Fallback: tipografía del sistema.</p>
+        </div>
+      </div>
+
+      <h3>Escala</h3>
+      <p class="desc">Todo en sentence case, sin mayúsculas sostenidas. Los horarios usan cifras tabulares para que las columnas se alineen.</p>
+      <div class="scale">
+        <div class="scale-row"><div class="k"><b>Título de pantalla</b>36 / 41 · serif 500</div><div class="t-display">Agenda de la semana</div></div>
+        <div class="scale-row"><div class="k"><b>Título de sección</b>28 / 34 · serif 500</div><div class="t-h1">31 de agosto al 6 de septiembre</div></div>
+        <div class="scale-row"><div class="k"><b>Título de panel</b>22 / 29 · serif 600</div><div class="t-h2">Programar turno</div></div>
+        <div class="scale-row"><div class="k"><b>Subtítulo</b>17 / 24 · sans 600</div><div class="t-h3">Turnos del lunes 31 de agosto</div></div>
+        <div class="scale-row"><div class="k"><b>Cuerpo</b>15 / 24 · sans 400</div><div class="t-body">Sesión individual de 50 minutos, con repetición semanal los lunes a las 9:00.</div></div>
+        <div class="scale-row"><div class="k"><b>Apoyo</b>13 / 20 · sans 400</div><div class="t-small">Las notas se guardan únicamente en tu cuenta de Google Drive.</div></div>
+        <div class="scale-row"><div class="k"><b>Horarios</b>15 / 21 · sans 500 tabular</div><div class="t-num">09:00 &nbsp; 10:15 &nbsp; 11:00 &nbsp; 16:30</div></div>
+      </div>
+      <p class="cap">Líneas de texto de hasta 66 caracteres en descripciones y de hasta 72 en notas clínicas largas.</p>
+    </section>
+
+    <!-- ============ Espaciado y formas ============ -->
+    <section class="sec" id="formas">
+      <h2>Espaciado y formas</h2>
+      <p class="lead">Base de 4 px, esquinas suaves pero contenidas y casi sin sombras: la jerarquía se logra con bordes y espacio.</p>
+
+      <h3>Espaciado</h3>
+      <div class="stage">
+        <div class="space-row">
+          <div class="space-box"><i style="width:4px;height:4px"></i>4</div>
+          <div class="space-box"><i style="width:8px;height:8px"></i>8</div>
+          <div class="space-box"><i style="width:12px;height:12px"></i>12</div>
+          <div class="space-box"><i style="width:16px;height:16px"></i>16</div>
+          <div class="space-box"><i style="width:24px;height:24px"></i>24</div>
+          <div class="space-box"><i style="width:32px;height:32px"></i>32</div>
+          <div class="space-box"><i style="width:48px;height:48px"></i>48</div>
+        </div>
+        <p class="cap">8 px entre elementos relacionados, 16 px dentro de componentes, 24 a 32 px entre bloques.</p>
+      </div>
+
+      <h3>Radios</h3>
+      <div class="stage">
+        <div class="row" style="gap:20px">
+          <div><div class="shape" style="border-radius:4px">4 px</div><p class="cap" style="margin-top:8px">Detalles menores</p></div>
+          <div><div class="shape" style="border-radius:8px">8 px</div><p class="cap" style="margin-top:8px">Botones y campos</p></div>
+          <div><div class="shape" style="border-radius:12px">12 px</div><p class="cap" style="margin-top:8px">Tarjetas y paneles</p></div>
+          <div><div class="shape" style="border-radius:999px">Pastilla</div><p class="cap" style="margin-top:8px">Estados</p></div>
+        </div>
+      </div>
+
+      <h3>Elevación</h3>
+      <div class="stage stage--bg">
+        <div class="row" style="gap:20px">
+          <div class="elev" style="border:1px solid var(--line)">Nivel 0<br>Solo borde</div>
+          <div class="elev" style="box-shadow:var(--sh-1);border:1px solid var(--line)">Nivel 1<br>Sombra mínima</div>
+          <div class="elev" style="box-shadow:var(--sh-2);border:1px solid var(--line)">Nivel 2<br>Ventanas y avisos</div>
+        </div>
+        <p class="cap">Las tarjetas de la agenda usan nivel 0. El nivel 2 se reserva para elementos que flotan sobre el contenido.</p>
+      </div>
+
+      <h3>Tokens en CSS</h3>
+      <pre class="code">:root{
+  --ink:#1E2A32;  --ink-2:#566670;  --line:#D9E1E3;  --line-strong:#7B8A93;
+  --bg:#F5F7F7;   --surface:#FFFFFF;
+  --primary:#2C5F6B;  --primary-hover:#234C56;  --primary-tint:#E4EFF1;
+  --ok:#2F6B4A;   --ok-tint:#E3F1E8;
+  --warn:#8A5A12; --warn-tint:#FBF1DC;
+  --err:#9C3A3A;  --err-tint:#F7E4E4;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-pill:999px;
+  --sh-1:0 1px 2px rgba(30,42,50,.06);
+  --sh-2:0 12px 32px rgba(30,42,50,.14);
+}</pre>
+    </section>
+
+    <!-- ============ Íconos ============ -->
+    <section class="sec" id="iconos">
+      <h2>Íconos</h2>
+      <p class="lead">Un solo set de trazo uniforme (1,75 px, esquinas redondeadas) que hereda el color del texto. Reemplaza los emojis y símbolos sueltos de la versión actual, que cambian de aspecto según el dispositivo.</p>
+      <div class="stage stage--bg">
+        <div class="icons">
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><div>Agenda<small>reemplaza 📅</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><div>Fichero<small>reemplaza 📂</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg><div>Configuración<small>reemplaza ⚙️</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><div>Programar<small>reemplaza +</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg><div>Drive<small>reemplaza ▲</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-eye-off"/></svg><div>Ocultar datos<small>reemplaza 🔒</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><div>Datos visibles<small>estado inverso</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg><div>Anterior<small>reemplaza ◀</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-chev-r"/></svg><div>Siguiente<small>reemplaza ▶</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg><div>Menú<small>reemplaza ☰</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg><div>Turno recurrente</div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-video"/></svg><div>Videollamada</div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-pin"/></svg><div>Presencial</div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg><div>Consola<small>reemplaza ⚙️ dev</small></div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div>Éxito</div></div>
+          <div class="icon-cell"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><div>Atención</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Botones ============ -->
+    <section class="sec" id="botones">
+      <h2>Botones</h2>
+      <p class="lead">Cada pantalla tiene un único botón principal. Los textos son verbos concretos y el mismo nombre se mantiene en todo el flujo: si el botón dice “Guardar turno”, el aviso dice “Turno guardado”.</p>
+
+      <div class="stage">
+        <div class="row">
+          <button class="btn btn--primary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Programar turno</button>
+          <button class="btn btn--secondary"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg>Conectar Drive</button>
+          <button class="btn btn--ghost">Cancelar</button>
+          <button class="btn btn--danger">Cancelar turno</button>
+          <button class="btn" disabled>Guardar turno</button>
+        </div>
+        <div class="row" style="margin-top:20px">
+          <button class="btn btn--toggle js-privacy" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>Ocultar datos</button>
+          <span class="seg" role="group" aria-label="Navegar entre semanas">
+            <button type="button" class="only-icon" aria-label="Semana anterior"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+            <button type="button">Hoy</button>
+            <button type="button" class="only-icon" aria-label="Semana siguiente"><svg class="icon" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+          </span>
+          <button class="icon-btn" aria-label="Abrir menú"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+          <button class="btn btn--primary btn--sm">Tamaño chico</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="t btn-table">
+          <thead><tr><th>Botón</th><th>Cuándo se usa</th></tr></thead>
+          <tbody>
+            <tr><td>Principal</td><td>La acción más importante de la pantalla. Máximo uno visible a la vez.</td></tr>
+            <tr><td>Secundario</td><td>Acciones de apoyo, como conectar una cuenta o reintentar.</td></tr>
+            <tr><td>Texto</td><td>Cancelar y cerrar. No compite con el principal.</td></tr>
+            <tr><td>Peligro</td><td>Acciones que cancelan o eliminan. Pide confirmación.</td></tr>
+            <tr><td>Conmutador</td><td>Activa o desactiva un modo, como ocultar datos. Se anuncia con <code>aria-pressed</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap"><strong>Medidas:</strong> altura de 40 px (32 px en la variante chica), radio de 8 px y foco visible de 2 px en petróleo.</p>
+    </section>
+
+    <!-- ============ Marca y navegación ============ -->
+    <section class="sec" id="navegacion">
+      <h2>Marca y navegación</h2>
+      <p class="lead">La Ψ se presenta sobre un cuadrado petróleo, junto al nombre en serif. La barra lateral tiene solo tres destinos y el estado de Drive vive al pie, separado de las acciones.</p>
+
+      <h3>Marca</h3>
+      <div class="stage">
+        <div class="row" style="gap:40px">
+          <div class="brand brand--lg"><span class="brand-mark" aria-hidden="true">Ψ</span><span class="brand-name">Psico-Agenda<small>Gestión clínica</small></span></div>
+          <div class="brand"><span class="brand-mark" aria-hidden="true">Ψ</span><span class="brand-name">Psico-Agenda<small>Gestión clínica</small></span></div>
+          <div class="brand"><span class="brand-mark" aria-hidden="true">Ψ</span></div>
+        </div>
+        <p class="cap">Versión grande para pantalla de ingreso, versión estándar para la barra lateral y solo el símbolo cuando el menú está contraído. El subtítulo “Gestión clínica” reemplaza al actual “Datos clínicos”.</p>
+      </div>
+
+      <h3>Barra lateral</h3>
+      <div class="stage stage--bg">
+        <div style="max-width:232px;padding:18px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);display:grid;gap:24px">
+          <div class="brand" style="padding:0 8px"><span class="brand-mark" aria-hidden="true">Ψ</span><span class="brand-name">Psico-Agenda<small>Gestión clínica</small></span></div>
+          <nav class="nav" aria-label="Principal">
+            <a href="#navegacion" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Agenda</a>
+            <a href="#navegacion"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>Fichero</a>
+            <a href="#navegacion"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Configuración</a>
+          </nav>
+          <div class="drive"><span class="dot" aria-hidden="true"></span><div><b>Drive conectado</b><span>Sincronizado a las 10:42</span></div></div>
+        </div>
+        <p class="cap">El elemento activo usa petróleo tenue y <code>aria-current="page"</code>. No hay botones de acción dentro de la barra.</p>
+      </div>
+
+      <h3>Barra superior en celular</h3>
+      <div class="stage stage--bg">
+        <div class="mobilebar">
+          <button class="icon-btn" aria-label="Abrir menú"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+          <div class="brand"><span class="brand-mark" aria-hidden="true">Ψ</span><span class="brand-name">Psico-Agenda</span></div>
+          <button class="icon-btn js-privacy" aria-pressed="false" aria-label="Ocultar datos"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
+        </div>
+        <p class="cap">En pantallas angostas la barra lateral se convierte en un menú. Ocultar datos queda siempre visible a la derecha.</p>
+      </div>
+    </section>
+
+    <!-- ============ Semana y calendario ============ -->
+    <section class="sec" id="semana">
+      <h2>Semana y calendario</h2>
+      <p class="lead">Tres piezas para moverse en el tiempo: el encabezado de semana, la tira de días y el calendario mensual. Estas muestras se calculan con la fecha real de tu dispositivo.</p>
+
+      <h3>Encabezado de semana</h3>
+      <div class="stage">
+        <div class="weekhead">
+          <div>
+            <div class="wk-title" id="demo-wk-title">Semana</div>
+            <div class="wk-sub">Semana en curso</div>
+          </div>
+          <div class="row">
+            <span class="seg" role="group" aria-label="Navegar entre semanas">
+              <button type="button" class="only-icon" aria-label="Semana anterior"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+              <button type="button">Hoy</button>
+              <button type="button" class="only-icon" aria-label="Semana siguiente"><svg class="icon" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+            </span>
+            <button class="btn btn--primary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Programar turno</button>
+          </div>
+        </div>
+        <p class="cap">El rango se escribe completo y sin repetir el mes cuando coincide. Los botones de semana se agrupan; el principal queda aparte a la derecha.</p>
+      </div>
+
+      <h3>Tira de días y calendario mensual</h3>
+      <p class="desc">Hoy se marca con un borde; el día elegido, con relleno petróleo; un punto indica que hay turnos. Probá seleccionar días.</p>
+      <div class="stage">
+        <div class="grid-2" style="grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr);align-items:start;gap:28px">
+          <div>
+            <div class="strip" id="demo-strip" role="group" aria-label="Días de la semana"></div>
+            <p class="cap">Cada día es un botón con <code>aria-pressed</code> para el elegido y <code>aria-current="date"</code> para hoy.</p>
+          </div>
+          <div class="cal" id="demo-cal"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Turnos ============ -->
+    <section class="sec" id="turnos">
+      <h2>Turnos y estado vacío</h2>
+      <p class="lead">Cada turno es una fila con horario, paciente, modalidad y estado. La barra de color y el texto del estado transmiten lo mismo, así no se depende solo del color.</p>
+
+      <h3>Fila de turno</h3>
+      <div class="stage stage--bg">
+        <div class="agenda-list">
+          <article class="appt">
+            <div class="when">09:00<span>09:50</span></div>
+            <div class="bar"></div>
+            <div><div class="who" data-sensitive>Lucía M.</div><div class="what"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-pin"/></svg>Sesión individual · Presencial<svg class="icon icon--sm" aria-label="Se repite cada semana" role="img"><use href="#i-repeat"/></svg></div></div>
+            <span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Confirmado</span>
+          </article>
+          <article class="appt">
+            <div class="when">11:00<span>11:50</span></div>
+            <div class="bar warn"></div>
+            <div><div class="who" data-sensitive>Martín G.</div><div class="what"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-video"/></svg>Primera consulta · Videollamada</div></div>
+            <span class="badge badge--warn"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg>Por confirmar</span>
+          </article>
+          <article class="appt is-cancelled">
+            <div class="when">16:30<span>17:20</span></div>
+            <div class="bar off"></div>
+            <div><div class="who" data-sensitive>Camila R.</div><div class="what"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-pin"/></svg>Sesión individual · Presencial</div></div>
+            <span class="badge badge--off"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-x"/></svg>Cancelado</span>
+          </article>
+        </div>
+        <p class="cap">Los nombres llevan <code>data-sensitive</code>, por lo que se difuminan al activar “Ocultar datos”. Probalo con el botón de la sección <a href="#drive">Drive y privacidad</a>.</p>
+      </div>
+
+      <h3>Estado vacío</h3>
+      <p class="desc">Reemplaza el ☕ y el texto “Sin turnos agendados para este día” por una invitación a actuar.</p>
+      <div class="stage stage--bg">
+        <div class="empty" style="max-width:480px">
+          <div class="ic"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></div>
+          <h4>No hay turnos para este día</h4>
+          <p>Programá un turno o elegí otro día en el calendario.</p>
+          <button class="btn btn--secondary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Programar turno</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Formulario ============ -->
+    <section class="sec" id="formulario">
+      <h2>Formulario de turno</h2>
+      <p class="lead">Etiquetas siempre visibles sobre el campo, ayudas en gris y errores que dicen qué pasó y cómo corregirlo. Esta es una propuesta para la ventana de “Programar turno”, que no pude ver en la versión actual.</p>
+      <div class="stage stage--bg">
+        <div class="modal" role="group" aria-label="Ejemplo de ventana Programar turno">
+          <div class="modal-head">
+            <h4>Programar turno</h4>
+            <button class="icon-btn" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="modal-body">
+            <div class="field">
+              <label for="f-pac">Paciente</label>
+              <select class="select" id="f-pac"><option>Lucía M.</option><option>Martín G.</option><option>Camila R.</option></select>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="f-fecha">Fecha</label>
+                <input class="input" id="f-fecha" type="text" value="12/10/2025" aria-invalid="true" aria-describedby="f-fecha-err">
+                <div class="err-msg" id="f-fecha-err"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg>Elegí una fecha desde hoy en adelante.</div>
+              </div>
+              <div class="field">
+                <label for="f-hora">Hora de inicio</label>
+                <input class="input" id="f-hora" type="text" value="09:00">
+              </div>
+              <div class="field">
+                <label for="f-dur">Duración</label>
+                <select class="select" id="f-dur"><option>50 minutos</option><option>30 minutos</option><option>90 minutos</option></select>
+              </div>
+            </div>
+            <div class="field" role="radiogroup" aria-labelledby="f-mod">
+              <span class="label" id="f-mod">Modalidad</span>
+              <div class="opts">
+                <label class="opt"><input type="radio" name="mod" checked><span><svg class="icon icon--sm" aria-hidden="true"><use href="#i-pin"/></svg>Presencial</span></label>
+                <label class="opt"><input type="radio" name="mod"><span><svg class="icon icon--sm" aria-hidden="true"><use href="#i-video"/></svg>Videollamada</span></label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="f-rep">Repetición</label>
+                <select class="select" id="f-rep"><option>No se repite</option><option selected>Cada semana</option><option>Cada 2 semanas</option><option>Cada mes</option></select>
+              </div>
+              <div class="field">
+                <label for="f-hasta">Repetir hasta</label>
+                <input class="input" id="f-hasta" type="text" placeholder="dd/mm/aaaa">
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-notas">Notas del turno</label>
+              <textarea class="textarea" id="f-notas" placeholder="Opcional"></textarea>
+              <span class="hint">Las notas se guardan solo en tu cuenta de Google Drive.</span>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn--ghost">Cancelar</button>
+            <button class="btn btn--primary">Guardar turno</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Drive y privacidad ============ -->
+    <section class="sec" id="drive">
+      <h2>Drive y privacidad</h2>
+      <p class="lead">Son dos asuntos distintos y se separan. El estado de Drive se muestra como información al pie de la barra lateral; ocultar datos es un conmutador siempre visible arriba.</p>
+
+      <h3>Estados de la conexión con Drive</h3>
+      <div class="stage stage--bg">
+        <div class="stack" style="max-width:560px">
+          <div class="alert alert--warn"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><div><b>Drive sin conectar</b><span class="body">Los turnos no se guardan hasta que conectes tu cuenta.</span><br><button class="btn btn--secondary btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud"/></svg>Conectar Drive</button></div></div>
+          <div class="alert alert--info"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><div><b>Sincronizando con Drive</b><span class="body">Esperá unos segundos antes de cerrar la página.</span></div></div>
+          <div class="alert alert--ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div><b>Drive conectado</b><span class="body">Sincronizado hoy a las 10:42.</span></div></div>
+          <div class="alert alert--err"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg><div><b>No pudimos guardar en Drive</b><span class="body">Tus cambios siguen en esta página. Revisá tu conexión e intentá de nuevo.</span><br><button class="btn btn--secondary btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg>Reintentar</button></div></div>
+        </div>
+      </div>
+
+      <h3>Ocultar datos</h3>
+      <p class="desc">Activalo para difuminar todos los datos de pacientes. El botón mantiene siempre el mismo texto; el estado se comunica con color, ícono y <code>aria-pressed</code>.</p>
+      <div class="stage">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:24px">
+          <button class="btn btn--toggle js-privacy" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>Ocultar datos</button>
+          <div class="appt" style="flex:1;min-width:280px;max-width:480px">
+            <div class="when">09:00<span>09:50</span></div>
+            <div class="bar"></div>
+            <div><div class="who" data-sensitive>Lucía M.</div><div class="what" data-sensitive>Sesión individual · Presencial</div></div>
+            <span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Confirmado</span>
+          </div>
+        </div>
+        <p class="cap"><strong>Recomendación:</strong> volver a ocultar los datos automáticamente tras unos minutos sin actividad, y mantener el estado entre pantallas.</p>
+      </div>
+    </section>
+
+    <!-- ============ Mensajes ============ -->
+    <section class="sec" id="mensajes">
+      <h2>Mensajes</h2>
+      <p class="lead">Los avisos explican qué pasó y qué hacer, sin disculpas ni frases vagas. Usan el mismo verbo que el botón que los originó.</p>
+      <div class="stage stage--bg">
+        <div class="stack" style="max-width:560px">
+          <div class="alert alert--info"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><div><b>Turnos recurrentes</b><span class="body">Si editás un turno que se repite, podés cambiar solo este o todos los siguientes.</span></div></div>
+          <div class="alert alert--ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><div><b>Turno guardado</b><span class="body">Se agregó a tu agenda y a Drive.</span></div></div>
+          <div class="alert alert--warn"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><div><b>Horario superpuesto</b><span class="body">Ya tenés un turno entre las 11:00 y las 11:50. Elegí otro horario.</span></div></div>
+          <div class="alert alert--err"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg><div><b>No se pudo guardar el turno</b><span class="body">Falta elegir un paciente.</span></div></div>
+        </div>
+        <div style="margin-top:20px"><span class="toast" role="status"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Turno guardado</span></div>
+        <p class="cap">El aviso temporal (arriba) dura unos 5 segundos y se anuncia a lectores de pantalla con <code>role="status"</code>.</p>
+      </div>
+    </section>
+
+    <!-- ============ Consola ============ -->
+    <section class="sec" id="consola">
+      <h2>Consola de desarrollo</h2>
+      <p class="lead">Es una herramienta para quien programa, no para la profesional. Se mantiene oculta y solo aparece en modo desarrollo. Cuando aparece, usa un tono oscuro y tipografía monoespaciada, y se expande con un clic.</p>
+      <div class="stage stage--bg">
+        <details class="dev">
+          <summary><span class="l"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-terminal"/></svg>Consola de desarrollo · 3 registros</span><svg class="icon icon--sm chev" aria-hidden="true"><use href="#i-chev-d"/></svg></summary>
+          <div class="log">
+            <div><span class="t">10:42:08</span> Drive: sincronización completa</div>
+            <div><span class="t">10:42:31</span> Turno creado · recurrencia semanal</div>
+            <div class="e"><span class="t">10:43:02</span> Error 429 al guardar · reintento en 5 s</div>
+          </div>
+        </details>
+        <p class="cap">Abrila haciendo clic en la barra. En producción se activa con <code>?dev=1</code> o con <code>Ctrl + Alt + D</code>.</p>
+      </div>
+    </section>
+
+    <!-- ============ Pantalla de ejemplo ============ -->
+    <section class="sec" id="pantalla">
+      <h2>Pantalla de ejemplo</h2>
+      <p class="lead">Todos los componentes juntos en la agenda. Es interactiva: elegí días, cambiá de semana, navegá el mes y probá “Ocultar datos”. Si reducís el ancho de la ventana, pasa a la versión para celular.</p>
+
+      <div class="frame">
+        <div class="app">
+          <aside class="app-side">
+            <div class="brand"><span class="brand-mark" aria-hidden="true">Ψ</span><span class="brand-name">Psico-Agenda<small>Gestión clínica</small></span></div>
+            <nav class="nav" aria-label="Principal">
+              <a href="#pantalla" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Agenda</a>
+              <a href="#pantalla"><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg>Fichero</a>
+              <a href="#pantalla"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Configuración</a>
+            </nav>
+            <div class="grow"></div>
+            <div class="drive"><span class="dot" aria-hidden="true"></span><div><b>Drive conectado</b><span>Sincronizado a las 10:42</span></div></div>
+          </aside>
+
+          <div class="app-main">
+            <div class="app-top">
+              <button class="icon-btn menu-btn" aria-label="Abrir menú"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg></button>
+              <button class="btn btn--toggle btn--sm js-privacy" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>Ocultar datos</button>
+            </div>
+
+            <div class="weekhead">
+              <div>
+                <h1 id="app-title">Agenda</h1>
+                <div class="wk-sub" id="app-range"></div>
+              </div>
+              <div class="row">
+                <span class="seg" role="group" aria-label="Navegar entre semanas">
+                  <button type="button" class="only-icon" id="app-prev" aria-label="Semana anterior"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+                  <button type="button" id="app-today">Hoy</button>
+                  <button type="button" class="only-icon" id="app-next" aria-label="Semana siguiente"><svg class="icon" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+                </span>
+                <button class="btn btn--primary"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Programar turno</button>
+              </div>
+            </div>
+
+            <div class="strip" id="app-strip" role="group" aria-label="Días de la semana"></div>
+
+            <div class="app-body">
+              <section aria-labelledby="app-list-title">
+                <h2 class="list-title" id="app-list-title" style="font-family:var(--sans)"></h2>
+                <div id="app-list" class="agenda-list"></div>
+              </section>
+              <div class="cal-wrap"><div class="cal" id="app-cal"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Pendientes ============ -->
+    <section class="sec" id="pendientes">
+      <h2>Pendientes de la revisión</h2>
+      <p class="lead">Los puntos que marqué al revisar la versión actual de Psico-Agenda y cómo queda resuelto cada uno en este diseño.</p>
+
+      <div class="fixes">
+
+        <article class="fix">
+          <header><h3>La fecha de “Hoy” no coincide con el día actual</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>La página mostraba la semana del 31 de agosto de 2026 con “Hoy” en el lunes 31. Puede ser una versión en caché o una fecha calculada fuera del navegador.</p></div>
+            <div><h4>Cómo se resuelve</h4>
+              <ul>
+                <li>Calcular “hoy” en el navegador, en la zona horaria de Buenos Aires.</li>
+                <li>Recalcular al volver a la pestaña, para cubrir el cambio de día.</li>
+                <li>No guardar la fecha elegida entre sesiones.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="demo">Hoy, según tu dispositivo: <span class="livedate" id="live-date"></span></div>
+          <pre class="code">const TZ = 'America/Argentina/Buenos_Aires';
+const hoy = () =&gt; new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date()); // aaaa-mm-dd
+
+document.addEventListener('visibilitychange', () =&gt; {
+  if (!document.hidden) renderAgenda(hoy());
+});</pre>
+        </article>
+
+        <article class="fix">
+          <header><h3>“Programar turno” aparece dos veces</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>El mismo botón estaba en la barra lateral y en el encabezado de la agenda.</p></div>
+            <div><h4>Cómo se resuelve</h4><p>Queda un único botón principal, junto al título de la semana. La barra lateral solo navega. En celular, el botón se mantiene en esa misma posición.</p></div>
+          </div>
+          <div class="demo before"><span class="pill"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-plus"/></svg>Programar Turno</span><span class="pill">Programar Turno</span><span class="arrow">→</span><button class="btn btn--primary btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-plus"/></svg>Programar turno</button></div>
+        </article>
+
+        <article class="fix">
+          <header><h3>Emojis usados como íconos</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>📅 📂 ⚙️ 🔒 ☕ se dibujan distinto en cada sistema operativo y le restan seriedad a una herramienta clínica.</p></div>
+            <div><h4>Cómo se resuelve</h4><p>Un set de íconos SVG con trazo uniforme que toma el color del texto. Ver la sección <a href="#iconos">Íconos</a> para el reemplazo de cada uno.</p></div>
+          </div>
+          <div class="demo before"><span class="pill">📅 Agenda</span><span class="pill">📂 Fichero</span><span class="pill">⚙️ Configuración</span><span class="arrow">→</span>
+            <span class="pill"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-calendar"/></svg>Agenda</span><span class="pill"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-folder"/></svg>Fichero</span><span class="pill"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-settings"/></svg>Configuración</span></div>
+        </article>
+
+        <article class="fix">
+          <header><h3>Consola de desarrollo visible para la usuaria</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>La barra “Consola Dev (0 logs)” aparecía al pie de la interfaz de producción.</p></div>
+            <div><h4>Cómo se resuelve</h4>
+              <ul>
+                <li>Oculta por defecto.</li>
+                <li>Se activa con <code>?dev=1</code> o <code>Ctrl + Alt + D</code>.</li>
+                <li>Diseño propio en la sección <a href="#consola">Consola de desarrollo</a>.</li>
+              </ul>
+            </div>
+          </div>
+          <pre class="code">const dev = new URLSearchParams(location.search).has('dev');
+document.getElementById('consola-dev').hidden = !dev;
+addEventListener('keydown', e =&gt; {
+  if (e.ctrlKey &amp;&amp; e.altKey &amp;&amp; e.key.toLowerCase() === 'd') toggleConsola();
+});</pre>
+        </article>
+
+        <article class="fix">
+          <header><h3>Símbolos tipográficos mezclados</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>Se combinaban ▲ ◀ ▶ ≪ ☰ + como si fueran íconos, con distinto grosor y alineación.</p></div>
+            <div><h4>Cómo se resuelve</h4><p>Todas las flechas, el menú y el signo más salen del mismo set de íconos, con el mismo trazo y tamaño. Los botones de semana pasan a tener texto accesible.</p></div>
+          </div>
+          <div class="demo before"><span class="pill">◀ Sem. Anterior</span><span class="pill">Sem. Siguiente ▶</span><span class="arrow">→</span>
+            <span class="seg" role="group" aria-label="Ejemplo de navegación entre semanas"><button type="button" class="only-icon" aria-label="Semana anterior"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button><button type="button">Hoy</button><button type="button" class="only-icon" aria-label="Semana siguiente"><svg class="icon" aria-hidden="true"><use href="#i-chev-r"/></svg></button></span></div>
+        </article>
+
+        <article class="fix">
+          <header><h3>Drive y “Ocultar datos” agrupados sin relación</h3><span class="badge badge--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Resuelto</span></header>
+          <div class="cols">
+            <div><h4>Qué vi</h4><p>“Conectar Drive” (una configuración) y “Ocultar datos” (una acción de privacidad) estaban lado a lado en la barra lateral.</p></div>
+            <div><h4>Cómo se resuelve</h4>
+              <ul>
+                <li>Drive pasa a ser un indicador de estado al pie de la barra lateral. “Conectar Drive” solo aparece cuando falta la conexión.</li>
+                <li>Ocultar datos pasa a la barra superior como conmutador siempre visible.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <article class="fix">
+          <header><h3>Accesibilidad por verificar</h3><span class="badge badge--warn"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg>Verificar en el código real</span></header>
+          <div class="cols">
+            <div><h4>Qué quedó incluido en el diseño</h4>
+              <ul>
+                <li>Contraste AA en todo el texto y 3:1 en bordes de controles.</li>
+                <li>Áreas táctiles de al menos 40 px (32 px en la variante chica).</li>
+                <li>Foco visible de 2 px en todos los elementos interactivos.</li>
+                <li>Botones de solo ícono con <code>aria-label</code>.</li>
+                <li>Día actual con <code>aria-current="date"</code> y día elegido con <code>aria-pressed</code>.</li>
+                <li>Estados que no dependen solo del color.</li>
+                <li>Animaciones mínimas y desactivadas con “reducir movimiento”.</li>
+              </ul>
+            </div>
+            <div><h4>Qué falta comprobar</h4>
+              <p>Desde el HTML no pude ver si los botones actuales tienen etiquetas accesibles ni medir el contraste real. Conviene pasar Lighthouse o axe DevTools sobre la aplicación y revisar el orden de tabulación del calendario y de la ventana de turnos.</p>
+              <p style="margin-top:8px">Además, declarar <code>&lt;html lang="es-AR"&gt;</code> y agregar <code>viewport-fit=cover</code> al meta viewport si la app se usa instalada en celular.</p>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="copied" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const TZ = 'America/Argentina/Buenos_Aires';
+  const DAY = 864e5;
+  const ICON = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`;
+  const ICON_SM = id => `<svg class="icon icon--sm" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+  /* ---------- Fechas (todas como medianoche UTC abstracta) ---------- */
+  const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+  function todayTs() {
+    const [y, m, d] = dayFmt.format(new Date()).split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+  const fmt = (ts, opts) => new Intl.DateTimeFormat('es-AR', { timeZone: 'UTC', ...opts }).format(ts);
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const mondayOf = ts => ts - ((new Date(ts).getUTCDay() + 6) % 7) * DAY;
+  const monthStart = ts => { const d = new Date(ts); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1); };
+  const addMonths = (ts, n) => { const d = new Date(ts); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1); };
+
+  function weekRange(mon) {
+    const sun = mon + 6 * DAY;
+    const a = new Date(mon), b = new Date(sun);
+    const sameMonth = a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear();
+    const sameYear = a.getUTCFullYear() === b.getUTCFullYear();
+    const end = `${b.getUTCDate()} de ${fmt(sun, { month: 'long' })} de ${b.getUTCFullYear()}`;
+    if (sameMonth) return `${a.getUTCDate()} al ${end}`;
+    if (sameYear) return `${a.getUTCDate()} de ${fmt(mon, { month: 'long' })} al ${end}`;
+    return `${a.getUTCDate()} de ${fmt(mon, { month: 'long' })} de ${a.getUTCFullYear()} al ${end}`;
+  }
+
+  /* ---------- Datos de ejemplo (relativos a hoy, ficticios) ---------- */
+  const SAMPLE = {
+    0: [
+      { s: '09:00', e: '09:50', n: 'Lucía M.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'ok', rec: true },
+      { s: '11:00', e: '11:50', n: 'Martín G.', d: 'Primera consulta · Videollamada', ic: 'i-video', st: 'warn' },
+      { s: '16:30', e: '17:20', n: 'Camila R.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'ok', rec: true }
+    ],
+    1: [{ s: '10:00', e: '10:50', n: 'Tomás B.', d: 'Sesión individual · Videollamada', ic: 'i-video', st: 'ok', rec: true }],
+    2: [
+      { s: '09:00', e: '09:50', n: 'Lucía M.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'ok', rec: true },
+      { s: '15:00', e: '15:50', n: 'Valentina S.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'warn' }
+    ],
+    7: [{ s: '09:00', e: '09:50', n: 'Lucía M.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'ok', rec: true }],
+    '-1': [{ s: '17:00', e: '17:50', n: 'Camila R.', d: 'Sesión individual · Presencial', ic: 'i-pin', st: 'ok', rec: true }]
+  };
+  const diffFromToday = ts => Math.round((ts - todayTs()) / DAY);
+  const hasAppts = ts => !!SAMPLE[diffFromToday(ts)];
+
+  const BADGE = {
+    ok: `<span class="badge badge--ok">${ICON_SM('i-check')}Confirmado</span>`,
+    warn: `<span class="badge badge--warn">${ICON_SM('i-alert')}Por confirmar</span>`
+  };
+
+  /* ---------- Componentes reutilizables ---------- */
+  function renderStrip(el, sel, onPick) {
+    const mon = mondayOf(sel), today = todayTs();
+    el.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const ts = mon + i * DAY;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'day' + (hasAppts(ts) ? ' has' : '');
+      b.setAttribute('aria-pressed', String(ts === sel));
+      if (ts === today) b.setAttribute('aria-current', 'date');
+      b.setAttribute('aria-label', cap(fmt(ts, { weekday: 'long', day: 'numeric', month: 'long' })) + (ts === today ? ', hoy' : '') + (hasAppts(ts) ? ', con turnos' : ''));
+      b.innerHTML = `<span>${fmt(ts, { weekday: 'short' }).replace('.', '')}</span><b>${new Date(ts).getUTCDate()}</b>`;
+      b.addEventListener('click', () => onPick(ts));
+      el.appendChild(b);
+    }
+  }
+
+  function renderCal(el, sel, monthTs, onPick, onMonth) {
+    const today = todayTs();
+    const first = monthTs;
+    const gridStart = mondayOf(first);
+    const wd = ['lu', 'ma', 'mi', 'ju', 'vi', 'sá', 'do'];
+    let html = `<div class="cal-head">
+      <button type="button" class="icon-btn" data-m="-1" aria-label="Mes anterior">${ICON('i-chev-l')}</button>
+      <h4>${cap(fmt(first, { month: 'long', year: 'numeric' }))}</h4>
+      <button type="button" class="icon-btn" data-m="1" aria-label="Mes siguiente">${ICON('i-chev-r')}</button>
+    </div><div class="cal-grid">` + wd.map(w => `<div class="wd" aria-hidden="true">${w}</div>`).join('');
+    const curMonth = new Date(first).getUTCMonth();
+    for (let i = 0; i < 42; i++) {
+      const ts = gridStart + i * DAY;
+      const d = new Date(ts);
+      if (i >= 35 && d.getUTCMonth() !== curMonth) break;
+      const cls = 'cal-d' + (d.getUTCMonth() !== curMonth ? ' out' : '') + (hasAppts(ts) ? ' has' : '');
+      html += `<button type="button" class="${cls}" data-ts="${ts}" aria-pressed="${ts === sel}"${ts === today ? ' aria-current="date"' : ''} aria-label="${cap(fmt(ts, { weekday: 'long', day: 'numeric', month: 'long' }))}">${d.getUTCDate()}</button>`;
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    el.querySelectorAll('[data-ts]').forEach(b => b.addEventListener('click', () => onPick(Number(b.dataset.ts))));
+    el.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => onMonth(Number(b.dataset.m))));
+  }
+
+  /* ---------- Muestra de la sección "Semana y calendario" ---------- */
+  const demo = { sel: todayTs(), month: monthStart(todayTs()) };
+  function renderDemo() {
+    document.getElementById('demo-wk-title').textContent = weekRange(mondayOf(demo.sel));
+    renderStrip(document.getElementById('demo-strip'), demo.sel, ts => { demo.sel = ts; demo.month = monthStart(ts); renderDemo(); });
+    renderCal(document.getElementById('demo-cal'), demo.sel, demo.month,
+      ts => { demo.sel = ts; demo.month = monthStart(ts); renderDemo(); },
+      n => { demo.month = addMonths(demo.month, n); renderDemo(); });
+  }
+
+  /* ---------- Pantalla de ejemplo ---------- */
+  const app = { sel: todayTs(), month: monthStart(todayTs()) };
+  function renderApp() {
+    document.getElementById('app-range').textContent = weekRange(mondayOf(app.sel));
+    renderStrip(document.getElementById('app-strip'), app.sel, ts => { app.sel = ts; app.month = monthStart(ts); renderApp(); });
+    renderCal(document.getElementById('app-cal'), app.sel, app.month,
+      ts => { app.sel = ts; app.month = monthStart(ts); renderApp(); },
+      n => { app.month = addMonths(app.month, n); renderApp(); });
+
+    const label = cap(fmt(app.sel, { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', ''));
+    document.getElementById('app-list-title').textContent = 'Turnos del ' + label.charAt(0).toLowerCase() + label.slice(1);
+
+    const list = document.getElementById('app-list');
+    const items = SAMPLE[diffFromToday(app.sel)];
+    if (!items) {
+      list.innerHTML = `<div class="empty"><div class="ic">${ICON('i-calendar')}</div><h4>No hay turnos para este día</h4><p>Programá un turno o elegí otro día en el calendario.</p><button type="button" class="btn btn--secondary">${ICON('i-plus')}Programar turno</button></div>`;
+    } else {
+      list.innerHTML = items.map(a => `<article class="appt">
+        <div class="when">${a.s}<span>${a.e}</span></div>
+        <div class="bar${a.st === 'warn' ? ' warn' : ''}"></div>
+        <div><div class="who" data-sensitive>${a.n}</div>
+          <div class="what">${ICON_SM(a.ic)}<span data-sensitive>${a.d}</span>${a.rec ? `<svg class="icon icon--sm" role="img" aria-label="Se repite cada semana"><use href="#i-repeat"/></svg>` : ''}</div></div>
+        ${BADGE[a.st]}
+      </article>`).join('');
+    }
+  }
+  document.getElementById('app-prev').addEventListener('click', () => { app.sel -= 7 * DAY; app.month = monthStart(app.sel); renderApp(); });
+  document.getElementById('app-next').addEventListener('click', () => { app.sel += 7 * DAY; app.month = monthStart(app.sel); renderApp(); });
+  document.getElementById('app-today').addEventListener('click', () => { app.sel = todayTs(); app.month = monthStart(app.sel); renderApp(); });
+
+  /* ---------- Fecha en vivo (pendiente 1) ---------- */
+  function renderLive() {
+    document.getElementById('live-date').textContent = cap(fmt(todayTs(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', ''));
+  }
+
+  /* ---------- Ocultar datos (conmutadores sincronizados) ---------- */
+  function setPrivate(on) {
+    document.body.classList.toggle('is-private', on);
+    document.querySelectorAll('.js-privacy').forEach(b => {
+      b.setAttribute('aria-pressed', String(on));
+      const use = b.querySelector('use');
+      if (use) use.setAttribute('href', on ? '#i-eye-off' : '#i-eye');
+    });
+  }
+  document.querySelectorAll('.js-privacy').forEach(b =>
+    b.addEventListener('click', () => setPrivate(b.getAttribute('aria-pressed') !== 'true')));
+
+  /* ---------- Copiar colores ---------- */
+  const toast = document.getElementById('copied');
+  let t;
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    let msg;
+    try { await navigator.clipboard.writeText(b.dataset.copy); msg = 'Copiado ' + b.dataset.copy; }
+    catch (e) { msg = 'No se pudo copiar. Seleccioná el código a mano: ' + b.dataset.copy; }
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(t);
+    t = setTimeout(() => toast.classList.remove('show'), 2200);
+  }));
+
+  /* ---------- Inicio y cambio de día ---------- */
+  function renderAll() { renderDemo(); renderApp(); renderLive(); }
+  renderAll();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      const today = todayTs();
+      if (demo.sel === today) return;
+      renderLive();
+    }
+  });
+})();
+</script>
+</body>
+</html>

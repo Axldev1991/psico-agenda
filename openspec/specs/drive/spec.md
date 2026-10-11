@@ -46,3 +46,7 @@ Este documento detalla los requisitos de aceptación y comportamiento clínico e
 
 ### REQ-10: Pre-carga Completa de Emergencia (Modo Offline Completo)
 - **Criterio de Aceptación:** En la interfaz de configuración/sincronización, se debe incluir un botón de **"Pre-cargar todo para uso Offline"** que descargue en bucle todos los expedientes inactivos de una sola vez, asegurando el acceso local 100% offline ante viajes.
+
+### REQ-11: Reconciliación No Destructiva de Sesiones (Last-Write-Wins)
+- **Criterio de Aceptación:** Durante la descarga y sincronización de expedientes clínicos, la aplicación nunca debe borrar de forma destructiva las sesiones locales existentes con `deleteByPatient`. En su lugar, debe conciliar las sesiones locales y remotas utilizando resolución granular Last-Write-Wins (LWW) por UUID basada en `updatedAt` (con fallback a `createdAt`), uniendo sesiones disjuntas y preservando turnos y notas registradas localmente en modo offline.
+- **Validación:** Comprobado mediante pruebas unitarias en `drive-sync-merger.test.ts` e integración en `drive-sync.service.test.ts`.

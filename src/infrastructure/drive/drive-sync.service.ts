@@ -4,6 +4,7 @@ import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from "../../domain/session.types";
 import { driveLogger } from "./drive-logger";
+import { mergeSessionsByLWW } from "./drive-sync-merger";
 import { container } from "../container";
 
 const driveRepo = container.getDriveRepository();
@@ -80,9 +81,11 @@ export class DriveSyncService {
       await patientRepo.save(updatedPatient);
     }
 
-    await sessionRepo.deleteByPatient(uuid);
-    if (Array.isArray(remotePatientData.sessions)) {
-      await sessionRepo.saveAll(remotePatientData.sessions);
+    const localPatientSessions = await sessionRepo.getByPatient(uuid);
+    const remoteSessions = Array.isArray(remotePatientData.sessions) ? remotePatientData.sessions : [];
+    const mergedSessions = mergeSessionsByLWW(localPatientSessions, remoteSessions);
+    if (mergedSessions.length > 0) {
+      await sessionRepo.saveAll(mergedSessions);
     }
   }
 
@@ -105,9 +108,11 @@ export class DriveSyncService {
 
         await patientRepo.save(patient);
 
-        await sessionRepo.deleteByPatient(patient.uuid);
-        if (Array.isArray(patientData.sessions)) {
-          await sessionRepo.saveAll(patientData.sessions);
+        const localPatientSessions = await sessionRepo.getByPatient(patient.uuid);
+        const remoteSessions = Array.isArray(patientData.sessions) ? patientData.sessions : [];
+        const mergedSessions = mergeSessionsByLWW(localPatientSessions, remoteSessions);
+        if (mergedSessions.length > 0) {
+          await sessionRepo.saveAll(mergedSessions);
         }
       }
     }
@@ -243,11 +248,30 @@ export class DriveSyncService {
     for (const uuid of patientsToUpload) {
       const localP = localPatients.find(p => p.uuid === uuid);
       if (localP) {
-        const pSessions = localSessions.filter(s => s.patientUuid === uuid);
+        let existingRemoteSessions: Session[] = [];
+        try {
+          const remoteStr = await driveRepo.downloadFileFromFolder(patientsFolderId, `${uuid}.json`);
+          if (remoteStr) {
+            const parsed = JSON.parse(remoteStr);
+            if (Array.isArray(parsed.sessions)) {
+              existingRemoteSessions = parsed.sessions;
+            }
+          }
+        } catch {
+          // Archivo nuevo o inexistente
+        }
+
+        const localPatientSessions = localSessions.filter(s => s.patientUuid === uuid);
+        const mergedSessions = mergeSessionsByLWW(localPatientSessions, existingRemoteSessions);
+
+        if (existingRemoteSessions.length > 0) {
+          await sessionRepo.saveAll(mergedSessions);
+        }
+
         const fileContent = {
           uuid: localP.uuid,
           clinicalHistory: localP.clinicalHistory || "",
-          sessions: pSessions
+          sessions: mergedSessions
         };
         await driveRepo.uploadFileToFolder(patientsFolderId, `${uuid}.json`, "application/json", JSON.stringify(fileContent));
       }
@@ -278,10 +302,13 @@ export class DriveSyncService {
           mergedPatients[idx].isHistoryLoaded = true;
           mergedPatients[idx].status = 'active';
         }
-        // Actualizar sesiones locales del paciente
-        await sessionRepo.deleteByPatient(uuid);
-        if (Array.isArray(patientData.sessions)) {
-          await sessionRepo.saveAll(patientData.sessions);
+
+        // Reconciliar sesiones del paciente de forma no destructiva con LWW
+        const localPatientSessions = localSessions.filter(s => s.patientUuid === uuid);
+        const remoteSessions = Array.isArray(patientData.sessions) ? patientData.sessions : [];
+        const mergedSessions = mergeSessionsByLWW(localPatientSessions, remoteSessions);
+        if (mergedSessions.length > 0) {
+          await sessionRepo.saveAll(mergedSessions);
         }
       }
     }

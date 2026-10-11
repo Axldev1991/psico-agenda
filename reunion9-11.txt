@@ -1,0 +1,6 @@
+PSICO AGENDA:
+- revisar la logica de ageda: toggle entre pacientes: eventual o permanente.
+- revisar en el cambio de agenda la ayuda visual con los horarios disponibles para cambio. (RE agenda)
+- Setear horarios disponibles, vacaciones etc.
+- Pensar anotaciones extras por fuera de las sesiones.
+- notificaciones

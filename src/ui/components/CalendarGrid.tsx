@@ -17,7 +17,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
-import { CalendarSlot } from "../hooks/useCalendar";
+import { CalendarSlot } from "../../domain/agenda.types";
 import { getHoliday, Holiday } from "../../domain/holidays";
 import { Session } from "../../domain/session.types";
 

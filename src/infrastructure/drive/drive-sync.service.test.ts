@@ -25,6 +25,7 @@ const {
   mockSaveAllMovementConfigs,
   mockGetPunctuationConfigs,
   mockSaveAllPunctuationConfigs,
+  mockGetByPatient,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -46,6 +47,7 @@ const {
   mockSaveAllMovementConfigs: vi.fn(),
   mockGetPunctuationConfigs: vi.fn(),
   mockSaveAllPunctuationConfigs: vi.fn(),
+  mockGetByPatient: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -78,6 +80,7 @@ vi.mock('../db/dexie-session.repository', () => {
   return {
     DexieSessionRepository: class {
       getAll = mockGetAllSessions;
+      getByPatient = mockGetByPatient;
       deleteByPatient = mockDeleteByPatient;
       saveAll = mockSaveAllSessions;
       getRecurrenceRules = mockGetRecurrenceRules;
@@ -103,6 +106,7 @@ describe('DriveSyncService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAllSessions.mockResolvedValue([]);
+    mockGetByPatient.mockResolvedValue([]);
     mockGetMovementConfigs.mockResolvedValue([]);
     mockGetPunctuationConfigs.mockResolvedValue([]);
     service = new DriveSyncService();
@@ -142,7 +146,7 @@ describe('DriveSyncService', () => {
     const mockPatient = { uuid: patientUuid, fullName: 'Test' };
     const remoteData = {
       clinicalHistory: 'New history',
-      sessions: [{ patientUuid: patientUuid, dateTime: '2026-06-03T10:00:00Z' }]
+      sessions: [{ uuid: 'sess-remote', patientUuid: patientUuid, dateTime: '2026-06-03T10:00:00Z' }]
     };
 
     mockGetByUuid.mockResolvedValue(mockPatient);
@@ -161,8 +165,8 @@ describe('DriveSyncService', () => {
       })
     );
 
-    // Verify session update
-    expect(mockDeleteByPatient).toHaveBeenCalledWith(patientUuid);
+    // Verify sessions saved via LWW (non-destructive)
+    expect(mockDeleteByPatient).not.toHaveBeenCalled();
     expect(mockSaveAllSessions).toHaveBeenCalledWith(remoteData.sessions);
   });
 
@@ -251,6 +255,60 @@ describe('DriveSyncService', () => {
         ])
       );
       expect(mockSaveAllSessions).toHaveBeenCalledWith(remoteDetail.sessions);
+    });
+
+    it('should preserve offline-created local sessions when downloading remote patient during performSync (REQ-11)', async () => {
+      const localPatient = {
+        uuid: 'p1',
+        fullName: 'Local Patient',
+        updatedAt: '2026-07-20T10:00:00Z',
+        isHistoryLoaded: true,
+      };
+      const remotePatient = {
+        uuid: 'p1',
+        fullName: 'Remote Patient',
+        updatedAt: '2026-07-21T10:00:00Z',
+        status: 'active' as const,
+      };
+      const offlineLocalSession = {
+        uuid: 'sess-offline',
+        patientUuid: 'p1',
+        dateTime: '2026-07-20T11:00:00Z',
+        updatedAt: '2026-07-20T11:00:00Z',
+      };
+      const remoteSession = {
+        uuid: 'sess-remote',
+        patientUuid: 'p1',
+        dateTime: '2026-07-21T09:00:00Z',
+        updatedAt: '2026-07-21T09:00:00Z',
+      };
+      const remoteDetail = {
+        uuid: 'p1',
+        clinicalHistory: 'Remote history',
+        sessions: [remoteSession],
+      };
+
+      mockGetAll.mockResolvedValue([localPatient]);
+      mockGetAllSessions.mockResolvedValue([offlineLocalSession]);
+      mockDownloadFile.mockImplementation(async (folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({ patients: [remotePatient], recurrenceRules: [], exportedAt: '2026-07-21T10:00:00Z' });
+        }
+        if (filename === 'p1.json') {
+          return JSON.stringify(remoteDetail);
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Crucial: both offline local session and remote session must be merged and saved!
+      expect(mockSaveAllSessions).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ uuid: 'sess-offline' }),
+          expect.objectContaining({ uuid: 'sess-remote' }),
+        ])
+      );
     });
 
     it('should respect DLP Guard and not upload patient if isHistoryLoaded is false', async () => {
