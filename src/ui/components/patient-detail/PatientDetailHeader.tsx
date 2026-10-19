@@ -2,12 +2,14 @@
 
 import React from "react";
 import { Patient } from "../../../domain/patient.types";
+import { Session } from "../../../domain/session.types";
 import { calculateAge } from "../../../domain/patient.utils";
-import { exportFullHistoryToWord } from "../../../infrastructure/export/docx-exporter";
+import { generateClinicalHistoryDocument } from "../../../domain/export.service";
 import { Icon } from "../common/Icon";
 
 interface PatientDetailHeaderProps {
   patient: Patient;
+  sessions: Session[];
   onBack: () => void;
   onEdit: (patient: Patient) => void;
 }
@@ -20,9 +22,26 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
 
 export function PatientDetailHeader({
   patient,
+  sessions,
   onBack,
   onEdit,
 }: PatientDetailHeaderProps) {
+  const handleExport = () => {
+    const htmlContent = generateClinicalHistoryDocument(patient, sessions);
+    const blob = new Blob(['\ufeff' + htmlContent], {
+      type: 'application/msword;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = patient.fullName.replace(/\s+/g, '_');
+    
+    a.href = url;
+    a.download = `${safeName}_historial.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
   const isUnderage = patient.type === "underage";
 
@@ -92,9 +111,8 @@ export function PatientDetailHeader({
 
           <button
             type="button"
-            disabled={patient.isHistoryLoaded === false}
-            onClick={() => exportFullHistoryToWord(patient)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+            onClick={handleExport}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
             title="Exportar todo el historial clínico a un único Word (.doc)"
           >
             <Icon name="download" size={14} />

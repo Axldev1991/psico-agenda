@@ -153,7 +153,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     <>
       <section className="space-y-6 animate-in fade-in duration-300">
         {/* Cabecera del Paciente */}
-        <PatientDetailHeader patient={patient} onBack={onBack} onEdit={onEdit} />
+        <PatientDetailHeader patient={patient} sessions={sortedSessions} onBack={onBack} onEdit={onEdit} />
 
         {/* Workspace o Alerta de Lazy Loading */}
         {patient.isHistoryLoaded === false ? (
