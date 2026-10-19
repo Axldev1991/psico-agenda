@@ -5,6 +5,12 @@ import { Patient } from "../../domain/patient.types";
 
 export type ActiveTab = "calendar" | "patients" | "settings";
 
+export interface Toast {
+  id: string;
+  message: string;
+  type: "success" | "info" | "error";
+}
+
 export interface UIContextType {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
@@ -21,6 +27,8 @@ export interface UIContextType {
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   navigateToPatientDetail: (patient: Patient) => void;
+  toast: Toast | null;
+  showToast: (message: string, type?: "success" | "info" | "error") => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -32,6 +40,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   const openNewPatientModal = () => {
     setPatientToEdit(null);
@@ -61,6 +70,14 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setActiveTab("patients");
   };
 
+  const showToast = (message: string, type: "success" | "info" | "error" = "success") => {
+    const id = crypto.randomUUID();
+    setToast({ id, message, type });
+    setTimeout(() => {
+      setToast((curr) => (curr?.id === id ? null : curr));
+    }, 4000);
+  };
+
   return (
     <UIContext.Provider
       value={{
@@ -79,6 +96,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
         isSidebarCollapsed,
         setIsSidebarCollapsed,
         navigateToPatientDetail,
+        toast,
+        showToast,
       }}
     >
       {children}

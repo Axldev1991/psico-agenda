@@ -33,6 +33,7 @@ function HomeContent() {
     isSessionModalOpen,
     closeSessionModal,
     navigateToPatientDetail,
+    toast,
   } = useUIState();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -179,6 +180,28 @@ function HomeContent() {
         onCreateManual={addManualSession}
         onCreateRecurrence={addRecurrence}
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <aside
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-surface border border-line shadow-xl rounded-xl animate-in fade-in slide-in-from-bottom-3 duration-200"
+        >
+          <div
+            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+              toast.type === "success"
+                ? "bg-ok/15 text-ok"
+                : toast.type === "error"
+                ? "bg-err/15 text-err"
+                : "bg-primary-tint text-primary"
+            }`}
+          >
+            <Icon name={toast.type === "error" ? "alert" : "check"} size={14} />
+          </div>
+          <span className="text-sm font-semibold text-ink">{toast.message}</span>
+        </aside>
+      )}
 
       {/* Dev Console */}
       <DevLogsConsole />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -11,6 +11,7 @@ import {
   SwapSlotsParams,
 } from "../../../domain/agenda.types";
 import { findAvailableSlots } from "../../../domain/agenda.service";
+import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
 
 interface RescheduleModalProps {
@@ -35,19 +36,60 @@ export function RescheduleModal({
   const [mode, setMode] = useState<Mode>("reschedule");
   const [scope, setScope] = useState<RescheduleScope>("eventual");
   const [targetDateStr, setTargetDateStr] = useState("");
+  const [targetDisplayDate, setTargetDisplayDate] = useState("");
   const [selectedAvailableSlot, setSelectedAvailableSlot] = useState<AvailableSlot | null>(null);
   const [selectedSwapSlotKey, setSelectedSwapSlotKey] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const datePickerRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useUIState();
+
   useEffect(() => {
     if (slot) {
       setTargetDateStr(format(slot.dateTime, "yyyy-MM-dd"));
+      setTargetDisplayDate(format(slot.dateTime, "dd/MM/yyyy"));
       setSelectedAvailableSlot(null);
       setSelectedSwapSlotKey("");
       setMode("reschedule");
       setScope("eventual");
     }
   }, [slot]);
+
+  const handleDisplayDateChange = (val: string) => {
+    const digits = val.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length >= 5) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    } else if (digits.length >= 3) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    }
+    setTargetDisplayDate(formatted);
+
+    if (digits.length === 8) {
+      const d = parseInt(digits.slice(0, 2), 10);
+      const m = parseInt(digits.slice(2, 4), 10);
+      const y = parseInt(digits.slice(4), 10);
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 2000 && y <= 2100) {
+        const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        setTargetDateStr(iso);
+        setSelectedAvailableSlot(null);
+      }
+    } else if (digits.length === 0) {
+      setTargetDateStr("");
+      setSelectedAvailableSlot(null);
+    }
+  };
+
+  const handleNativeDateChange = (isoVal: string) => {
+    setTargetDateStr(isoVal);
+    setSelectedAvailableSlot(null);
+    if (isoVal) {
+      const [y, m, d] = isoVal.split("-");
+      setTargetDisplayDate(`${d}/${m}/${y}`);
+    } else {
+      setTargetDisplayDate("");
+    }
+  };
 
   const targetDate = useMemo(() => {
     if (!targetDateStr) return new Date();
@@ -101,6 +143,13 @@ export function RescheduleModal({
           scope,
         });
       }
+
+      showToast(
+        mode === "reschedule"
+          ? "¡Turno reagendado correctamente!"
+          : "¡Intercambio de turnos realizado con éxito!",
+        "success"
+      );
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -263,17 +312,38 @@ export function RescheduleModal({
                 >
                   Fecha de destino <span className="text-primary font-bold">*</span>
                 </label>
-                <input
-                  id="reschedule-date"
-                  type="date"
-                  required
-                  value={targetDateStr}
-                  onChange={(e) => {
-                    setTargetDateStr(e.target.value);
-                    setSelectedAvailableSlot(null);
-                  }}
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    id="reschedule-date"
+                    type="text"
+                    required
+                    placeholder="DD/MM/AAAA"
+                    value={targetDisplayDate}
+                    onChange={(e) => handleDisplayDateChange(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 pr-10 text-ink focus:outline-none focus:border-primary text-base transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => datePickerRef.current?.showPicker()}
+                    title="Abrir calendario"
+                    aria-label="Abrir selector de fecha"
+                    className="absolute right-2.5 p-1 text-ink-sub hover:text-primary transition-colors cursor-pointer"
+                  >
+                    <Icon name="calendar" size={18} />
+                  </button>
+                  <input
+                    ref={datePickerRef}
+                    type="date"
+                    tabIndex={-1}
+                    value={targetDateStr}
+                    onChange={(e) => handleNativeDateChange(e.target.value)}
+                    className="sr-only pointer-events-none"
+                    aria-hidden="true"
+                  />
+                </div>
+                <span className="text-xs text-ink-sub mt-1 block">
+                  Formato DD/MM/AAAA (ej. 22/10/2026)
+                </span>
               </div>
 
               <div>
