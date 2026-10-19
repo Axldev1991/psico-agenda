@@ -30,7 +30,20 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
 
     try {
       const rrule = RRule.fromString(rule.rruleString);
-      const occurrences = rrule.between(intervalStart, intervalEnd, true);
+      // Normalize query interval to UTC day boundaries to prevent timezone skew (e.g. UTC-3 excluding Monday at 00:00Z)
+      const queryStart = new Date(Date.UTC(
+        intervalStart.getFullYear(),
+        intervalStart.getMonth(),
+        intervalStart.getDate(),
+        0, 0, 0, 0
+      ));
+      const queryEnd = new Date(Date.UTC(
+        intervalEnd.getFullYear(),
+        intervalEnd.getMonth(),
+        intervalEnd.getDate(),
+        23, 59, 59, 999
+      ));
+      const occurrences = rrule.between(queryStart, queryEnd, true);
 
       occurrences.forEach((occurrence) => {
         // Extract UTC calendar date from RRule occurrence to prevent timezone skew
