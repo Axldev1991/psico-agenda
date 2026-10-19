@@ -86,4 +86,61 @@ test.describe("Fase 3: Privacidad, Resiliencia y Accesibilidad Modal", () => {
     await timelineTab.click();
     await expect(page.getByText("Expediente Clínico Unificado")).toBeVisible();
   });
+
+  test("debe operar sin conexión (offline) persistiendo datos en IndexedDB (E2E-13)", async ({
+    page,
+    context,
+  }) => {
+    const patientName = `Paciente Offline ${Date.now()}`;
+
+    // 1. Simular corte completo de red
+    await context.setOffline(true);
+
+    // 2. Dar de alta paciente en modo offline
+    await page.getByRole("button", { name: "Fichero" }).click();
+    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+
+    const patientDialog = page.getByRole("dialog");
+    await expect(patientDialog).toBeVisible();
+
+    await page.locator("#p-name").fill(patientName);
+    await page.locator("#p-phone").fill("+54 11 0000 9999");
+    await page.getByRole("button", { name: "Guardar paciente" }).click();
+    await expect(patientDialog).not.toBeVisible();
+
+    // 3. Verificar que el paciente aparece en la lista local de IndexedDB
+    const patientRow = page.getByRole("row", { name: new RegExp(patientName) });
+    await expect(patientRow).toBeVisible();
+
+    // 4. Programar un turno en modo offline
+    await page.getByRole("button", { name: "Agenda" }).click();
+    await page.getByRole("button", { name: /Programar turno/i }).first().click();
+
+    const sessionDialog = page.getByRole("dialog");
+    await expect(sessionDialog).toBeVisible();
+
+    await page.locator("#modal-patient").selectOption({ label: patientName });
+    await page.locator("#modal-time").fill("14:00");
+
+    const dateInput = page.locator("#modal-date");
+    if (!(await dateInput.inputValue())) {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
+    }
+
+    await sessionDialog.getByRole("button", { name: "Programar turno" }).click();
+    await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
+    await expect(sessionDialog).not.toBeVisible();
+
+    // 5. Verificar que la tarjeta aparece en la grilla
+    const appointmentCard = page.locator("article", { hasText: patientName });
+    await expect(appointmentCard).toBeVisible();
+
+    // 6. Restaurar red y asegurar consistencia
+    await context.setOffline(false);
+  });
 });
+

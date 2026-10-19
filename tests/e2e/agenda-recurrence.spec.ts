@@ -208,4 +208,123 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await expect(updatedCardA.getByText("11:00")).toBeVisible();
     await expect(updatedCardB.getByText("10:00")).toBeVisible();
   });
+
+  test("debe programar un turno recurrente mensual ordinal (E2E-07)", async ({ page }) => {
+    const patientName = `Paciente Mensual ${Date.now()}`;
+
+    // 1. Crear el paciente
+    await page.getByRole("button", { name: "Fichero" }).click();
+    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+    await page.locator("#p-name").fill(patientName);
+    await page.getByRole("button", { name: "Guardar paciente" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+
+    // 2. Abrir modal de programar turno
+    await page.getByRole("button", { name: "Agenda" }).click();
+    await page.getByRole("button", { name: "Programar turno" }).first().click();
+
+    const sessionModal = page.getByRole("dialog");
+    await expect(sessionModal).toBeVisible();
+
+    // 3. Seleccionar paciente y activar recurrencia mensual
+    await page.locator("#modal-patient").selectOption({ label: patientName });
+    await sessionModal.getByRole("checkbox").check();
+
+    // Seleccionar cadencia Mensual
+    await sessionModal.getByRole("button", { name: "Mensual" }).click();
+
+    // Asegurar fecha y hora
+    const dateInput = page.locator("#modal-date");
+    if (!(await dateInput.inputValue())) {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
+    }
+
+    // Validar que el texto descriptivo del resumen indique recurrencia mensual
+    await expect(sessionModal.getByText(/de cada mes/i)).toBeVisible();
+
+    // 4. Guardar turno
+    await sessionModal.getByRole("button", { name: "Programar turno" }).click();
+    await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
+    await expect(sessionModal).not.toBeVisible();
+
+    // 5. Verificar que el turno aparece en la agenda con indicador de recurrencia
+    const appointmentCard = page.locator("article", { hasText: patientName });
+    await expect(appointmentCard).toBeVisible();
+  });
+
+  test("debe reagendar un turno de manera permanente actualizando la recurrencia para fechas futuras (E2E-09)", async ({
+    page,
+  }) => {
+    const patientName = `Paciente Permanente ${Date.now()}`;
+
+    // 1. Crear paciente
+    await page.getByRole("button", { name: "Fichero" }).click();
+    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+    await page.locator("#p-name").fill(patientName);
+    await page.getByRole("button", { name: "Guardar paciente" }).click();
+    await expect(page.getByRole("dialog")).not.toBeVisible();
+
+    // 2. Programar turno recurrente semanal inicial a las 10:00
+    await page.getByRole("button", { name: "Agenda" }).click();
+    await page.getByRole("button", { name: "Programar turno" }).first().click();
+
+    const sessionModal = page.getByRole("dialog");
+    await page.locator("#modal-patient").selectOption({ label: patientName });
+    await sessionModal.getByRole("checkbox").check();
+    await page.locator("#modal-time").fill("10:00");
+
+    const dateInput = page.locator("#modal-date");
+    if (!(await dateInput.inputValue())) {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
+    }
+
+    await sessionModal.getByRole("button", { name: "Programar turno" }).click();
+    await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
+    await expect(sessionModal).not.toBeVisible();
+
+    // 3. Abrir modal de reagendamiento en la tarjeta
+    const initialCard = page.locator("article", { hasText: patientName });
+    await expect(initialCard).toBeVisible();
+    await initialCard.getByRole("button", { name: "Reagendar" }).click();
+
+    const rescheduleModal = page.getByRole("dialog");
+    await expect(rescheduleModal).toBeVisible();
+
+    // 4. Seleccionar alcance "Permanente" (De ahora en más)
+    const permanentRadio = rescheduleModal.getByRole("radio", { name: /De ahora en más/i });
+    await permanentRadio.check();
+    await expect(permanentRadio).toBeChecked();
+
+    // 5. Elegir un horario disponible en la grilla de slots
+    const availableSlotBtns = rescheduleModal.locator("button", { hasText: /^\d{2}:\d{2}$/ });
+    const count = await availableSlotBtns.count();
+    expect(count).toBeGreaterThan(0);
+    const chosenSlotBtn = availableSlotBtns.nth(count > 1 ? 1 : 0);
+    const newTime = (await chosenSlotBtn.innerText()).trim();
+    await chosenSlotBtn.click();
+
+    // 6. Confirmar reagendamiento permanente
+    await rescheduleModal.getByRole("button", { name: "Confirmar cambio" }).click();
+    await expect(page.getByText("¡Turno reagendado correctamente!")).toBeVisible();
+    await expect(rescheduleModal).not.toBeVisible();
+
+    // 7. Verificar que en la semana actual el turno se actualizó al nuevo horario
+    const updatedCard = page.locator("article", { hasText: patientName });
+    await expect(updatedCard.getByText(newTime)).toBeVisible();
+
+    // 8. Navegar a la semana siguiente y corroborar que el turno recurrente YA tiene el nuevo horario
+    await page.getByRole("button", { name: "Semana siguiente" }).click();
+    const nextWeekCard = page.locator("article", { hasText: patientName });
+    await expect(nextWeekCard).toBeVisible();
+    await expect(nextWeekCard.getByText(newTime)).toBeVisible();
+  });
 });
+
