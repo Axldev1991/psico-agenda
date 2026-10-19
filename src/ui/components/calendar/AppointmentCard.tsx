@@ -11,6 +11,7 @@ interface AppointmentCardProps {
   onUpdateStatus: (slot: CalendarSlot, status: Session["status"]) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
   onNavigateToPatientDetail: (patientUuid: string) => void;
+  onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
 
 export function AppointmentCard({
@@ -18,6 +19,7 @@ export function AppointmentCard({
   onUpdateStatus,
   onRemoveRecurrenceRule,
   onNavigateToPatientDetail,
+  onOpenRescheduleModal,
 }: AppointmentCardProps) {
   const startTime = format(slot.dateTime, "HH:mm");
   const endTime = format(addMinutes(slot.dateTime, 50), "HH:mm");
@@ -122,6 +124,19 @@ export function AppointmentCard({
             <Icon name="file" size={15} />
             <span className="hidden md:inline font-medium">Ficha</span>
           </button>
+
+          {/* Reagendar button */}
+          {!isCancelled && onOpenRescheduleModal && (
+            <button
+              type="button"
+              onClick={() => onOpenRescheduleModal(slot)}
+              className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-sm flex items-center gap-1"
+              title="Reagendar o cambiar turno"
+            >
+              <Icon name="calendar" size={15} />
+              <span className="hidden md:inline font-medium">Reagendar</span>
+            </button>
+          )}
 
           {/* Status changer dropdown */}
           <select

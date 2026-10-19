@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeAgendaSlots } from "./agenda.service";
+import { computeAgendaSlots, buildRRuleString, findAvailableSlots } from "./agenda.service";
 import { RecurrenceRule, Session } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
+import { AvailableSlot } from "./agenda.types";
 
 describe("Agenda Domain Service (computeAgendaSlots)", () => {
   const intervalStart = new Date("2026-10-12T00:00:00.000Z"); // Monday
@@ -173,5 +174,139 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
     expect(slots).toHaveLength(2);
     expect(slots[0].uuid).toBe("sess-2");
     expect(slots[1].uuid).toBe("sess-1");
+  });
+
+  describe("buildRRuleString", () => {
+    it("generates multi-day weekly RRule string", () => {
+      const result = buildRRuleString({
+        cadence: "weekly",
+        daysOfWeek: [0, 3], // Monday & Thursday
+        startDate: "2026-10-01",
+      });
+      expect(result).toBe("DTSTART:20261001T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,TH");
+    });
+
+    it("generates biweekly RRule string with interval=2", () => {
+      const result = buildRRuleString({
+        cadence: "biweekly",
+        daysOfWeek: [1], // Tuesday
+        startDate: "2026-10-06",
+      });
+      expect(result).toBe("DTSTART:20261006T000000Z\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU");
+    });
+
+    it("generates monthly RRule string", () => {
+      const result = buildRRuleString({
+        cadence: "monthly",
+        daysOfWeek: [4], // Friday
+        startDate: "2026-10-01",
+      });
+      expect(result).toBe("DTSTART:20261001T000000Z\nRRULE:FREQ=MONTHLY;BYDAY=FR");
+    });
+
+    it("throws error if no days of week are selected", () => {
+      expect(() =>
+        buildRRuleString({
+          cadence: "weekly",
+          daysOfWeek: [],
+        })
+      ).toThrow("At least one day of week must be selected");
+    });
+  });
+
+  describe("Multi-day and Biweekly computeAgendaSlots expansion", () => {
+    it("expands a multi-day rule into multiple slots within the same week", () => {
+      const multiDayRule: RecurrenceRule = {
+        patientUuid: "p-1",
+        rruleString: "DTSTART:20261001T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=MO,TH",
+        startDate: "2026-10-01",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      const slots = computeAgendaSlots({
+        intervalStart, // 2026-10-12 to 2026-10-18
+        intervalEnd,
+        recurrenceRules: [multiDayRule],
+        dbSessions: [],
+        patients: [mockPatient],
+      });
+
+      expect(slots).toHaveLength(2);
+      expect(slots[0].dateTime.getDay()).toBe(1); // Monday (12 Oct)
+      expect(slots[1].dateTime.getDay()).toBe(4); // Thursday (15 Oct)
+    });
+
+    it("expands a biweekly rule skipping alternate weeks", () => {
+      const twoWeekIntervalStart = new Date("2026-10-05T00:00:00.000Z"); // Week 1
+      const twoWeekIntervalEnd = new Date("2026-10-18T23:59:59.999Z");   // Week 2
+
+      const biweeklyRule: RecurrenceRule = {
+        patientUuid: "p-1",
+        rruleString: "DTSTART:20261006T000000Z\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU",
+        startDate: "2026-10-06",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      const slots = computeAgendaSlots({
+        intervalStart: twoWeekIntervalStart,
+        intervalEnd: twoWeekIntervalEnd,
+        recurrenceRules: [biweeklyRule],
+        dbSessions: [],
+        patients: [mockPatient],
+      });
+
+      // Should only appear on Tuesday Week 1 (Oct 6), skipping Tuesday Week 2 (Oct 13)
+      expect(slots).toHaveLength(1);
+      expect(slots[0].dateTime.toISOString()).toContain("2026-10-06");
+    });
+  });
+
+  describe("findAvailableSlots", () => {
+    it("finds all unbooked slots and ignores cancelled appointments", () => {
+      const targetDate = new Date(2026, 9, 14);
+
+      const bookedSlots = [
+        {
+          patientUuid: "p-1",
+          patientName: "Juan",
+          dateTime: new Date(2026, 9, 14, 10, 0, 0), // 10:00
+          durationMinutes: 50,
+          status: "scheduled" as const,
+          price: 25000,
+          isRecurrent: true,
+        },
+        {
+          patientUuid: "p-2",
+          patientName: "Pedro",
+          dateTime: new Date(2026, 9, 14, 11, 0, 0), // 11:00 CANCELLED
+          durationMinutes: 50,
+          status: "cancelled" as const,
+          price: 25000,
+          isRecurrent: false,
+        },
+      ];
+
+      const available = findAvailableSlots({
+        targetDate,
+        bookedSlots,
+        startHour: 9,
+        endHour: 13,
+        slotDurationMinutes: 50,
+        intervalStepMinutes: 60,
+      });
+
+      const availableTimes = available.map((s: AvailableSlot) => s.time);
+
+      // 09:00: free
+      // 10:00: booked (scheduled) -> excluded
+      // 11:00: cancelled -> available!
+      // 12:00: free
+      expect(availableTimes).toContain("09:00");
+      expect(availableTimes).not.toContain("10:00");
+      expect(availableTimes).toContain("11:00");
+      expect(availableTimes).toContain("12:00");
+    });
   });
 });

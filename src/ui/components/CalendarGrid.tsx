@@ -27,6 +27,7 @@ interface CalendarGridProps {
   dbSessions: any[];
   recurrenceRules: any[];
   onNavigateToPatientDetail: (patientUuid: string) => void;
+  onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
 
 export function CalendarGrid({
@@ -44,6 +45,7 @@ export function CalendarGrid({
   dbSessions,
   recurrenceRules,
   onNavigateToPatientDetail,
+  onOpenRescheduleModal,
 }: CalendarGridProps) {
   const currentHoliday = getHoliday(currentDate, holidays);
   const dayAppointments = agenda.filter((slot) => isSameDay(slot.dateTime, currentDate));
@@ -111,6 +113,7 @@ export function CalendarGrid({
                   onUpdateStatus={onUpdateStatus}
                   onRemoveRecurrenceRule={onRemoveRecurrenceRule}
                   onNavigateToPatientDetail={onNavigateToPatientDetail}
+                  onOpenRescheduleModal={onOpenRescheduleModal}
                 />
               ))}
             </div>

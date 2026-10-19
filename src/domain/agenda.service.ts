@@ -83,11 +83,9 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
   dbSessions.forEach((session) => {
     const sessionDate = parseISO(session.dateTime);
     if (sessionDate >= intervalStart && sessionDate <= intervalEnd) {
-      // Check if this date/patient was already processed in recurrence to prevent duplicates
-      const alreadyCovered = agenda.some(
-        (slot) =>
-          slot.patientUuid === session.patientUuid &&
-          isSameDay(slot.dateTime, sessionDate)
+      // Check if this session was already processed in recurrence overrides
+      const alreadyCovered = session.uuid && agenda.some(
+        (slot) => slot.uuid === session.uuid
       );
 
       if (!alreadyCovered) {
@@ -111,3 +109,101 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
   // 3. Chronological Sort
   return agenda.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
 }
+
+/**
+ * Builds an RFC 5545 compliant RRule string based on clinical cadence, selected days, and start date.
+ */
+export function buildRRuleString(options: {
+  cadence: 'weekly' | 'biweekly' | 'monthly';
+  daysOfWeek: number[]; // 0 = MO, 1 = TU, 2 = WE, 3 = TH, 4 = FR, 5 = SA, 6 = SU
+  startDate?: string;   // "YYYY-MM-DD"
+}): string {
+  const dayNames = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
+  const sortedDays = Array.from(new Set(options.daysOfWeek))
+    .filter((d) => d >= 0 && d <= 6)
+    .sort((a, b) => a - b);
+
+  if (sortedDays.length === 0) {
+    throw new Error('At least one day of week must be selected');
+  }
+
+  const byDays = sortedDays.map((d) => dayNames[d]).join(',');
+  const dtstart = options.startDate
+    ? `DTSTART:${options.startDate.replace(/-/g, '')}T000000Z\nRRULE:`
+    : '';
+
+  switch (options.cadence) {
+    case 'weekly':
+      return `${dtstart}FREQ=WEEKLY;BYDAY=${byDays}`;
+    case 'biweekly':
+      return `${dtstart}FREQ=WEEKLY;INTERVAL=2;BYDAY=${byDays}`;
+    case 'monthly':
+      return `${dtstart}FREQ=MONTHLY;BYDAY=${byDays}`;
+    default:
+      return `${dtstart}FREQ=WEEKLY;BYDAY=${byDays}`;
+  }
+}
+
+/**
+ * Computes unbooked, free consultation slots for a given day within working clinical hours.
+ */
+export function findAvailableSlots(params: {
+  targetDate: Date;
+  bookedSlots: CalendarSlot[];
+  startHour?: number;          // Default 8 (08:00)
+  endHour?: number;            // Default 20 (20:00)
+  slotDurationMinutes?: number;// Default 50
+  intervalStepMinutes?: number;// Default 60
+}): { time: string; dateTime: Date; formattedTime: string }[] {
+  const {
+    targetDate,
+    bookedSlots,
+    startHour = 8,
+    endHour = 20,
+    slotDurationMinutes = 50,
+    intervalStepMinutes = 60,
+  } = params;
+
+  const available: { time: string; dateTime: Date; formattedTime: string }[] = [];
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+  const day = targetDate.getDate();
+
+  // Find all active booked slots on this day (ignoring cancelled slots)
+  const activeDaySlots = bookedSlots.filter(
+    (s) => isSameDay(s.dateTime, targetDate) && s.status !== 'cancelled'
+  );
+
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += intervalStepMinutes) {
+      const slotStart = new Date(year, month, day, hour, minute, 0, 0);
+      const slotEnd = new Date(slotStart.getTime() + slotDurationMinutes * 60 * 1000);
+
+      // Check collision with any existing active booked appointment
+      const hasConflict = activeDaySlots.some((booked) => {
+        const bookedStart = new Date(booked.dateTime).getTime();
+        const bookedDuration = booked.durationMinutes || 50;
+        const bookedEnd = bookedStart + bookedDuration * 60 * 1000;
+
+        return (
+          slotStart.getTime() < bookedEnd &&
+          slotEnd.getTime() > bookedStart
+        );
+      });
+
+      if (!hasConflict) {
+        const hh = String(hour).padStart(2, '0');
+        const mm = String(minute).padStart(2, '0');
+        const time = `${hh}:${mm}`;
+        available.push({
+          time,
+          dateTime: slotStart,
+          formattedTime: `${time} hs`,
+        });
+      }
+    }
+  }
+
+  return available;
+}
+

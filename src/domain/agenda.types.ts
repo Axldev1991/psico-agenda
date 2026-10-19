@@ -23,3 +23,41 @@ export interface ComputeAgendaSlotsParams {
   patients: Patient[];
   holidays?: Holiday[];
 }
+
+export type RecurrenceCadence = 'weekly' | 'biweekly' | 'monthly';
+
+export interface BuildRRuleOptions {
+  cadence: RecurrenceCadence;
+  daysOfWeek: number[]; // 0 = MO, 1 = TU, 2 = WE, 3 = TH, 4 = FR, 5 = SA, 6 = SU
+  startDate?: string;   // YYYY-MM-DD
+}
+
+export interface AvailableSlot {
+  time: string;           // "16:00"
+  dateTime: Date;
+  formattedTime: string;  // "16:00 hs"
+}
+
+export interface FindAvailableSlotsParams {
+  targetDate: Date;
+  bookedSlots: CalendarSlot[];
+  startHour?: number;          // Default 8 (08:00)
+  endHour?: number;            // Default 20 (20:00)
+  slotDurationMinutes?: number;// Default 50
+  intervalStepMinutes?: number;// Default 60
+}
+
+export type RescheduleScope = 'eventual' | 'permanent';
+
+export interface RescheduleSlotParams {
+  slot: CalendarSlot;
+  newDateTime: Date;
+  scope: RescheduleScope;
+}
+
+export interface SwapSlotsParams {
+  slotA: CalendarSlot;
+  slotB: CalendarSlot;
+  scope: RescheduleScope;
+}
+

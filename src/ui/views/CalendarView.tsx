@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CalendarGrid } from "../components/CalendarGrid";
+import { RescheduleModal } from "../components/calendar/RescheduleModal";
 import { useCalendar } from "../hooks/useCalendar";
 import { useUIState } from "../context/UIContext";
+import { CalendarSlot } from "../../domain/agenda.types";
 
 interface CalendarViewProps {
   onNavigateToPatientDetail: (patientUuid: string) => void;
@@ -23,26 +25,54 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     holidays,
     dbSessions,
     recurrenceRules,
+    rescheduleSlot,
+    swapSlots,
   } = useCalendar();
 
   const { openSessionModal } = useUIState();
 
+  const [selectedSlotForReschedule, setSelectedSlotForReschedule] =
+    useState<CalendarSlot | null>(null);
+  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+
+  const handleOpenReschedule = (slot: CalendarSlot) => {
+    setSelectedSlotForReschedule(slot);
+    setIsRescheduleOpen(true);
+  };
+
+  const handleCloseReschedule = () => {
+    setSelectedSlotForReschedule(null);
+    setIsRescheduleOpen(false);
+  };
+
   return (
-    <CalendarGrid
-      currentDate={currentDate}
-      weekDays={weekDays}
-      agenda={agenda}
-      holidays={holidays}
-      nextWeek={nextWeek}
-      prevWeek={prevWeek}
-      goToToday={goToToday}
-      onUpdateStatus={updateSessionStatus}
-      onRemoveRecurrenceRule={removeRecurrenceRule}
-      onOpenSessionModal={openSessionModal}
-      selectDate={selectDate}
-      dbSessions={dbSessions}
-      recurrenceRules={recurrenceRules}
-      onNavigateToPatientDetail={onNavigateToPatientDetail}
-    />
+    <>
+      <CalendarGrid
+        currentDate={currentDate}
+        weekDays={weekDays}
+        agenda={agenda}
+        holidays={holidays}
+        nextWeek={nextWeek}
+        prevWeek={prevWeek}
+        goToToday={goToToday}
+        onUpdateStatus={updateSessionStatus}
+        onRemoveRecurrenceRule={removeRecurrenceRule}
+        onOpenSessionModal={openSessionModal}
+        selectDate={selectDate}
+        dbSessions={dbSessions}
+        recurrenceRules={recurrenceRules}
+        onNavigateToPatientDetail={onNavigateToPatientDetail}
+        onOpenRescheduleModal={handleOpenReschedule}
+      />
+
+      <RescheduleModal
+        isOpen={isRescheduleOpen}
+        onClose={handleCloseReschedule}
+        slot={selectedSlotForReschedule}
+        bookedSlots={agenda}
+        onReschedule={rescheduleSlot}
+        onSwap={swapSlots}
+      />
+    </>
   );
 }

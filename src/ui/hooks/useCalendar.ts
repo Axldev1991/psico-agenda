@@ -8,12 +8,13 @@ import {
   addWeeks, 
   subWeeks,
   isSameDay,
+  format,
 } from 'date-fns';
 import { container } from '../../infrastructure/container';
 import { Session, RecurrenceRule } from '../../domain/session.types';
 import { Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
-import { CalendarSlot } from '../../domain/agenda.types';
-import { computeAgendaSlots } from '../../domain/agenda.service';
+import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence } from '../../domain/agenda.types';
+import { computeAgendaSlots, buildRRuleString } from '../../domain/agenda.service';
 
 export type { CalendarSlot };
 
@@ -129,10 +130,27 @@ export function useCalendar() {
     await sessionRepo.save(newSession);
   };
 
-  const addRecurrence = async (ruleData: Omit<RecurrenceRule, 'rruleString'> & { dayOfWeek: number }) => {
-    // dayOfWeek: 0 = MO, 1 = TU, 2 = WE, 3 = TH, 4 = FR, 5 = SA, 6 = SU
-    const dayNames = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-    const rruleString = `FREQ=WEEKLY;BYDAY=${dayNames[ruleData.dayOfWeek]}`;
+  const addRecurrence = async (ruleData: {
+    patientUuid: string;
+    startDate: string;
+    startTime: string;
+    durationMinutes: number;
+    daysOfWeek?: number[];
+    dayOfWeek?: number;
+    cadence?: RecurrenceCadence;
+  }) => {
+    // Soporte retrocompatible para dayOfWeek único o arreglo daysOfWeek
+    const days = ruleData.daysOfWeek && ruleData.daysOfWeek.length > 0
+      ? ruleData.daysOfWeek
+      : ruleData.dayOfWeek !== undefined
+      ? [ruleData.dayOfWeek]
+      : [0];
+
+    const rruleString = buildRRuleString({
+      cadence: ruleData.cadence || 'weekly',
+      daysOfWeek: days,
+      startDate: ruleData.startDate,
+    });
 
     const newRule: RecurrenceRule = {
       patientUuid: ruleData.patientUuid,
@@ -142,6 +160,174 @@ export function useCalendar() {
       durationMinutes: ruleData.durationMinutes
     };
     await sessionRepo.saveRecurrenceRule(newRule);
+  };
+
+  const rescheduleSlot = async (params: RescheduleSlotParams) => {
+    const { slot, newDateTime, scope } = params;
+    const nowIso = new Date().toISOString();
+
+    if (scope === 'eventual') {
+      // 1. Cancelar o registrar excepción para el turno original
+      if (slot.uuid) {
+        const existing = await sessionRepo.getByUuid(slot.uuid);
+        if (existing) {
+          existing.status = 'cancelled';
+          existing.description = `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`;
+          existing.updatedAt = nowIso;
+          await sessionRepo.save(existing);
+        }
+      } else {
+        const cancelException: Session = {
+          uuid: crypto.randomUUID(),
+          patientUuid: slot.patientUuid,
+          dateTime: slot.dateTime.toISOString(),
+          status: 'cancelled',
+          priceAtSession: slot.price,
+          description: `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        };
+        await sessionRepo.save(cancelException);
+      }
+
+      // 2. Crear sesión puntual en la nueva fecha y hora
+      const newSession: Session = {
+        uuid: crypto.randomUUID(),
+        patientUuid: slot.patientUuid,
+        dateTime: newDateTime.toISOString(),
+        status: 'scheduled',
+        priceAtSession: slot.price,
+        description: `Turno eventual reagendado (original: ${format(slot.dateTime, 'dd/MM HH:mm')})`,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      await sessionRepo.save(newSession);
+    } else {
+      // Cambio permanente: actualizar la RecurrenceRule
+      const existingRule = await sessionRepo.getRecurrenceRuleByPatient(slot.patientUuid);
+      const newTime = format(newDateTime, 'HH:mm');
+      const newDateStr = format(newDateTime, 'yyyy-MM-dd');
+      const dayIndex = (newDateTime.getDay() + 6) % 7; // 0=MO, ..., 6=SU
+
+      if (existingRule) {
+        const updatedRule: RecurrenceRule = {
+          ...existingRule,
+          startDate: newDateStr,
+          startTime: newTime,
+          rruleString: buildRRuleString({
+            cadence: 'weekly',
+            daysOfWeek: [dayIndex],
+            startDate: newDateStr,
+          }),
+        };
+        await sessionRepo.saveRecurrenceRule(updatedRule);
+      } else if (slot.uuid) {
+        // Sesión manual no recurrente
+        const existingSession = await sessionRepo.getByUuid(slot.uuid);
+        if (existingSession) {
+          existingSession.dateTime = newDateTime.toISOString();
+          existingSession.updatedAt = nowIso;
+          await sessionRepo.save(existingSession);
+        }
+      }
+    }
+  };
+
+  const swapSlots = async (params: SwapSlotsParams) => {
+    const { slotA, slotB, scope } = params;
+    const nowIso = new Date().toISOString();
+
+    if (scope === 'eventual') {
+      // 1. Cancelar o marcar excepción para slotA original
+      if (slotA.uuid) {
+        const sessA = await sessionRepo.getByUuid(slotA.uuid);
+        if (sessA) {
+          sessA.status = 'cancelled';
+          sessA.description = `Enroque con ${slotB.patientName}`;
+          sessA.updatedAt = nowIso;
+          await sessionRepo.save(sessA);
+        }
+      } else {
+        await sessionRepo.save({
+          uuid: crypto.randomUUID(),
+          patientUuid: slotA.patientUuid,
+          dateTime: slotA.dateTime.toISOString(),
+          status: 'cancelled',
+          priceAtSession: slotA.price,
+          description: `Enroque con ${slotB.patientName}`,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        });
+      }
+
+      // 2. Cancelar o marcar excepción para slotB original
+      if (slotB.uuid) {
+        const sessB = await sessionRepo.getByUuid(slotB.uuid);
+        if (sessB) {
+          sessB.status = 'cancelled';
+          sessB.description = `Enroque con ${slotA.patientName}`;
+          sessB.updatedAt = nowIso;
+          await sessionRepo.save(sessB);
+        }
+      } else {
+        await sessionRepo.save({
+          uuid: crypto.randomUUID(),
+          patientUuid: slotB.patientUuid,
+          dateTime: slotB.dateTime.toISOString(),
+          status: 'cancelled',
+          priceAtSession: slotB.price,
+          description: `Enroque con ${slotA.patientName}`,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        });
+      }
+
+      // 3. Crear turnos cruzados
+      await sessionRepo.save({
+        uuid: crypto.randomUUID(),
+        patientUuid: slotA.patientUuid,
+        dateTime: slotB.dateTime.toISOString(),
+        status: 'scheduled',
+        priceAtSession: slotA.price,
+        description: `Enroque eventual (horario habitual de ${slotB.patientName})`,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+
+      await sessionRepo.save({
+        uuid: crypto.randomUUID(),
+        patientUuid: slotB.patientUuid,
+        dateTime: slotA.dateTime.toISOString(),
+        status: 'scheduled',
+        priceAtSession: slotB.price,
+        description: `Enroque eventual (horario habitual de ${slotA.patientName})`,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      });
+    } else {
+      // Cambio permanente: intercambiar las reglas recurrentes de A y B
+      const ruleA = await sessionRepo.getRecurrenceRuleByPatient(slotA.patientUuid);
+      const ruleB = await sessionRepo.getRecurrenceRuleByPatient(slotB.patientUuid);
+
+      if (ruleA && ruleB) {
+        const newRuleA: RecurrenceRule = {
+          ...ruleA,
+          rruleString: ruleB.rruleString,
+          startDate: ruleB.startDate,
+          startTime: ruleB.startTime,
+          durationMinutes: ruleB.durationMinutes,
+        };
+        const newRuleB: RecurrenceRule = {
+          ...ruleB,
+          rruleString: ruleA.rruleString,
+          startDate: ruleA.startDate,
+          startTime: ruleA.startTime,
+          durationMinutes: ruleA.durationMinutes,
+        };
+        await sessionRepo.saveRecurrenceRule(newRuleA);
+        await sessionRepo.saveRecurrenceRule(newRuleB);
+      }
+    }
   };
 
   const updateSessionStatus = async (slot: CalendarSlot, newStatus: Session['status']) => {
@@ -191,6 +377,8 @@ export function useCalendar() {
     selectDate: setCurrentDate,
     addManualSession,
     addRecurrence,
+    rescheduleSlot,
+    swapSlots,
     updateSessionStatus,
     removeRecurrenceRule,
     patients,

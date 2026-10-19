@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
+import { RecurrenceCadence } from "../../domain/agenda.types";
 import { Icon } from "./common/Icon";
 
 interface SessionModalProps {
@@ -20,18 +21,19 @@ interface SessionModalProps {
     startDate: string;
     startTime: string;
     durationMinutes: number;
-    dayOfWeek: number;
+    daysOfWeek?: number[];
+    cadence?: RecurrenceCadence;
   }) => Promise<void>;
 }
 
-const WEEKDAY_NAMES = [
-  "Lunes",
-  "Martes",
-  "Miércoles",
-  "Jueves",
-  "Viernes",
-  "Sábado",
-  "Domingo",
+const WEEKDAYS = [
+  { index: 0, short: "Lu", name: "Lunes" },
+  { index: 1, short: "Ma", name: "Martes" },
+  { index: 2, short: "Mi", name: "Miércoles" },
+  { index: 3, short: "Ju", name: "Jueves" },
+  { index: 4, short: "Vi", name: "Viernes" },
+  { index: 5, short: "Sá", name: "Sábado" },
+  { index: 6, short: "Do", name: "Domingo" },
 ];
 
 export function SessionModal({
@@ -45,9 +47,31 @@ export function SessionModal({
   const [isRecurrent, setIsRecurrent] = useState(false);
   const [sessionDate, setSessionDate] = useState("");
   const [sessionTime, setSessionTime] = useState("16:00");
-  const [recurrenceDay, setRecurrenceDay] = useState("0");
+  const [selectedDays, setSelectedDays] = useState<number[]>([0]);
+  const [cadence, setCadence] = useState<RecurrenceCadence>("weekly");
 
   if (!isOpen) return null;
+
+  const toggleDay = (dayIndex: number) => {
+    setSelectedDays((prev) => {
+      if (prev.includes(dayIndex)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((d) => d !== dayIndex);
+      } else {
+        return [...prev, dayIndex].sort((a, b) => a - b);
+      }
+    });
+  };
+
+  const handleDateChange = (dateVal: string) => {
+    setSessionDate(dateVal);
+    if (dateVal) {
+      const parsed = new Date(dateVal + "T00:00:00");
+      const jsDay = parsed.getDay();
+      const rDay = jsDay === 0 ? 6 : jsDay - 1;
+      setSelectedDays([rDay]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +83,8 @@ export function SessionModal({
         startDate: sessionDate,
         startTime: sessionTime,
         durationMinutes: 50,
-        dayOfWeek: Number(recurrenceDay),
+        daysOfWeek: selectedDays,
+        cadence,
       });
     } else {
       const isoDateTime = `${sessionDate}T${sessionTime}:00`;
@@ -75,9 +100,22 @@ export function SessionModal({
     setIsRecurrent(false);
     setSessionDate("");
     setSessionTime("16:00");
-    setRecurrenceDay("0");
+    setSelectedDays([0]);
+    setCadence("weekly");
     onClose();
   };
+
+  const selectedDaysSummary = selectedDays
+    .map((d) => WEEKDAYS.find((w) => w.index === d)?.name)
+    .filter(Boolean)
+    .join(" y ");
+
+  const cadenceSummary =
+    cadence === "weekly"
+      ? "todas las semanas"
+      : cadence === "biweekly"
+      ? "cada 14 días (quincenal)"
+      : "mensualmente";
 
   return (
     <div
@@ -140,21 +178,93 @@ export function SessionModal({
             <div className="text-sm">
               <span className="font-semibold text-ink block">¿Es un turno recurrente?</span>
               <span className="text-ink-sub mt-0.5 block leading-relaxed">
-                Los turnos recurrentes se cargan automáticamente todas las semanas, el mismo día y horario, durante todo el año.
+                Permite programar turnos periódicos fijos: semanales, bisemanales/multi-días, quincenales o mensuales.
               </span>
             </div>
           </label>
 
-          {/* Info Alert on Recurrence */}
+          {/* Recurrence Options */}
           {isRecurrent && (
-            <div
-              role="status"
-              className="flex items-center gap-2 p-3 bg-primary-tint/60 text-primary border border-primary/20 rounded-xl text-sm"
-            >
-              <Icon name="repeat" size={16} />
-              <span>
-                Se repetirá todos los {WEEKDAY_NAMES[Number(recurrenceDay)].toLowerCase()} a las {sessionTime}.
-              </span>
+            <div className="space-y-3.5 p-3.5 bg-bg-base/40 border border-line rounded-xl">
+              {/* Cadence Selector */}
+              <div>
+                <label className="text-sm font-semibold text-ink block mb-1.5">
+                  Frecuencia de repetición
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCadence("weekly")}
+                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                      cadence === "weekly"
+                        ? "bg-primary text-surface border-primary"
+                        : "bg-surface text-ink border-line hover:border-line-control"
+                    }`}
+                  >
+                    Semanal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCadence("biweekly")}
+                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                      cadence === "biweekly"
+                        ? "bg-primary text-surface border-primary"
+                        : "bg-surface text-ink border-line hover:border-line-control"
+                    }`}
+                  >
+                    Quincenal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCadence("monthly")}
+                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                      cadence === "monthly"
+                        ? "bg-primary text-surface border-primary"
+                        : "bg-surface text-ink border-line hover:border-line-control"
+                    }`}
+                  >
+                    Mensual
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Selection (Multi-day) */}
+              <div>
+                <label className="text-sm font-semibold text-ink block mb-1.5">
+                  Días de la semana ({selectedDays.length} seleccionado{selectedDays.length > 1 ? "s" : ""})
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {WEEKDAYS.map((day) => {
+                    const isSelected = selectedDays.includes(day.index);
+                    return (
+                      <button
+                        key={day.index}
+                        type="button"
+                        onClick={() => toggleDay(day.index)}
+                        title={day.name}
+                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer border ${
+                          isSelected
+                            ? "bg-primary-tint text-primary border-primary font-bold shadow-xs"
+                            : "bg-surface text-ink-sub border-line hover:border-line-control hover:text-ink"
+                        }`}
+                      >
+                        {day.short}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Info Alert on Recurrence */}
+              <div
+                role="status"
+                className="flex items-center gap-2 p-2.5 bg-primary-tint/60 text-primary border border-primary/20 rounded-lg text-sm"
+              >
+                <Icon name="repeat" size={16} />
+                <span className="leading-tight">
+                  Se repetirá {cadenceSummary} los <strong>{selectedDaysSummary || "días seleccionados"}</strong> a las {sessionTime}.
+                </span>
+              </div>
             </div>
           )}
 
@@ -169,16 +279,7 @@ export function SessionModal({
                 type="date"
                 required
                 value={sessionDate}
-                onChange={(e) => {
-                  setSessionDate(e.target.value);
-                  if (e.target.value) {
-                    const parsed = new Date(e.target.value + "T00:00:00");
-                    const jsDay = parsed.getDay(); // 0=Domingo, 1=Lunes...
-                    // Convert to 0=Lunes... 6=Domingo
-                    const rDay = jsDay === 0 ? 6 : jsDay - 1;
-                    setRecurrenceDay(String(rDay));
-                  }
-                }}
+                onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
               />
             </div>
@@ -200,27 +301,6 @@ export function SessionModal({
               </span>
             </div>
           </div>
-
-          {/* Recurrence Day of Week */}
-          {isRecurrent && (
-            <div>
-              <label htmlFor="modal-day" className="text-sm font-semibold text-ink block mb-1.5">
-                Día semanal de atención <span className="text-primary font-bold">*</span>
-              </label>
-              <select
-                id="modal-day"
-                value={recurrenceDay}
-                onChange={(e) => setRecurrenceDay(e.target.value)}
-                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-              >
-                {WEEKDAY_NAMES.map((name, idx) => (
-                  <option key={idx} value={String(idx)}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* Modal Footer */}
           <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
