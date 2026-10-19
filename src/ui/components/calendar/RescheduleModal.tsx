@@ -166,16 +166,21 @@ export function RescheduleModal({
       aria-labelledby="reschedule-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4"
     >
-      <div className="bg-surface border border-line rounded-2xl max-w-xl w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-line rounded-2xl max-w-3xl w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-5 border-b border-line flex items-center justify-between">
-          <div>
-            <h3 id="reschedule-modal-title" className="font-serif font-medium text-lg text-ink">
-              Reagendar turno
-            </h3>
-            <p className="text-sm text-ink-sub mt-0.5">
-              Paciente: <strong className="text-ink font-semibold">{slot.patientName}</strong>
-            </p>
+        <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary-tint text-primary rounded-xl shrink-0">
+              <Icon name="refresh" size={20} />
+            </div>
+            <div>
+              <h3 id="reschedule-modal-title" className="font-serif font-medium text-lg text-ink leading-tight">
+                Reagendar turno
+              </h3>
+              <p className="text-sm text-ink-sub mt-0.5">
+                Paciente: <strong className="text-ink font-semibold">{slot.patientName}</strong>
+              </p>
+            </div>
           </div>
           <button
             type="button"
@@ -188,240 +193,251 @@ export function RescheduleModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
-          {/* Current slot info banner */}
-          <div className="p-3 bg-bg-base/60 border border-line rounded-xl text-sm flex items-center gap-3">
-            <div className="p-2 bg-primary-tint text-primary rounded-lg">
-              <Icon name="calendar" size={18} />
-            </div>
-            <div>
-              <span className="text-ink-sub block text-xs uppercase tracking-wider font-semibold">
-                Turno actual
-              </span>
-              <span className="text-ink font-medium capitalize">
-                {currentSlotDateStr} a las {currentSlotTimeStr} hs
-              </span>
-            </div>
-          </div>
-
-          {/* Operation Mode Selector: Move vs Swap */}
-          <div>
-            <label className="text-sm font-semibold text-ink block mb-1.5">
-              Tipo de reagendamiento
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMode("reschedule")}
-                className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex flex-col gap-1 ${
-                  mode === "reschedule"
-                    ? "bg-primary-tint/40 border-primary text-primary"
-                    : "bg-surface border-line text-ink hover:border-line-control"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 font-semibold text-sm">
-                  <Icon name="refresh" size={14} />
-                  <span>Horario disponible</span>
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+            {/* Left Column: Context & Modifiers (5 cols) */}
+            <div className="md:col-span-5 space-y-3.5">
+              {/* Current slot info banner */}
+              <div className="p-3 bg-bg-base/60 border border-line rounded-xl text-sm flex items-start gap-2.5">
+                <div className="p-1.5 bg-primary-tint text-primary rounded-lg shrink-0 mt-0.5">
+                  <Icon name="calendar" size={16} />
                 </div>
-                <span className="text-xs text-ink-sub">
-                  Mover a un espacio libre en la agenda
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode("swap")}
-                className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex flex-col gap-1 ${
-                  mode === "swap"
-                    ? "bg-primary-tint/40 border-primary text-primary"
-                    : "bg-surface border-line text-ink hover:border-line-control"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 font-semibold text-sm">
-                  <Icon name="repeat" size={14} />
-                  <span>Intercambio</span>
-                </div>
-                <span className="text-xs text-ink-sub">
-                  Enroque con otro paciente agendado
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Scope Selector: Eventual vs Permanent */}
-          <div>
-            <label className="text-sm font-semibold text-ink block mb-1.5">
-              Alcance de la modificación
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label
-                className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-start gap-2.5 ${
-                  scope === "eventual"
-                    ? "bg-primary-tint/30 border-primary text-ink"
-                    : "bg-surface border-line text-ink hover:border-line-control"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="scope"
-                  value="eventual"
-                  checked={scope === "eventual"}
-                  onChange={() => setScope("eventual")}
-                  className="mt-0.5 accent-primary"
-                />
-                <div className="text-sm">
-                  <span className="font-semibold block">Solo esta vez</span>
-                  <span className="text-xs text-ink-sub">
-                    Modificación eventual (mantiene la recurrencia fija)
+                <div className="min-w-0">
+                  <span className="text-xs text-ink-sub block uppercase tracking-wider font-semibold">
+                    Turno actual
+                  </span>
+                  <span className="text-sm text-ink font-semibold capitalize block truncate">
+                    {currentSlotDateStr}
+                  </span>
+                  <span className="text-xs text-ink-sub block">
+                    A las {currentSlotTimeStr} hs
                   </span>
                 </div>
-              </label>
-
-              <label
-                className={`p-3 rounded-xl border cursor-pointer transition-colors flex items-start gap-2.5 ${
-                  scope === "permanent"
-                    ? "bg-primary-tint/30 border-primary text-ink"
-                    : "bg-surface border-line text-ink hover:border-line-control"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="scope"
-                  value="permanent"
-                  checked={scope === "permanent"}
-                  onChange={() => setScope("permanent")}
-                  className="mt-0.5 accent-primary"
-                />
-                <div className="text-sm">
-                  <span className="font-semibold block">De ahora en más</span>
-                  <span className="text-xs text-ink-sub">
-                    Permanente (actualiza el horario recurrente)
-                  </span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Mode 1: Reschedule to Available Slot */}
-          {mode === "reschedule" && (
-            <div className="space-y-3 pt-2">
-              <div>
-                <label
-                  htmlFor="reschedule-date"
-                  className="text-sm font-semibold text-ink block mb-1.5"
-                >
-                  Fecha de destino <span className="text-primary font-bold">*</span>
-                </label>
-                <div className="relative flex items-center">
-                  <input
-                    id="reschedule-date"
-                    type="text"
-                    required
-                    placeholder="DD/MM/AAAA"
-                    value={targetDisplayDate}
-                    onChange={(e) => handleDisplayDateChange(e.target.value)}
-                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 pr-10 text-ink focus:outline-none focus:border-primary text-base transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => datePickerRef.current?.showPicker()}
-                    title="Abrir calendario"
-                    aria-label="Abrir selector de fecha"
-                    className="absolute right-2.5 p-1 text-ink-sub hover:text-primary transition-colors cursor-pointer"
-                  >
-                    <Icon name="calendar" size={18} />
-                  </button>
-                  <input
-                    ref={datePickerRef}
-                    type="date"
-                    tabIndex={-1}
-                    value={targetDateStr}
-                    onChange={(e) => handleNativeDateChange(e.target.value)}
-                    className="sr-only pointer-events-none"
-                    aria-hidden="true"
-                  />
-                </div>
-                <span className="text-xs text-ink-sub mt-1 block">
-                  Formato DD/MM/AAAA (ej. 22/10/2026)
-                </span>
               </div>
 
+              {/* Operation Mode Selector: Move vs Swap */}
               <div>
                 <label className="text-sm font-semibold text-ink block mb-1.5">
-                  Horarios disponibles ({availableSlots.length} libres)
+                  Tipo de reagendamiento
                 </label>
-                {availableSlots.length === 0 ? (
-                  <p className="text-sm text-ink-sub p-3 border border-dashed border-line rounded-xl text-center">
-                    No hay horarios disponibles para esta fecha.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-36 overflow-y-auto p-1">
-                    {availableSlots.map((av) => {
-                      const isSelected =
-                        selectedAvailableSlot?.time === av.time;
-                      return (
-                        <button
-                          key={av.time}
-                          type="button"
-                          onClick={() => setSelectedAvailableSlot(av)}
-                          className={`py-2 px-1 text-sm font-mono rounded-lg border text-center transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-primary text-surface border-primary font-bold shadow-xs scale-102"
-                              : "bg-surface text-ink border-line hover:border-line-control hover:bg-bg-base"
-                          }`}
-                        >
-                          {av.time}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Mode 2: Swap with Another Patient */}
-          {mode === "swap" && (
-            <div className="space-y-3 pt-2">
-              <div>
-                <label
-                  htmlFor="swap-candidate"
-                  className="text-sm font-semibold text-ink block mb-1.5"
-                >
-                  Seleccionar turno a intercambiar <span className="text-primary font-bold">*</span>
-                </label>
-                {swapCandidates.length === 0 ? (
-                  <p className="text-sm text-ink-sub p-3 border border-dashed border-line rounded-xl text-center">
-                    No hay otros turnos programados para intercambiar.
-                  </p>
-                ) : (
-                  <select
-                    id="swap-candidate"
-                    required
-                    value={selectedSwapSlotKey}
-                    onChange={(e) => setSelectedSwapSlotKey(e.target.value)}
-                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMode("reschedule")}
+                    className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer flex flex-col gap-0.5 ${
+                      mode === "reschedule"
+                        ? "bg-primary-tint/40 border-primary text-primary"
+                        : "bg-surface border-line text-ink hover:border-line-control"
+                    }`}
                   >
-                    <option value="">Seleccionar paciente y turno</option>
-                    {swapCandidates.map((c) => {
-                      const key = `${c.patientUuid}-${c.dateTime.getTime()}`;
-                      const formattedTime = format(c.dateTime, "EEE d/MM HH:mm", {
-                        locale: es,
-                      });
-                      return (
-                        <option key={key} value={key}>
-                          {c.patientName} — {formattedTime} hs
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
+                    <div className="flex items-center gap-1.5 font-semibold text-sm">
+                      <Icon name="refresh" size={14} />
+                      <span>Disponible</span>
+                    </div>
+                    <span className="text-xs text-ink-sub">
+                      Espacio libre
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMode("swap")}
+                    className={`p-2.5 rounded-xl border text-left transition-colors cursor-pointer flex flex-col gap-0.5 ${
+                      mode === "swap"
+                        ? "bg-primary-tint/40 border-primary text-primary"
+                        : "bg-surface border-line text-ink hover:border-line-control"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-sm">
+                      <Icon name="repeat" size={14} />
+                      <span>Intercambio</span>
+                    </div>
+                    <span className="text-xs text-ink-sub">
+                      Con otro paciente
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scope Selector: Eventual vs Permanent */}
+              <div>
+                <label className="text-sm font-semibold text-ink block mb-1.5">
+                  Alcance de la modificación
+                </label>
+                <div className="space-y-2">
+                  <label
+                    className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-start gap-2.5 ${
+                      scope === "eventual"
+                        ? "bg-primary-tint/30 border-primary text-ink"
+                        : "bg-surface border-line text-ink hover:border-line-control"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="scope"
+                      value="eventual"
+                      checked={scope === "eventual"}
+                      onChange={() => setScope("eventual")}
+                      className="mt-0.5 accent-primary"
+                    />
+                    <div className="text-sm leading-snug">
+                      <span className="font-semibold block text-sm">Solo esta vez</span>
+                      <span className="text-xs text-ink-sub">
+                        Modificación eventual (mantiene fijos)
+                      </span>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-2.5 rounded-xl border cursor-pointer transition-colors flex items-start gap-2.5 ${
+                      scope === "permanent"
+                        ? "bg-primary-tint/30 border-primary text-ink"
+                        : "bg-surface border-line text-ink hover:border-line-control"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="scope"
+                      value="permanent"
+                      checked={scope === "permanent"}
+                      onChange={() => setScope("permanent")}
+                      className="mt-0.5 accent-primary"
+                    />
+                    <div className="text-sm leading-snug">
+                      <span className="font-semibold block text-sm">De ahora en más</span>
+                      <span className="text-xs text-ink-sub">
+                        Permanente (actualiza recurrencia)
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Right Column: Target Date & Slot Selection (7 cols) */}
+            <div className="md:col-span-7 bg-bg-base/30 p-3.5 border border-line rounded-xl space-y-3">
+              {mode === "reschedule" && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="reschedule-date"
+                      className="text-sm font-semibold text-ink block mb-1"
+                    >
+                      Fecha de destino <span className="text-primary font-bold">*</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        id="reschedule-date"
+                        type="text"
+                        required
+                        placeholder="DD/MM/AAAA"
+                        value={targetDisplayDate}
+                        onChange={(e) => handleDisplayDateChange(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 pr-10 text-ink focus:outline-none focus:border-primary text-base transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => datePickerRef.current?.showPicker()}
+                        title="Abrir calendario"
+                        aria-label="Abrir selector de fecha"
+                        className="absolute right-2.5 p-1 text-ink-sub hover:text-primary transition-colors cursor-pointer"
+                      >
+                        <Icon name="calendar" size={18} />
+                      </button>
+                      <input
+                        ref={datePickerRef}
+                        type="date"
+                        tabIndex={-1}
+                        value={targetDateStr}
+                        onChange={(e) => handleNativeDateChange(e.target.value)}
+                        className="sr-only pointer-events-none"
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <span className="text-xs text-ink-sub mt-0.5 block">
+                      Formato DD/MM/AAAA (ej. 22/10/2026)
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-semibold text-ink block mb-1.5">
+                      Horarios disponibles ({availableSlots.length} libres)
+                    </label>
+                    {availableSlots.length === 0 ? (
+                      <p className="text-sm text-ink-sub p-4 border border-dashed border-line rounded-xl text-center bg-surface">
+                        No hay horarios disponibles para esta fecha.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-0.5">
+                        {availableSlots.map((av) => {
+                          const isSelected = selectedAvailableSlot?.time === av.time;
+                          return (
+                            <button
+                              key={av.time}
+                              type="button"
+                              onClick={() => setSelectedAvailableSlot(av)}
+                              className={`py-2 px-1 text-sm font-mono rounded-lg border text-center transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-primary text-surface border-primary font-bold shadow-xs scale-102"
+                                  : "bg-surface text-ink border-line hover:border-line-control hover:bg-bg-base"
+                              }`}
+                            >
+                              {av.time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {mode === "swap" && (
+                <div className="space-y-3">
+                  <div>
+                    <label
+                      htmlFor="swap-candidate"
+                      className="text-sm font-semibold text-ink block mb-1.5"
+                    >
+                      Seleccionar turno a intercambiar <span className="text-primary font-bold">*</span>
+                    </label>
+                    {swapCandidates.length === 0 ? (
+                      <p className="text-sm text-ink-sub p-4 border border-dashed border-line rounded-xl text-center bg-surface">
+                        No hay otros turnos programados para intercambiar.
+                      </p>
+                    ) : (
+                      <select
+                        id="swap-candidate"
+                        required
+                        value={selectedSwapSlotKey}
+                        onChange={(e) => setSelectedSwapSlotKey(e.target.value)}
+                        className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                      >
+                        <option value="">Seleccionar paciente y turno</option>
+                        {swapCandidates.map((c) => {
+                          const key = `${c.patientUuid}-${c.dateTime.getTime()}`;
+                          const formattedTime = format(c.dateTime, "EEE d/MM HH:mm", {
+                            locale: es,
+                          });
+                          return (
+                            <option key={key} value={key}>
+                              {c.patientName} — {formattedTime} hs
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-sub leading-relaxed">
+                    Se intercambiarán los turnos de ambos pacientes preservando la duración y consistencia en la agenda.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Modal Footer */}
-          <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-line flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
