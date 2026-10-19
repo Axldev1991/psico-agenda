@@ -54,8 +54,6 @@ export function SessionModal({
   const [selectedDays, setSelectedDays] = useState<number[]>([0]);
   const [cadence, setCadence] = useState<RecurrenceCadence>("weekly");
 
-  if (!isOpen) return null;
-
   const toggleDay = (dayIndex: number) => {
     setSelectedDays((prev) => {
       if (prev.includes(dayIndex)) {
@@ -146,6 +144,8 @@ export function SessionModal({
 
     return `Se repetirá todas las semanas los ${selectedDaysSummary || "días seleccionados"} a las ${sessionTime} hs.`;
   }, [cadence, sessionDate, selectedDays, selectedDaysSummary, sessionTime]);
+
+  if (!isOpen) return null;
 
   return (
     <div
