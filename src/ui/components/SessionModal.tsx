@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
@@ -10,6 +10,7 @@ import { RecurrenceCadence } from "../../domain/agenda.types";
 import { buildRRuleString } from "../../domain/agenda.service";
 import { useUIState } from "../context/UIContext";
 import { Icon } from "./common/Icon";
+import { DateInput } from "./common/DateInput";
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -51,12 +52,10 @@ export function SessionModal({
   const [selectedPatientUuid, setSelectedPatientUuid] = useState("");
   const [isRecurrent, setIsRecurrent] = useState(false);
   const [sessionDate, setSessionDate] = useState("");
-  const [displayDate, setDisplayDate] = useState("");
   const [sessionTime, setSessionTime] = useState("16:00");
   const [selectedDays, setSelectedDays] = useState<number[]>([0]);
   const [cadence, setCadence] = useState<RecurrenceCadence>("weekly");
 
-  const datePickerRef = useRef<HTMLInputElement>(null);
   const { showToast } = useUIState();
 
   const toggleDay = (dayIndex: number) => {
@@ -77,39 +76,6 @@ export function SessionModal({
       const jsDay = parsed.getDay();
       const rDay = jsDay === 0 ? 6 : jsDay - 1;
       setSelectedDays([rDay]);
-    }
-  };
-
-  const handleDisplayDateChange = (val: string) => {
-    const digits = val.replace(/\D/g, "").slice(0, 8);
-    let formatted = digits;
-    if (digits.length >= 5) {
-      formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-    } else if (digits.length >= 3) {
-      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    }
-    setDisplayDate(formatted);
-
-    if (digits.length === 8) {
-      const d = parseInt(digits.slice(0, 2), 10);
-      const m = parseInt(digits.slice(2, 4), 10);
-      const y = parseInt(digits.slice(4), 10);
-      if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 2000 && y <= 2100) {
-        const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-        handleDateChange(iso);
-      }
-    } else if (digits.length === 0) {
-      handleDateChange("");
-    }
-  };
-
-  const handleNativeDateChange = (isoVal: string) => {
-    handleDateChange(isoVal);
-    if (isoVal) {
-      const [y, m, d] = isoVal.split("-");
-      setDisplayDate(`${d}/${m}/${y}`);
-    } else {
-      setDisplayDate("");
     }
   };
 
@@ -141,7 +107,6 @@ export function SessionModal({
     setSelectedPatientUuid("");
     setIsRecurrent(false);
     setSessionDate("");
-    setDisplayDate("");
     setSessionTime("16:00");
     setSelectedDays([0]);
     setCadence("weekly");
@@ -262,38 +227,12 @@ export function SessionModal({
               <label htmlFor="modal-date" className="text-sm font-semibold text-ink block mb-1.5">
                 {isRecurrent ? "Fecha de inicio *" : "Fecha del turno *"}
               </label>
-              <div className="relative flex items-center">
-                <input
-                  id="modal-date"
-                  type="text"
-                  required
-                  placeholder="DD/MM/AAAA"
-                  value={displayDate}
-                  onChange={(e) => handleDisplayDateChange(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-lg px-3 py-2 pr-10 text-ink focus:outline-none focus:border-primary text-base transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => datePickerRef.current?.showPicker()}
-                  title="Abrir calendario"
-                  aria-label="Abrir selector de fecha"
-                  className="absolute right-2.5 p-1 text-ink-sub hover:text-primary transition-colors cursor-pointer"
-                >
-                  <Icon name="calendar" size={18} />
-                </button>
-                <input
-                  ref={datePickerRef}
-                  type="date"
-                  tabIndex={-1}
-                  value={sessionDate}
-                  onChange={(e) => handleNativeDateChange(e.target.value)}
-                  className="sr-only pointer-events-none"
-                  aria-hidden="true"
-                />
-              </div>
-              <span className="text-xs text-ink-sub mt-1 block">
-                Formato DD/MM/AAAA (ej. 22/10/2026)
-              </span>
+              <DateInput
+                id="modal-date"
+                required
+                value={sessionDate}
+                onChange={handleDateChange}
+              />
             </div>
 
             <div>
