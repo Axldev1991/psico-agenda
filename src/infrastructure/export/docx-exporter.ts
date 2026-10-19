@@ -133,7 +133,7 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
             <td style="width: 50%; vertical-align: top; border-left: 1px solid #cbd5e1; padding-left: 20px; font-size: 9.5pt; line-height: 1.5; color: #334155;">
               <span style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: bold;">Sesión Registrada</span><br/>
               <strong>Fecha:</strong> ${dateFormatted}<br/>
-              <strong>Costo Pactado:</strong> $${session.priceAtSession.toLocaleString('es-AR')} ARS<br/>
+              <strong>Costo Pactado:</strong> $${(session.priceAtSession ?? 0).toLocaleString('es-AR')} ARS<br/>
               <strong>Estado:</strong> ${session.status === 'completed' ? 'Atendido / Realizado' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente / No asistió' : 'Programado'}
             </td>
           </tr>
