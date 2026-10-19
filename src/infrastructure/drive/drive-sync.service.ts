@@ -33,6 +33,10 @@ export class DriveSyncService {
       for (const patient of allPatients) {
         if (patient.status === 'inactive' || patient.isHistoryLoaded === false) continue;
 
+        // Si el paciente fue creado o actualizado en los últimos 180 días, no es un paciente antiguo
+        const isRecentPatient = new Date(patient.createdAt || patient.updatedAt).getTime() >= threshold.getTime();
+        if (isRecentPatient) continue;
+
         // Buscar si tiene alguna sesión en la ventana de 180 días o a futuro
         const hasRecentActivity = allSessions.some(s => 
           s.patientUuid === patient.uuid && 

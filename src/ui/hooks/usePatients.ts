@@ -18,6 +18,7 @@ export function usePatients() {
       uuid: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      isHistoryLoaded: true,
     };
     await repository.save(newPatient);
   };

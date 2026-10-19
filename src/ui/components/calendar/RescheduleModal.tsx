@@ -53,6 +53,15 @@ export function RescheduleModal({
     }
   }, [slot]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const targetDate = useMemo(() => {
     if (!targetDateStr) return new Date();
     return new Date(`${targetDateStr}T00:00:00`);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
@@ -57,6 +57,15 @@ export function SessionModal({
   const [cadence, setCadence] = useState<RecurrenceCadence>("weekly");
 
   const { showToast } = useUIState();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const toggleDay = (dayIndex: number) => {
     setSelectedDays((prev) => {
