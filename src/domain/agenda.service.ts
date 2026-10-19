@@ -137,8 +137,16 @@ export function buildRRuleString(options: {
       return `${dtstart}FREQ=WEEKLY;BYDAY=${byDays}`;
     case 'biweekly':
       return `${dtstart}FREQ=WEEKLY;INTERVAL=2;BYDAY=${byDays}`;
-    case 'monthly':
-      return `${dtstart}FREQ=MONTHLY;BYDAY=${byDays}`;
+    case 'monthly': {
+      if (options.startDate) {
+        // Compute ordinal week position of the start date (1st, 2nd, 3rd, 4th, or last)
+        const dayOfMonth = parseInt(options.startDate.split('-')[2], 10);
+        const ordinal = Math.ceil(dayOfMonth / 7);
+        const setPos = ordinal >= 5 ? -1 : ordinal;
+        return `${dtstart}FREQ=MONTHLY;BYDAY=${byDays};BYSETPOS=${setPos}`;
+      }
+      return `${dtstart}FREQ=MONTHLY;BYDAY=${byDays};BYSETPOS=1`;
+    }
     default:
       return `${dtstart}FREQ=WEEKLY;BYDAY=${byDays}`;
   }

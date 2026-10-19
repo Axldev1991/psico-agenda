@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { RRule } from "rrule";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
 import { RecurrenceCadence } from "../../domain/agenda.types";
+import { buildRRuleString } from "../../domain/agenda.service";
 import { Icon } from "./common/Icon";
 
 interface SessionModalProps {
@@ -110,12 +114,38 @@ export function SessionModal({
     .filter(Boolean)
     .join(" y ");
 
-  const cadenceSummary =
-    cadence === "weekly"
-      ? "todas las semanas"
-      : cadence === "biweekly"
-      ? "cada 14 días (quincenal)"
-      : "mensualmente";
+  const recurrenceBannerMessage = useMemo(() => {
+    if (cadence === "monthly" && sessionDate) {
+      try {
+        const parsed = new Date(`${sessionDate}T00:00:00`);
+        const dayOfMonth = parsed.getDate();
+        const ordinal = Math.ceil(dayOfMonth / 7);
+        const ordinalLabel = ordinal >= 5 ? "último" : `${ordinal}°`;
+        const dayName = WEEKDAYS.find((w) => w.index === selectedDays[0])?.name || "día";
+
+        const rruleStr = buildRRuleString({
+          cadence: "monthly",
+          daysOfWeek: selectedDays,
+          startDate: sessionDate,
+        });
+        const rule = RRule.fromString(rruleStr);
+        const nextOccurrence = rule.after(parsed, false);
+        const nextStr = nextOccurrence
+          ? ` (próximo turno: ${format(nextOccurrence, "d 'de' MMMM", { locale: es })})`
+          : "";
+
+        return `Se repetirá el ${ordinalLabel} ${dayName.toLowerCase()} de cada mes a las ${sessionTime} hs${nextStr}.`;
+      } catch {
+        // fallback to standard message
+      }
+    }
+
+    if (cadence === "biweekly") {
+      return `Se repetirá cada 14 días (quincenal) los ${selectedDaysSummary || "días seleccionados"} a las ${sessionTime} hs.`;
+    }
+
+    return `Se repetirá todas las semanas los ${selectedDaysSummary || "días seleccionados"} a las ${sessionTime} hs.`;
+  }, [cadence, sessionDate, selectedDays, selectedDaysSummary, sessionTime]);
 
   return (
     <div
@@ -297,7 +327,7 @@ export function SessionModal({
               >
                 <Icon name="repeat" size={15} className="shrink-0" />
                 <span className="leading-tight text-xs sm:text-sm">
-                  Se repetirá {cadenceSummary} los <strong>{selectedDaysSummary || "días seleccionados"}</strong> a las {sessionTime}.
+                  {recurrenceBannerMessage}
                 </span>
               </div>
             </div>

@@ -86,6 +86,8 @@ export function useGoogleDrive() {
       const token = await driveRepo.login();
       localStorage.setItem("gd-access-token", token);
       setGlobalState({ googleToken: token, syncStatus: "idle", loading: false });
+      // Sincronización automática inmediata al conectar
+      await performSyncWithToken(token);
     } catch (err: any) {
       console.error(err);
       setGlobalState({
@@ -143,13 +145,13 @@ export function useGoogleDrive() {
     }
   };
 
-  const performSync = async () => {
-    if (!googleToken) return;
+  const performSyncWithToken = async (token: string) => {
+    if (!token) return;
     setGlobalState({ loading: true, syncStatus: "syncing", errorMessage: null });
 
     try {
       await checkSimulatedNetwork();
-      const result = await syncService.performSync(googleToken);
+      const result = await syncService.performSync(token);
       localStorage.setItem("gd-last-synced", result.lastSynced);
       setGlobalState({ lastSynced: result.lastSynced, syncStatus: "synced", loading: false });
     } catch (err: any) {
@@ -175,6 +177,12 @@ export function useGoogleDrive() {
           loading: false,
         });
       }
+    }
+  };
+
+  const performSync = async () => {
+    if (googleToken) {
+      await performSyncWithToken(googleToken);
     }
   };
 

@@ -195,13 +195,20 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(result).toBe("DTSTART:20261006T000000Z\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU");
     });
 
-    it("generates monthly RRule string", () => {
-      const result = buildRRuleString({
+    it("generates monthly RRule string with ordinal BYSETPOS", () => {
+      const result1 = buildRRuleString({
         cadence: "monthly",
-        daysOfWeek: [4], // Friday
-        startDate: "2026-10-01",
+        daysOfWeek: [4], // Friday Oct 23 -> 4th Friday
+        startDate: "2026-10-23",
       });
-      expect(result).toBe("DTSTART:20261001T000000Z\nRRULE:FREQ=MONTHLY;BYDAY=FR");
+      expect(result1).toBe("DTSTART:20261023T000000Z\nRRULE:FREQ=MONTHLY;BYDAY=FR;BYSETPOS=4");
+
+      const resultLast = buildRRuleString({
+        cadence: "monthly",
+        daysOfWeek: [4], // Friday Oct 30 -> 5th Friday -> last (-1)
+        startDate: "2026-10-30",
+      });
+      expect(resultLast).toBe("DTSTART:20261030T000000Z\nRRULE:FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1");
     });
 
     it("throws error if no days of week are selected", () => {
