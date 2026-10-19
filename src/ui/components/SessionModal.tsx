@@ -124,12 +124,17 @@ export function SessionModal({
       aria-labelledby="session-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4"
     >
-      <div className="bg-surface border border-line rounded-2xl max-w-lg w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-surface border border-line rounded-2xl max-w-2xl w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="p-5 border-b border-line flex items-center justify-between">
-          <h3 id="session-modal-title" className="font-serif font-medium text-lg text-ink">
-            Programar turno o sesión
-          </h3>
+          <div>
+            <h3 id="session-modal-title" className="font-serif font-medium text-lg text-ink">
+              Programar turno o sesión
+            </h3>
+            <p className="text-xs text-ink-sub mt-0.5">
+              Los campos con <span className="text-primary font-bold">*</span> son obligatorios.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -142,133 +147,45 @@ export function SessionModal({
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-sm text-ink-sub">
-            Los campos marcados con <span className="text-primary font-bold">*</span> son obligatorios.
-          </p>
+          {/* Row 1: Patient Selection & Recurrence Switch */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-end">
+            <div className="sm:col-span-7">
+              <label htmlFor="modal-patient" className="text-sm font-semibold text-ink block mb-1.5">
+                Paciente <span className="text-primary font-bold">*</span>
+              </label>
+              <select
+                id="modal-patient"
+                required
+                value={selectedPatientUuid}
+                onChange={(e) => setSelectedPatientUuid(e.target.value)}
+                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+              >
+                <option value="">Seleccionar paciente</option>
+                {patients.map((p) => (
+                  <option key={p.uuid} value={p.uuid}>
+                    {p.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Patient Selection */}
-          <div>
-            <label htmlFor="modal-patient" className="text-sm font-semibold text-ink block mb-1.5">
-              Paciente <span className="text-primary font-bold">*</span>
-            </label>
-            <select
-              id="modal-patient"
-              required
-              value={selectedPatientUuid}
-              onChange={(e) => setSelectedPatientUuid(e.target.value)}
-              className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-            >
-              <option value="">Seleccionar paciente</option>
-              {patients.map((p) => (
-                <option key={p.uuid} value={p.uuid}>
-                  {p.fullName}
-                </option>
-              ))}
-            </select>
+            <div className="sm:col-span-5">
+              <label className="flex items-center gap-2.5 p-2.5 rounded-lg border border-line bg-bg-base/60 cursor-pointer hover:bg-bg-base transition-colors h-10.5">
+                <input
+                  type="checkbox"
+                  checked={isRecurrent}
+                  onChange={(e) => setIsRecurrent(e.target.checked)}
+                  className="h-4 w-4 accent-primary rounded cursor-pointer shrink-0"
+                />
+                <div className="text-sm leading-tight select-none">
+                  <span className="font-semibold text-ink block text-sm">Turno recurrente</span>
+                  <span className="text-[11px] text-ink-sub block">Periódico fijo</span>
+                </div>
+              </label>
+            </div>
           </div>
 
-          {/* Recurrence Checkbox Card */}
-          <label className="flex items-start gap-3 p-3.5 rounded-xl border border-line bg-bg-base/60 cursor-pointer hover:bg-bg-base transition-colors">
-            <input
-              type="checkbox"
-              checked={isRecurrent}
-              onChange={(e) => setIsRecurrent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary rounded cursor-pointer"
-            />
-            <div className="text-sm">
-              <span className="font-semibold text-ink block">¿Es un turno recurrente?</span>
-              <span className="text-ink-sub mt-0.5 block leading-relaxed">
-                Permite programar turnos periódicos fijos: semanales, bisemanales/multi-días, quincenales o mensuales.
-              </span>
-            </div>
-          </label>
-
-          {/* Recurrence Options */}
-          {isRecurrent && (
-            <div className="space-y-3.5 p-3.5 bg-bg-base/40 border border-line rounded-xl">
-              {/* Cadence Selector */}
-              <div>
-                <label className="text-sm font-semibold text-ink block mb-1.5">
-                  Frecuencia de repetición
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCadence("weekly")}
-                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
-                      cadence === "weekly"
-                        ? "bg-primary text-surface border-primary"
-                        : "bg-surface text-ink border-line hover:border-line-control"
-                    }`}
-                  >
-                    Semanal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCadence("biweekly")}
-                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
-                      cadence === "biweekly"
-                        ? "bg-primary text-surface border-primary"
-                        : "bg-surface text-ink border-line hover:border-line-control"
-                    }`}
-                  >
-                    Quincenal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCadence("monthly")}
-                    className={`py-2 px-2 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
-                      cadence === "monthly"
-                        ? "bg-primary text-surface border-primary"
-                        : "bg-surface text-ink border-line hover:border-line-control"
-                    }`}
-                  >
-                    Mensual
-                  </button>
-                </div>
-              </div>
-
-              {/* Day Selection (Multi-day) */}
-              <div>
-                <label className="text-sm font-semibold text-ink block mb-1.5">
-                  Días de la semana ({selectedDays.length} seleccionado{selectedDays.length > 1 ? "s" : ""})
-                </label>
-                <div className="flex items-center gap-1.5">
-                  {WEEKDAYS.map((day) => {
-                    const isSelected = selectedDays.includes(day.index);
-                    return (
-                      <button
-                        key={day.index}
-                        type="button"
-                        onClick={() => toggleDay(day.index)}
-                        title={day.name}
-                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer border ${
-                          isSelected
-                            ? "bg-primary-tint text-primary border-primary font-bold shadow-xs"
-                            : "bg-surface text-ink-sub border-line hover:border-line-control hover:text-ink"
-                        }`}
-                      >
-                        {day.short}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Info Alert on Recurrence */}
-              <div
-                role="status"
-                className="flex items-center gap-2 p-2.5 bg-primary-tint/60 text-primary border border-primary/20 rounded-lg text-sm"
-              >
-                <Icon name="repeat" size={16} />
-                <span className="leading-tight">
-                  Se repetirá {cadenceSummary} los <strong>{selectedDaysSummary || "días seleccionados"}</strong> a las {sessionTime}.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Date & Time Row */}
+          {/* Row 2: Date & Time Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label htmlFor="modal-date" className="text-sm font-semibold text-ink block mb-1.5">
@@ -285,7 +202,7 @@ export function SessionModal({
             </div>
 
             <div>
-              <label htmlFor="modal-time" className="text-sm font-semibold text-ink block mb-1">
+              <label htmlFor="modal-time" className="text-sm font-semibold text-ink block mb-1.5">
                 Hora <span className="text-primary font-bold">*</span>
               </label>
               <input
@@ -296,14 +213,98 @@ export function SessionModal({
                 onChange={(e) => setSessionTime(e.target.value)}
                 className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
               />
-              <span className="text-sm text-ink-sub mt-1 block">
-                Formato de 24 horas, ej. 16:00.
-              </span>
             </div>
           </div>
 
+          {/* Row 3: Recurrence Options (2 Columns) */}
+          {isRecurrent && (
+            <div className="p-3.5 bg-bg-base/40 border border-line rounded-xl space-y-3 animate-in fade-in duration-150">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Cadence Selector */}
+                <div>
+                  <label className="text-sm font-semibold text-ink block mb-1.5">
+                    Frecuencia de repetición
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCadence("weekly")}
+                      className={`py-1.5 px-1 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                        cadence === "weekly"
+                          ? "bg-primary text-surface border-primary font-semibold"
+                          : "bg-surface text-ink border-line hover:border-line-control"
+                      }`}
+                    >
+                      Semanal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCadence("biweekly")}
+                      className={`py-1.5 px-1 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                        cadence === "biweekly"
+                          ? "bg-primary text-surface border-primary font-semibold"
+                          : "bg-surface text-ink border-line hover:border-line-control"
+                      }`}
+                    >
+                      Quincenal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCadence("monthly")}
+                      className={`py-1.5 px-1 text-sm font-medium rounded-lg border text-center transition-colors cursor-pointer ${
+                        cadence === "monthly"
+                          ? "bg-primary text-surface border-primary font-semibold"
+                          : "bg-surface text-ink border-line hover:border-line-control"
+                      }`}
+                    >
+                      Mensual
+                    </button>
+                  </div>
+                </div>
+
+                {/* Day Selection (Multi-day) */}
+                <div>
+                  <label className="text-sm font-semibold text-ink block mb-1.5">
+                    Días semanales ({selectedDays.length})
+                  </label>
+                  <div className="flex items-center gap-1">
+                    {WEEKDAYS.map((day) => {
+                      const isSelected = selectedDays.includes(day.index);
+                      return (
+                        <button
+                          key={day.index}
+                          type="button"
+                          onClick={() => toggleDay(day.index)}
+                          title={day.name}
+                          className={`flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer border ${
+                            isSelected
+                              ? "bg-primary-tint text-primary border-primary font-bold shadow-xs"
+                              : "bg-surface text-ink-sub border-line hover:border-line-control hover:text-ink"
+                          }`}
+                        >
+                          {day.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Alert on Recurrence */}
+              <div
+                role="status"
+                className="flex items-center gap-2 px-3 py-2 bg-primary-tint/60 text-primary border border-primary/20 rounded-lg text-sm"
+              >
+                <Icon name="repeat" size={15} className="shrink-0" />
+                <span className="leading-tight text-xs sm:text-sm">
+                  Se repetirá {cadenceSummary} los <strong>{selectedDaysSummary || "días seleccionados"}</strong> a las {sessionTime}.
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Modal Footer */}
-          <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-line flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}

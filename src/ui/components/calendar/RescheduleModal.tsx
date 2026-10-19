@@ -117,7 +117,7 @@ export function RescheduleModal({
       aria-labelledby="reschedule-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4"
     >
-      <div className="bg-surface border border-line rounded-2xl max-w-lg w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+      <div className="bg-surface border border-line rounded-2xl max-w-xl w-full overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 border-b border-line flex items-center justify-between">
           <div>
