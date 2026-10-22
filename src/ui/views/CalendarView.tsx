@@ -27,6 +27,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     recurrenceRules,
     rescheduleSlot,
     swapSlots,
+    patients,
   } = useCalendar();
 
   const { openSessionModal } = useUIState();
@@ -61,6 +62,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         selectDate={selectDate}
         dbSessions={dbSessions}
         recurrenceRules={recurrenceRules}
+        patients={patients}
         onNavigateToPatientDetail={onNavigateToPatientDetail}
         onOpenRescheduleModal={handleOpenReschedule}
       />

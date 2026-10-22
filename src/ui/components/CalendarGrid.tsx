@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import { CalendarSlot } from "../../domain/agenda.types";
 import { Holiday, getHoliday } from "../../domain/holidays";
 import { Session } from "../../domain/session.types";
+import { Patient } from "../../domain/patient.types";
 import { CalendarHeader } from "./calendar/CalendarHeader";
 import { WeekStrip } from "./calendar/WeekStrip";
 import { AppointmentCard } from "./calendar/AppointmentCard";
@@ -26,6 +27,7 @@ interface CalendarGridProps {
   selectDate: (date: Date) => void;
   dbSessions: any[];
   recurrenceRules: any[];
+  patients?: Patient[];
   onNavigateToPatientDetail: (patientUuid: string) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
@@ -44,6 +46,7 @@ export function CalendarGrid({
   selectDate,
   dbSessions,
   recurrenceRules,
+  patients = [],
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
 }: CalendarGridProps) {
@@ -126,6 +129,8 @@ export function CalendarGrid({
           weekDays={weekDays}
           dbSessions={dbSessions}
           recurrenceRules={recurrenceRules}
+          holidays={holidays}
+          patients={patients}
           onSelectDate={selectDate}
         />
       </div>

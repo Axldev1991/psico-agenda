@@ -11,6 +11,7 @@ export type IconName =
   | "chev-l"
   | "chev-r"
   | "chev-d"
+  | "chev-u"
   | "menu"
   | "terminal"
   | "lock"
@@ -73,6 +74,7 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   "chev-l": <path d="M15 6l-6 6 6 6" />,
   "chev-r": <path d="M9 6l6 6-6 6" />,
   "chev-d": <path d="M6 9l6 6 6-6" />,
+  "chev-u": <path d="M6 15l6-6 6 6" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   terminal: (
     <>

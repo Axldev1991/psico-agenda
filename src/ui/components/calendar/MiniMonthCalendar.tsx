@@ -18,12 +18,21 @@ import {
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
 import { Icon } from "../common/Icon";
+import { computeMonthlyBilling } from "../../../domain/billing.service";
+import { MonthlyBillingBadge } from "./MonthlyBillingBadge";
+import { CalendarSlot } from "../../../domain/agenda.types";
+import { Holiday, getHoliday } from "../../../domain/holidays";
+import { Patient } from "../../../domain/patient.types";
+import { computeAgendaSlots } from "../../../domain/agenda.service";
+
 
 interface MiniMonthCalendarProps {
   currentDate: Date;
   weekDays: Date[];
   dbSessions: any[];
   recurrenceRules: any[];
+  holidays?: Holiday[];
+  patients?: Patient[];
   onSelectDate: (date: Date) => void;
 }
 
@@ -32,6 +41,8 @@ export function MiniMonthCalendar({
   weekDays,
   dbSessions,
   recurrenceRules,
+  holidays = [],
+  patients = [],
   onSelectDate,
 }: MiniMonthCalendarProps) {
   const [viewMonth, setViewMonth] = useState(
@@ -47,6 +58,22 @@ export function MiniMonthCalendar({
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const monthDays = eachDayOfInterval({ start: startDate, end: endDate });
+
+  const monthlyAgendaSlots = React.useMemo(() => {
+    return computeAgendaSlots({
+      intervalStart: monthStart,
+      intervalEnd: monthEnd,
+      recurrenceRules,
+      dbSessions,
+      patients,
+      holidays,
+    });
+  }, [monthStart, monthEnd, recurrenceRules, dbSessions, patients, holidays]);
+
+  const billingSummary = React.useMemo(() => {
+    return computeMonthlyBilling(monthlyAgendaSlots, viewMonth);
+  }, [monthlyAgendaSlots, viewMonth]);
+
 
   const hasSessionOnDay = (day: Date): boolean => {
     // 1. Physical sessions
@@ -165,6 +192,8 @@ export function MiniMonthCalendar({
           );
         })}
       </div>
+
+      <MonthlyBillingBadge summary={billingSummary} targetMonth={viewMonth} />
     </aside>
   );
 }
