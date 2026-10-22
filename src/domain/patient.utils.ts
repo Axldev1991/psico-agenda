@@ -23,6 +23,44 @@ export function sortPatientsAlphabetically(patients: Patient[]): Patient[] {
   return [...patients].sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
 
+export type PatientTypeFilter = 'all' | 'adult' | 'underage';
+
+export interface PatientFilterParams {
+  status?: 'active' | 'inactive' | 'all';
+  type?: PatientTypeFilter;
+  searchTerm?: string;
+}
+
+/**
+ * Pure domain function to filter patients by status, population type, and search term,
+ * returning the results sorted alphabetically.
+ */
+export function filterPatients(
+  patients: Patient[],
+  params: PatientFilterParams = {}
+): Patient[] {
+  const { status = 'all', type = 'all', searchTerm = '' } = params;
+
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  const term = normalize(searchTerm.trim());
+
+  const filtered = patients.filter((p) => {
+    const patientStatus = p.status || 'active';
+    const matchesStatus = status === 'all' || patientStatus === status;
+
+    const patientType = p.type || 'adult';
+    const matchesType = type === 'all' || patientType === type;
+
+    const matchesSearch = !term || normalize(p.fullName).includes(term);
+
+    return matchesStatus && matchesType && matchesSearch;
+  });
+
+  return sortPatientsAlphabetically(filtered);
+}
+
 /**
  * Parses unified clinical history HTML and extracts content per session UUID.
  */

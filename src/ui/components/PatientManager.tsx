@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { Patient } from "../../domain/patient.types";
-import { sortPatientsAlphabetically } from "../../domain/patient.utils";
+import {
+  PatientTypeFilter,
+  filterPatients,
+} from "../../domain/patient.utils";
 import {
   PatientStatusTabs,
   PatientStatusFilter,
@@ -28,27 +31,24 @@ export function PatientManager({
 }: PatientManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<PatientStatusFilter>("active");
+  const [typeFilter, setTypeFilter] = useState<PatientTypeFilter>("all");
 
-  const normalize = (s: string) =>
-    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const typeFilteredPatients = patients.filter((p) => {
+    const patientType = p.type || "adult";
+    return typeFilter === "all" || patientType === typeFilter;
+  });
 
   const counts = {
-    active: patients.filter((p) => (p.status || "active") === "active").length,
-    inactive: patients.filter((p) => p.status === "inactive").length,
-    all: patients.length,
+    active: typeFilteredPatients.filter((p) => (p.status || "active") === "active").length,
+    inactive: typeFilteredPatients.filter((p) => p.status === "inactive").length,
+    all: typeFilteredPatients.length,
   };
 
-  const filteredPatients = sortPatientsAlphabetically(
-    patients.filter((p) => {
-      const patientStatus = p.status || "active";
-      const matchesStatus =
-        statusFilter === "all" || patientStatus === statusFilter;
-      const matchesSearch =
-        !searchTerm.trim() ||
-        normalize(p.fullName).includes(normalize(searchTerm.trim()));
-      return matchesStatus && matchesSearch;
-    })
-  );
+  const filteredPatients = filterPatients(patients, {
+    status: statusFilter,
+    type: typeFilter,
+    searchTerm,
+  });
 
   return (
     <section className="bg-surface border border-line rounded-2xl overflow-hidden shadow-xs">
@@ -59,12 +59,14 @@ export function PatientManager({
         counts={counts}
       />
 
-      {/* 2. List Header with Subtitle and Search */}
+      {/* 2. List Header with Subtitle, Population Filter, and Search */}
       <PatientListHeader
         currentTab={statusFilter}
-        count={counts[statusFilter]}
+        count={filteredPatients.length}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
         onOpenPatientModal={onOpenPatientModal}
       />
 

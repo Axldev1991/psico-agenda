@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge, sortPatientsAlphabetically, parseClinicalHistory, rebuildClinicalHistory, extractHighlights } from "./patient.utils";
+import { calculateAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights } from "./patient.utils";
 import { Patient } from "./patient.types";
 
 describe("Patient Utilities", () => {
@@ -41,6 +41,44 @@ describe("Patient Utilities", () => {
       expect(sorted[0].fullName).toBe("Alberto");
       expect(sorted[1].fullName).toBe("Carlos");
       expect(sorted[2].fullName).toBe("Zulma");
+    });
+  });
+
+  describe("filterPatients", () => {
+    const testPatients: Patient[] = [
+      { uuid: "1", fullName: "Zulma Gómez", status: "active", type: "adult", sessionPrice: 100, createdAt: "", updatedAt: "" },
+      { uuid: "2", fullName: "Alberto Fernandez", status: "active", type: "underage", sessionPrice: 100, createdAt: "", updatedAt: "" },
+      { uuid: "3", fullName: "Carlos Pérez", status: "inactive", type: "adult", sessionPrice: 100, createdAt: "", updatedAt: "" },
+      { uuid: "4", fullName: "Bautista Díaz", status: "inactive", type: "underage", sessionPrice: 100, createdAt: "", updatedAt: "" },
+    ];
+
+    it("should filter by status (active only)", () => {
+      const result = filterPatients(testPatients, { status: "active" });
+      expect(result).toHaveLength(2);
+      expect(result.map((p) => p.fullName)).toEqual(["Alberto Fernandez", "Zulma Gómez"]);
+    });
+
+    it("should filter by population type (underage only)", () => {
+      const result = filterPatients(testPatients, { type: "underage" });
+      expect(result).toHaveLength(2);
+      expect(result.map((p) => p.fullName)).toEqual(["Alberto Fernandez", "Bautista Díaz"]);
+    });
+
+    it("should combine status and type filters", () => {
+      const result = filterPatients(testPatients, { status: "active", type: "adult" });
+      expect(result).toHaveLength(1);
+      expect(result[0].fullName).toBe("Zulma Gómez");
+    });
+
+    it("should filter by search term ignoring accents and case", () => {
+      const result = filterPatients(testPatients, { searchTerm: "gomez" });
+      expect(result).toHaveLength(1);
+      expect(result[0].fullName).toBe("Zulma Gómez");
+    });
+
+    it("should return empty array when no matches found", () => {
+      const result = filterPatients(testPatients, { searchTerm: "inexistente" });
+      expect(result).toHaveLength(0);
     });
   });
 

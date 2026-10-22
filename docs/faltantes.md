@@ -8,16 +8,16 @@ Este documento detalla las funcionalidades, ajustes y requerimientos pendientes 
 
 ### 👤 Gestión de Pacientes
 
-- [ ] **Diferenciación de tipo de paciente:**
-  - Clasificar a los pacientes entre **Adultos** e **Infanto-Juveniles**.
-- [ ] **Edad del paciente:**
-  - Agregar el campo de **Edad** en el perfil/ficha del paciente.
-- [ ] **Ficha del paciente (CECI):**
-  - Incorporar la ficha del paciente enviada por CECI al sistema.
-- [ ] **Ordenamiento alfabético:**
-  - Ordenar la lista de pacientes alfabéticamente.
-- [ ] **Categorización por estado de tratamiento:**
-  - Clasificar a los pacientes en categorías: **En Tratamiento** y **No en Tratamiento** (o de alta/inactivos).
+- [x] **Diferenciación de tipo de paciente:**
+  - Clasificar a los pacientes entre **Adultos** e **Infanto-Juveniles** (con filtros reactivos en el fichero).
+- [x] **Edad del paciente:**
+  - Agregar el campo de **Edad** en el perfil/ficha del paciente (cálculo automático a partir de `birthDate`).
+- [x] **Ficha del paciente (CECI):**
+  - Incorporar la ficha del paciente enviada por CECI al sistema (`CeciForm` en detalle de paciente y modal).
+- [x] **Ordenamiento alfabético:**
+  - Ordenar la lista de pacientes alfabéticamente de forma predeterminada.
+- [x] **Categorización por estado de tratamiento:**
+  - Clasificar a los pacientes en categorías: **En Tratamiento** y **De alta** (inactivos).
 
 ### 📝 Sesiones e Historias Clínicas
 
