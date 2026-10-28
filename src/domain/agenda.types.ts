@@ -59,11 +59,31 @@ export interface RescheduleSlotParams {
   slot: CalendarSlot;
   newDateTime: Date;
   scope: RescheduleScope;
+  existingRule?: RecurrenceRule;
+  bookedSlots?: CalendarSlot[];
+}
+
+export interface RescheduleResult {
+  success: boolean;
+  error?: 'conflict' | 'missing_rule';
+  cancelException?: Session;
+  newSession?: Session;
+  updatedRule?: RecurrenceRule;
 }
 
 export interface SwapSlotsParams {
   slotA: CalendarSlot;
   slotB: CalendarSlot;
   scope: RescheduleScope;
+  ruleA?: RecurrenceRule;
+  ruleB?: RecurrenceRule;
+  bookedSlots?: CalendarSlot[];
+}
+
+export interface SwapResult {
+  success: boolean;
+  error?: 'conflict';
+  sessionsToSave: Session[];
+  rulesToSave: RecurrenceRule[];
 }
 

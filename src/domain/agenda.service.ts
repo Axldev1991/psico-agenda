@@ -1,6 +1,15 @@
 import { RRule } from "rrule";
-import { parseISO, isSameDay } from "date-fns";
-import { CalendarSlot, ComputeAgendaSlotsParams, FindAvailableSlotsParams } from "./agenda.types";
+import { parseISO, isSameDay, format } from "date-fns";
+import { 
+  CalendarSlot, 
+  ComputeAgendaSlotsParams, 
+  FindAvailableSlotsParams,
+  RescheduleSlotParams,
+  RescheduleResult,
+  SwapSlotsParams,
+  SwapResult,
+  RecurrenceCadence
+} from "./agenda.types";
 import { getHoliday } from "./holidays";
 import { isSlotWithinAvailability, isDateInAbsence } from "./availability.service";
 
@@ -282,3 +291,210 @@ export function findConflictingSlot(
     return slotStart.getTime() < bookedEnd && slotEnd.getTime() > bookedStart;
   });
 }
+
+function isSameSlot(s: CalendarSlot, target: CalendarSlot): boolean {
+  if (target.uuid && s.uuid) return s.uuid === target.uuid;
+  return s.patientUuid === target.patientUuid && s.dateTime.getTime() === target.dateTime.getTime();
+}
+
+function parseCadenceFromRRule(rruleString: string): RecurrenceCadence {
+  if (rruleString.includes('FREQ=MONTHLY')) return 'monthly';
+  if (rruleString.includes('INTERVAL=2')) return 'biweekly';
+  return 'weekly';
+}
+
+function parseDaysOfWeekFromRRule(rruleString: string): number[] {
+  const dayMap: Record<string, number> = {
+    MO: 0,
+    TU: 1,
+    WE: 2,
+    TH: 3,
+    FR: 4,
+    SA: 5,
+    SU: 6,
+  };
+  const match = rruleString.match(/BYDAY=([A-Z,]+)/);
+  if (!match) return [];
+  return match[1]
+    .split(',')
+    .map((d) => dayMap[d.trim()])
+    .filter((d): d is number => d !== undefined);
+}
+
+function computeUpdatedDaysOfWeek(
+  existingRruleString: string,
+  oldDateTime: Date,
+  newDateTime: Date
+): number[] {
+  const existingDays = parseDaysOfWeekFromRRule(existingRruleString);
+  const oldDay = (oldDateTime.getDay() + 6) % 7;
+  const newDay = (newDateTime.getDay() + 6) % 7;
+
+  if (existingDays.includes(oldDay)) {
+    return Array.from(new Set(existingDays.map((d) => (d === oldDay ? newDay : d)))).sort((a, b) => a - b);
+  }
+  return [newDay];
+}
+
+export function rescheduleSlot(params: RescheduleSlotParams): RescheduleResult {
+  const { slot, newDateTime, scope, existingRule, bookedSlots = [] } = params;
+
+  if (bookedSlots.length > 0) {
+    const otherBooked = bookedSlots.filter((s) => !isSameSlot(s, slot));
+    const conflict = findConflictingSlot(newDateTime, slot.durationMinutes, otherBooked);
+    if (conflict) {
+      return { success: false, error: 'conflict' };
+    }
+  }
+
+  if (scope === 'permanent') {
+    if (!slot.isRecurrent || !existingRule) {
+      return { success: false, error: 'missing_rule' };
+    }
+
+    const cadence = parseCadenceFromRRule(existingRule.rruleString);
+    const daysOfWeek = computeUpdatedDaysOfWeek(existingRule.rruleString, slot.dateTime, newDateTime);
+    const startTime = format(newDateTime, 'HH:mm');
+    const startDate = format(newDateTime, 'yyyy-MM-dd');
+
+    const updatedRule = {
+      ...existingRule,
+      startDate,
+      startTime,
+      rruleString: buildRRuleString({ cadence, daysOfWeek, startDate }),
+    };
+
+    return { success: true, updatedRule };
+  }
+
+  // Eventual
+  const nowStr = new Date().toISOString();
+
+  const cancelException = {
+    uuid: slot.uuid || crypto.randomUUID(),
+    patientUuid: slot.patientUuid,
+    dateTime: slot.dateTime.toISOString(),
+    status: 'cancelled' as const,
+    priceAtSession: slot.price,
+    notes: slot.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  const newSession = {
+    uuid: crypto.randomUUID(),
+    patientUuid: slot.patientUuid,
+    dateTime: newDateTime.toISOString(),
+    status: 'scheduled' as const,
+    priceAtSession: slot.price,
+    notes: slot.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  return { success: true, cancelException, newSession };
+}
+
+export function swapSlots(params: SwapSlotsParams): SwapResult {
+  const { slotA, slotB, scope, ruleA, ruleB, bookedSlots = [] } = params;
+
+  if (bookedSlots.length > 0) {
+    const otherBooked = bookedSlots.filter(
+      (s) => !isSameSlot(s, slotA) && !isSameSlot(s, slotB)
+    );
+
+    const conflictA = findConflictingSlot(slotB.dateTime, slotA.durationMinutes, otherBooked);
+    if (conflictA) return { success: false, error: 'conflict', sessionsToSave: [], rulesToSave: [] };
+
+    const conflictB = findConflictingSlot(slotA.dateTime, slotB.durationMinutes, otherBooked);
+    if (conflictB) return { success: false, error: 'conflict', sessionsToSave: [], rulesToSave: [] };
+  }
+
+  if (scope === 'permanent') {
+    const rulesToSave = [];
+
+    if (slotA.isRecurrent && ruleA) {
+      const cadenceA = parseCadenceFromRRule(ruleA.rruleString);
+      const daysOfWeekA = computeUpdatedDaysOfWeek(ruleA.rruleString, slotA.dateTime, slotB.dateTime);
+      const startTime = format(slotB.dateTime, 'HH:mm');
+      const startDate = format(slotB.dateTime, 'yyyy-MM-dd');
+
+      rulesToSave.push({
+        ...ruleA,
+        startDate,
+        startTime,
+        rruleString: buildRRuleString({ cadence: cadenceA, daysOfWeek: daysOfWeekA, startDate }),
+      });
+    }
+
+    if (slotB.isRecurrent && ruleB) {
+      const cadenceB = parseCadenceFromRRule(ruleB.rruleString);
+      const daysOfWeekB = computeUpdatedDaysOfWeek(ruleB.rruleString, slotB.dateTime, slotA.dateTime);
+      const startTime = format(slotA.dateTime, 'HH:mm');
+      const startDate = format(slotA.dateTime, 'yyyy-MM-dd');
+
+      rulesToSave.push({
+        ...ruleB,
+        startDate,
+        startTime,
+        rruleString: buildRRuleString({ cadence: cadenceB, daysOfWeek: daysOfWeekB, startDate }),
+      });
+    }
+
+    return { success: true, sessionsToSave: [], rulesToSave };
+  }
+
+  // Eventual
+  const nowStr = new Date().toISOString();
+
+  const cancelA = {
+    uuid: slotA.uuid || crypto.randomUUID(),
+    patientUuid: slotA.patientUuid,
+    dateTime: slotA.dateTime.toISOString(),
+    status: 'cancelled' as const,
+    priceAtSession: slotA.price,
+    notes: slotA.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  const cancelB = {
+    uuid: slotB.uuid || crypto.randomUUID(),
+    patientUuid: slotB.patientUuid,
+    dateTime: slotB.dateTime.toISOString(),
+    status: 'cancelled' as const,
+    priceAtSession: slotB.price,
+    notes: slotB.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  const newA = {
+    uuid: crypto.randomUUID(),
+    patientUuid: slotA.patientUuid,
+    dateTime: slotB.dateTime.toISOString(),
+    status: 'scheduled' as const,
+    priceAtSession: slotA.price,
+    notes: slotA.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  const newB = {
+    uuid: crypto.randomUUID(),
+    patientUuid: slotB.patientUuid,
+    dateTime: slotA.dateTime.toISOString(),
+    status: 'scheduled' as const,
+    priceAtSession: slotB.price,
+    notes: slotB.notes,
+    createdAt: nowStr,
+    updatedAt: nowStr,
+  };
+
+  return { 
+    success: true, 
+    sessionsToSave: [cancelA, cancelB, newA, newB], 
+    rulesToSave: [] 
+  };
+}
+

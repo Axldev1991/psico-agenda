@@ -1,9 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { computeAgendaSlots, buildRRuleString, findAvailableSlots, findConflictingSlot } from "./agenda.service";
+import { 
+  computeAgendaSlots, 
+  buildRRuleString, 
+  findAvailableSlots, 
+  findConflictingSlot,
+  rescheduleSlot,
+  swapSlots
+} from "./agenda.service";
 import { RecurrenceRule, Session } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
-import { AvailableSlot } from "./agenda.types";
+import { AvailableSlot, CalendarSlot } from "./agenda.types";
 
 describe("Agenda Domain Service (computeAgendaSlots)", () => {
   const intervalStart = new Date("2026-10-12T00:00:00.000Z"); // Monday
@@ -476,6 +483,245 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(slots).toHaveLength(1);
       expect(slots[0].isSuspended).toBe(true);
       expect(slots[0].absence?.reason).toBe("Vacaciones");
+    });
+  });
+
+  describe("rescheduleSlot", () => {
+    // Oct 14, 2026 is Wednesday
+    const baseSlot: CalendarSlot = {
+      uuid: "session-1",
+      patientUuid: "p-1",
+      patientName: "Juan Pérez",
+      dateTime: new Date(2026, 9, 14, 16, 0, 0),
+      durationMinutes: 50,
+      status: "scheduled",
+      price: 25000,
+      isRecurrent: true,
+    };
+
+    const existingRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "DTSTART:20261014T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE",
+      startDate: "2026-10-14",
+      startTime: "16:00",
+      durationMinutes: 50,
+    };
+
+    it("reschedules eventually, creating cancel exception and new session", () => {
+      // Oct 15, 2026 is Thursday
+      const newDateTime = new Date(2026, 9, 15, 10, 0, 0);
+
+      const result = rescheduleSlot({
+        slot: baseSlot,
+        newDateTime,
+        scope: "eventual",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.cancelException).toBeDefined();
+      expect(result.cancelException?.status).toBe("cancelled");
+      expect(result.cancelException?.uuid).toBe("session-1"); // keep same uuid if provided
+
+      expect(result.newSession).toBeDefined();
+      expect(result.newSession?.status).toBe("scheduled");
+      expect(result.newSession?.dateTime).toBe(newDateTime.toISOString());
+      expect(result.newSession?.uuid).toBeDefined();
+      expect(result.newSession?.uuid).not.toBe("session-1");
+    });
+
+    it("reschedules permanently, updating the RecurrenceRule with local time and day", () => {
+      // Oct 16, 2026 is Friday
+      const newDateTime = new Date(2026, 9, 16, 9, 0, 0);
+
+      const result = rescheduleSlot({
+        slot: baseSlot,
+        newDateTime,
+        scope: "permanent",
+        existingRule,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedRule).toBeDefined();
+      expect(result.updatedRule?.startTime).toBe("09:00");
+      expect(result.updatedRule?.startDate).toBe("2026-10-16");
+      expect(result.updatedRule?.rruleString).toContain("BYDAY=FR");
+    });
+
+    it("preserves other days in multi-day recurrence rules when rescheduling permanently", () => {
+      const multiDayRule: RecurrenceRule = {
+        patientUuid: "p-1",
+        rruleString: "DTSTART:20261014T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE,FR",
+        startDate: "2026-10-14",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      // Move Wednesday slot to Monday (Oct 19, 2026) at 11:00
+      const newDateTime = new Date(2026, 9, 19, 11, 0, 0);
+
+      const result = rescheduleSlot({
+        slot: baseSlot,
+        newDateTime,
+        scope: "permanent",
+        existingRule: multiDayRule,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedRule?.startTime).toBe("11:00");
+      expect(result.updatedRule?.startDate).toBe("2026-10-19");
+      // Wednesday (WE) moved to Monday (MO), while Friday (FR) was preserved!
+      expect(result.updatedRule?.rruleString).toContain("BYDAY=MO,FR");
+    });
+
+    it("fails permanent reschedule if no rule is provided", () => {
+      const newDateTime = new Date(2026, 9, 16, 9, 0, 0);
+
+      const result = rescheduleSlot({
+        slot: baseSlot,
+        newDateTime,
+        scope: "permanent",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("missing_rule");
+    });
+
+    it("detects conflict and returns error", () => {
+      const newDateTime = new Date(2026, 9, 15, 10, 0, 0);
+
+      const bookedSlots: CalendarSlot[] = [
+        {
+          uuid: "session-2",
+          patientUuid: "p-2",
+          patientName: "Maria",
+          dateTime: new Date(2026, 9, 15, 10, 30, 0), // Conflicts with 10:00 (duration 50)
+          durationMinutes: 50,
+          status: "scheduled",
+          price: 25000,
+          isRecurrent: false,
+        },
+      ];
+
+      const result = rescheduleSlot({
+        slot: baseSlot,
+        newDateTime,
+        scope: "eventual",
+        bookedSlots,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("conflict");
+    });
+  });
+
+  describe("swapSlots", () => {
+    const slotA: CalendarSlot = {
+      uuid: "session-a",
+      patientUuid: "p-1",
+      patientName: "Juan Pérez",
+      dateTime: new Date(2026, 9, 14, 16, 0, 0), // Wednesday 16:00
+      durationMinutes: 50,
+      status: "scheduled",
+      price: 25000,
+      isRecurrent: true,
+    };
+
+    const slotB: CalendarSlot = {
+      uuid: "session-b",
+      patientUuid: "p-2",
+      patientName: "Maria Paz",
+      dateTime: new Date(2026, 9, 15, 10, 0, 0), // Thursday 10:00
+      durationMinutes: 50,
+      status: "scheduled",
+      price: 25000,
+      isRecurrent: true,
+    };
+
+    const ruleA: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "DTSTART:20261014T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE",
+      startDate: "2026-10-14",
+      startTime: "16:00",
+      durationMinutes: 50,
+    };
+
+    const ruleB: RecurrenceRule = {
+      patientUuid: "p-2",
+      rruleString: "DTSTART:20261015T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=TH",
+      startDate: "2026-10-15",
+      startTime: "10:00",
+      durationMinutes: 50,
+    };
+
+    it("swaps eventually, creating 4 sessions (2 cancellations, 2 new)", () => {
+      const result = swapSlots({
+        slotA,
+        slotB,
+        scope: "eventual",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.sessionsToSave).toHaveLength(4);
+
+      const cancellations = result.sessionsToSave.filter((s) => s.status === "cancelled");
+      const scheduled = result.sessionsToSave.filter((s) => s.status === "scheduled");
+
+      expect(cancellations).toHaveLength(2);
+      expect(scheduled).toHaveLength(2);
+
+      // Check dates are swapped
+      const newA = scheduled.find((s) => s.patientUuid === "p-1");
+      const newB = scheduled.find((s) => s.patientUuid === "p-2");
+
+      expect(newA?.dateTime).toBe(slotB.dateTime.toISOString());
+      expect(newB?.dateTime).toBe(slotA.dateTime.toISOString());
+    });
+
+    it("swaps permanently, updating 2 RecurrenceRules", () => {
+      const result = swapSlots({
+        slotA,
+        slotB,
+        scope: "permanent",
+        ruleA,
+        ruleB,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.rulesToSave).toHaveLength(2);
+
+      const newRuleA = result.rulesToSave.find((r) => r.patientUuid === "p-1");
+      const newRuleB = result.rulesToSave.find((r) => r.patientUuid === "p-2");
+
+      expect(newRuleA?.startDate).toBe("2026-10-15"); // from B
+      expect(newRuleA?.startTime).toBe("10:00"); // from B
+      expect(newRuleA?.rruleString).toContain("BYDAY=TH");
+
+      expect(newRuleB?.startDate).toBe("2026-10-14"); // from A
+      expect(newRuleB?.startTime).toBe("16:00"); // from A
+      expect(newRuleB?.rruleString).toContain("BYDAY=WE");
+    });
+
+    it("detects conflict with a third party slot", () => {
+      const thirdSlot: CalendarSlot = {
+        uuid: "session-c",
+        patientUuid: "p-3",
+        patientName: "Carlos",
+        dateTime: new Date(2026, 9, 14, 16, 30, 0), // Conflicts with Maria at Juan's time
+        durationMinutes: 50,
+        status: "scheduled",
+        price: 25000,
+        isRecurrent: false,
+      };
+
+      const result = swapSlots({
+        slotA,
+        slotB,
+        scope: "eventual",
+        bookedSlots: [thirdSlot],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("conflict");
     });
   });
 });

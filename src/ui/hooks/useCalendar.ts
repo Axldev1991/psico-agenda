@@ -15,7 +15,12 @@ import { Session, RecurrenceRule } from '../../domain/session.types';
 import { Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence } from '../../domain/agenda.types';
 import { AbsencePeriod } from '../../domain/availability.types';
-import { computeAgendaSlots, buildRRuleString } from '../../domain/agenda.service';
+import { 
+  computeAgendaSlots, 
+  buildRRuleString, 
+  rescheduleSlot as domainRescheduleSlot, 
+  swapSlots as domainSwapSlots 
+} from '../../domain/agenda.service';
 
 export type { CalendarSlot };
 
@@ -182,169 +187,120 @@ export function useCalendar() {
 
   const rescheduleSlot = async (params: RescheduleSlotParams) => {
     const { slot, newDateTime, scope } = params;
-    const nowIso = new Date().toISOString();
+    let existingRule: RecurrenceRule | undefined;
+    if (slot.patientUuid) {
+      existingRule = await sessionRepo.getRecurrenceRuleByPatient(slot.patientUuid);
+    }
 
-    if (scope === 'eventual') {
-      // 1. Cancelar o registrar excepción para el turno original
+    const result = domainRescheduleSlot({
+      slot,
+      newDateTime,
+      scope,
+      existingRule,
+      bookedSlots: agenda,
+    });
+
+    if (!result.success) {
+      if (result.error === 'conflict') {
+        throw new Error('El horario seleccionado colisiona con otro turno existente.');
+      }
+      if (result.error === 'missing_rule') {
+        throw new Error('No se encontró una regla de recurrencia activa para este paciente.');
+      }
+      throw new Error('Error al reagendar el turno.');
+    }
+
+    if (result.cancelException) {
       if (slot.uuid) {
         const existing = await sessionRepo.getByUuid(slot.uuid);
         if (existing) {
           existing.status = 'cancelled';
           existing.description = `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`;
-          existing.updatedAt = nowIso;
+          existing.updatedAt = result.cancelException.updatedAt;
           await sessionRepo.save(existing);
+        } else {
+          await sessionRepo.save({
+            ...result.cancelException,
+            description: `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`,
+          });
         }
       } else {
-        const cancelException: Session = {
-          uuid: crypto.randomUUID(),
-          patientUuid: slot.patientUuid,
-          dateTime: slot.dateTime.toISOString(),
-          status: 'cancelled',
-          priceAtSession: slot.price,
+        await sessionRepo.save({
+          ...result.cancelException,
           description: `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-        await sessionRepo.save(cancelException);
+        });
       }
+    }
 
-      // 2. Crear sesión puntual en la nueva fecha y hora
-      const newSession: Session = {
-        uuid: crypto.randomUUID(),
-        patientUuid: slot.patientUuid,
-        dateTime: newDateTime.toISOString(),
-        status: 'scheduled',
-        priceAtSession: slot.price,
+    if (result.newSession) {
+      await sessionRepo.save({
+        ...result.newSession,
         description: `Turno eventual reagendado (original: ${format(slot.dateTime, 'dd/MM HH:mm')})`,
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      };
-      await sessionRepo.save(newSession);
-    } else {
-      // Cambio permanente: actualizar la RecurrenceRule
-      const existingRule = await sessionRepo.getRecurrenceRuleByPatient(slot.patientUuid);
-      const newTime = format(newDateTime, 'HH:mm');
-      const newDateStr = format(newDateTime, 'yyyy-MM-dd');
-      const dayIndex = (newDateTime.getDay() + 6) % 7; // 0=MO, ..., 6=SU
+      });
+    }
 
-      if (existingRule) {
-        const updatedRule: RecurrenceRule = {
-          ...existingRule,
-          startDate: newDateStr,
-          startTime: newTime,
-          rruleString: buildRRuleString({
-            cadence: 'weekly',
-            daysOfWeek: [dayIndex],
-            startDate: newDateStr,
-          }),
-        };
-        await sessionRepo.saveRecurrenceRule(updatedRule);
-      } else if (slot.uuid) {
-        // Sesión manual no recurrente
-        const existingSession = await sessionRepo.getByUuid(slot.uuid);
-        if (existingSession) {
-          existingSession.dateTime = newDateTime.toISOString();
-          existingSession.updatedAt = nowIso;
-          await sessionRepo.save(existingSession);
-        }
+    if (result.updatedRule) {
+      await sessionRepo.saveRecurrenceRule(result.updatedRule);
+    } else if (scope === 'permanent' && !slot.isRecurrent && slot.uuid) {
+      // Sesión manual puntual no recurrente
+      const existingSession = await sessionRepo.getByUuid(slot.uuid);
+      if (existingSession) {
+        existingSession.dateTime = newDateTime.toISOString();
+        existingSession.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existingSession);
       }
     }
   };
 
   const swapSlots = async (params: SwapSlotsParams) => {
     const { slotA, slotB, scope } = params;
-    const nowIso = new Date().toISOString();
+    const ruleA = await sessionRepo.getRecurrenceRuleByPatient(slotA.patientUuid);
+    const ruleB = await sessionRepo.getRecurrenceRuleByPatient(slotB.patientUuid);
 
-    if (scope === 'eventual') {
-      // 1. Cancelar o marcar excepción para slotA original
-      if (slotA.uuid) {
-        const sessA = await sessionRepo.getByUuid(slotA.uuid);
-        if (sessA) {
-          sessA.status = 'cancelled';
-          sessA.description = `Enroque con ${slotB.patientName}`;
-          sessA.updatedAt = nowIso;
-          await sessionRepo.save(sessA);
+    const result = domainSwapSlots({
+      slotA,
+      slotB,
+      scope,
+      ruleA,
+      ruleB,
+      bookedSlots: agenda,
+    });
+
+    if (!result.success) {
+      if (result.error === 'conflict') {
+        throw new Error('El enroque no es posible porque existe una colisión con otro turno agendado.');
+      }
+      throw new Error('Error al realizar el enroque de turnos.');
+    }
+
+    for (const session of result.sessionsToSave) {
+      if (session.status === 'cancelled') {
+        const isA = session.patientUuid === slotA.patientUuid;
+        const otherPatientName = isA ? slotB.patientName : slotA.patientName;
+        const existing = await sessionRepo.getByUuid(session.uuid);
+        if (existing) {
+          existing.status = 'cancelled';
+          existing.description = `Enroque con ${otherPatientName}`;
+          existing.updatedAt = session.updatedAt;
+          await sessionRepo.save(existing);
+        } else {
+          await sessionRepo.save({
+            ...session,
+            description: `Enroque con ${otherPatientName}`,
+          });
         }
       } else {
+        const isA = session.patientUuid === slotA.patientUuid;
+        const otherPatientName = isA ? slotB.patientName : slotA.patientName;
         await sessionRepo.save({
-          uuid: crypto.randomUUID(),
-          patientUuid: slotA.patientUuid,
-          dateTime: slotA.dateTime.toISOString(),
-          status: 'cancelled',
-          priceAtSession: slotA.price,
-          description: `Enroque con ${slotB.patientName}`,
-          createdAt: nowIso,
-          updatedAt: nowIso,
+          ...session,
+          description: `Enroque eventual (horario habitual de ${otherPatientName})`,
         });
       }
+    }
 
-      // 2. Cancelar o marcar excepción para slotB original
-      if (slotB.uuid) {
-        const sessB = await sessionRepo.getByUuid(slotB.uuid);
-        if (sessB) {
-          sessB.status = 'cancelled';
-          sessB.description = `Enroque con ${slotA.patientName}`;
-          sessB.updatedAt = nowIso;
-          await sessionRepo.save(sessB);
-        }
-      } else {
-        await sessionRepo.save({
-          uuid: crypto.randomUUID(),
-          patientUuid: slotB.patientUuid,
-          dateTime: slotB.dateTime.toISOString(),
-          status: 'cancelled',
-          priceAtSession: slotB.price,
-          description: `Enroque con ${slotA.patientName}`,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        });
-      }
-
-      // 3. Crear turnos cruzados
-      await sessionRepo.save({
-        uuid: crypto.randomUUID(),
-        patientUuid: slotA.patientUuid,
-        dateTime: slotB.dateTime.toISOString(),
-        status: 'scheduled',
-        priceAtSession: slotA.price,
-        description: `Enroque eventual (horario habitual de ${slotB.patientName})`,
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      });
-
-      await sessionRepo.save({
-        uuid: crypto.randomUUID(),
-        patientUuid: slotB.patientUuid,
-        dateTime: slotA.dateTime.toISOString(),
-        status: 'scheduled',
-        priceAtSession: slotB.price,
-        description: `Enroque eventual (horario habitual de ${slotA.patientName})`,
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      });
-    } else {
-      // Cambio permanente: intercambiar las reglas recurrentes de A y B
-      const ruleA = await sessionRepo.getRecurrenceRuleByPatient(slotA.patientUuid);
-      const ruleB = await sessionRepo.getRecurrenceRuleByPatient(slotB.patientUuid);
-
-      if (ruleA && ruleB) {
-        const newRuleA: RecurrenceRule = {
-          ...ruleA,
-          rruleString: ruleB.rruleString,
-          startDate: ruleB.startDate,
-          startTime: ruleB.startTime,
-          durationMinutes: ruleB.durationMinutes,
-        };
-        const newRuleB: RecurrenceRule = {
-          ...ruleB,
-          rruleString: ruleA.rruleString,
-          startDate: ruleA.startDate,
-          startTime: ruleA.startTime,
-          durationMinutes: ruleA.durationMinutes,
-        };
-        await sessionRepo.saveRecurrenceRule(newRuleA);
-        await sessionRepo.saveRecurrenceRule(newRuleB);
-      }
+    for (const rule of result.rulesToSave) {
+      await sessionRepo.saveRecurrenceRule(rule);
     }
   };
 
