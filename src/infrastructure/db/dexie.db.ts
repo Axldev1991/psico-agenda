@@ -1,7 +1,7 @@
 import Dexie, { Table } from 'dexie';
 import { Patient } from '../../domain/patient.types';
 import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from '../../domain/session.types';
-
+import { ExtraNote } from '../../domain/extra-note.types';
 
 export class PsicoAgendaDatabase extends Dexie {
   patients!: Table<Patient>;
@@ -10,6 +10,7 @@ export class PsicoAgendaDatabase extends Dexie {
   movementConfigs!: Table<MovementConfig>;
   punctuationConfigs!: Table<PunctuationConfig>;
   appSettings!: Table<{ key: string; value: any }>;
+  extraNotes!: Table<ExtraNote>;
 
   constructor() {
     super('PsicoAgendaDB');
@@ -65,6 +66,17 @@ export class PsicoAgendaDatabase extends Dexie {
       movementConfigs: 'key',
       punctuationConfigs: 'key',
       appSettings: 'key'
+    });
+
+    // Versión 8: Persistencia de notas extra
+    this.version(8).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid',
+      movementConfigs: 'key',
+      punctuationConfigs: 'key',
+      appSettings: 'key',
+      extraNotes: 'uuid, patientUuid, createdAt, isPinned'
     });
   }
 }

@@ -1,11 +1,13 @@
 import { DexiePatientRepository } from "./db/dexie-patient.repository";
 import { DexieSessionRepository } from "./db/dexie-session.repository";
 import { DexieSettingsRepository } from "./db/dexie-settings.repository";
+import { DexieExtraNoteRepository } from "./db/dexie-extra-note.repository";
 import { GoogleDriveRepository } from "./drive/google-drive.repository";
 import { DriveFolderSyncService } from "./drive/drive-folder-sync.service";
 import { IPatientRepository } from "../repositories/patient.repository";
 import { ISessionRepository } from "../repositories/session.repository";
 import { ISettingsRepository } from "../repositories/settings.repository";
+import { IExtraNoteRepository } from "../repositories/extra-note.repository";
 import { IDriveRepository } from "../repositories/drive.repository";
 
 class ServiceContainer {
@@ -16,6 +18,7 @@ class ServiceContainer {
     this.register<IPatientRepository>("patientRepository", new DexiePatientRepository());
     this.register<ISessionRepository>("sessionRepository", new DexieSessionRepository());
     this.register<ISettingsRepository>("settingsRepository", new DexieSettingsRepository());
+    this.register<IExtraNoteRepository>("extraNoteRepository", new DexieExtraNoteRepository());
     this.register<IDriveRepository>("driveRepository", new GoogleDriveRepository());
     this.register<DriveFolderSyncService>("driveFolderSyncService", new DriveFolderSyncService());
   }
@@ -42,6 +45,10 @@ class ServiceContainer {
 
   getSettingsRepository(): ISettingsRepository {
     return this.get<ISettingsRepository>("settingsRepository");
+  }
+
+  getExtraNoteRepository(): IExtraNoteRepository {
+    return this.get<IExtraNoteRepository>("extraNoteRepository");
   }
 
   getDriveRepository(): IDriveRepository {
