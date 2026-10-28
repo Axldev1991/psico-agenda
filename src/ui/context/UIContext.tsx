@@ -16,6 +16,8 @@ export interface UIContextType {
   setActiveTab: (tab: ActiveTab) => void;
   selectedPatientForDetail: Patient | null;
   setSelectedPatientForDetail: (patient: Patient | null) => void;
+  targetSessionUuidForDetail: string | null;
+  setTargetSessionUuidForDetail: (uuid: string | null) => void;
   patientToEdit: Patient | null;
   isPatientModalOpen: boolean;
   openNewPatientModal: () => void;
@@ -26,7 +28,7 @@ export interface UIContextType {
   closeSessionModal: () => void;
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
-  navigateToPatientDetail: (patient: Patient) => void;
+  navigateToPatientDetail: (patient: Patient, sessionUuid?: string) => void;
   toast: Toast | null;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
 }
@@ -36,6 +38,7 @@ const UIContext = createContext<UIContextType | undefined>(undefined);
 export function UIProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("calendar");
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
+  const [targetSessionUuidForDetail, setTargetSessionUuidForDetail] = useState<string | null>(null);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
@@ -65,8 +68,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setIsSessionModalOpen(false);
   };
 
-  const navigateToPatientDetail = (patient: Patient) => {
+  const navigateToPatientDetail = (patient: Patient, sessionUuid?: string) => {
     setSelectedPatientForDetail(patient);
+    setTargetSessionUuidForDetail(sessionUuid || null);
     setActiveTab("patients");
   };
 
@@ -85,6 +89,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
         setActiveTab,
         selectedPatientForDetail,
         setSelectedPatientForDetail,
+        targetSessionUuidForDetail,
+        setTargetSessionUuidForDetail,
         patientToEdit,
         isPatientModalOpen,
         openNewPatientModal,

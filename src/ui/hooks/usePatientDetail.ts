@@ -3,12 +3,15 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Patient } from "../../domain/patient.types";
 import { container } from "../../infrastructure/container";
 import { useGoogleDrive } from "./useGoogleDrive";
-import { parseClinicalHistory, rebuildClinicalHistory } from "../../domain/patient.utils";
+import { parseClinicalHistory, rebuildClinicalHistory, findInitialSession } from "../../domain/patient.utils";
 
 const patientRepo = container.getPatientRepository();
 const sessionRepo = container.getSessionRepository();
 
-export function usePatientDetail(initialPatient: Patient) {
+export function usePatientDetail(
+  initialPatient: Patient,
+  targetSessionUuid?: string | null
+) {
   const dbPatient = useLiveQuery(
     () => patientRepo.getByUuid(initialPatient.uuid),
     [initialPatient.uuid]
@@ -217,14 +220,27 @@ export function usePatientDetail(initialPatient: Patient) {
     }
   }, [patient.uuid, patient.clinicalHistory]);
 
-  // Seleccionar automáticamente la sesión activa inicial cuando se cargan las sesiones
+  // Seleccionar automáticamente la sesión activa inicial (priorizando objetivo, hoy o pasada reciente)
   useEffect(() => {
-    if (sortedSessions.length > 0 && !selectedSessionUuid) {
-      setSelectedSessionUuid(sortedSessions[0].uuid);
+    if (sessions.length > 0) {
+      if (targetSessionUuid) {
+        const target = sessions.find((s) => s.uuid === targetSessionUuid);
+        if (target) {
+          setSelectedSessionUuid(target.uuid);
+          return;
+        }
+      }
+      if (!selectedSessionUuid) {
+        const initial = findInitialSession(sessions, targetSessionUuid);
+        if (initial) {
+          setSelectedSessionUuid(initial.uuid);
+        }
+      }
     }
-  }, [sortedSessions, selectedSessionUuid]);
+  }, [sessions, selectedSessionUuid, targetSessionUuid]);
 
-  // AUTO-PREPEND LOGIC: prepend sessions that don't have an anchor in clinical history
+  // AUTO-PREPEND & CLEANUP LOGIC:
+  // Prepend past/today sessions, and clean up empty future placeholder sessions
   useEffect(() => {
     if (sessions.length === 0 || !patient || patient.isHistoryLoaded === false) return;
 
@@ -232,7 +248,48 @@ export function usePatientDetail(initialPatient: Patient) {
     const parsed = parseClinicalHistory(currentHistory);
     let mapModified = false;
 
+    const now = new Date();
+    const endOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999
+    ).getTime();
+
+    // 1. Limpieza preventiva: si existen sesiones futuras que solo tengan el placeholder por defecto, las removemos
     sessions.forEach((session) => {
+      const isFutureScheduled =
+        new Date(session.dateTime).getTime() > endOfToday &&
+        session.status === "scheduled" &&
+        session.uuid !== selectedSessionUuid;
+
+      if (isFutureScheduled && parsed.has(session.uuid)) {
+        const content = parsed.get(session.uuid) || "";
+        const cleanContent = content.replace(/<[^>]*>/g, "").trim();
+        if (!cleanContent || cleanContent === "Escribí la evolución clínica aquí...") {
+          parsed.delete(session.uuid);
+          mapModified = true;
+        }
+      }
+    });
+
+    // 2. Solo incorporar sesiones elegibles:
+    // - Pasadas o del día de hoy
+    // - O no programadas (completadas, canceladas, ausentes)
+    // - O la sesión actualmente seleccionada en pantalla
+    // - O que ya tengan notas personalizadas
+    const eligibleSessions = sessions.filter((s) => {
+      const isPastOrToday = new Date(s.dateTime).getTime() <= endOfToday;
+      const isNotScheduled = s.status !== "scheduled";
+      const isSelected = s.uuid === selectedSessionUuid;
+      const alreadyHasNotes = parsed.has(s.uuid);
+      return isPastOrToday || isNotScheduled || isSelected || alreadyHasNotes;
+    });
+
+    eligibleSessions.forEach((session) => {
       if (!parsed.has(session.uuid)) {
         parsed.set(
           session.uuid,
@@ -243,12 +300,12 @@ export function usePatientDetail(initialPatient: Patient) {
     });
 
     if (mapModified) {
-      const fullHtml = rebuildClinicalHistory(sessions, parsed);
+      const fullHtml = rebuildClinicalHistory(eligibleSessions, parsed);
       const updatedPatient = { ...patient, clinicalHistory: fullHtml };
       patientRepo.save(updatedPatient);
       setSessionContents(parsed);
     }
-  }, [sessions, patient.uuid, patient.isHistoryLoaded]);
+  }, [sessions, patient.uuid, patient.isHistoryLoaded, selectedSessionUuid]);
 
   const handleHistoryChange = (newHtml: string) => {
     if (!selectedSessionUuid) return;

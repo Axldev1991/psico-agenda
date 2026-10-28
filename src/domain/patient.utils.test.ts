@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights } from "./patient.utils";
+import { calculateAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights, findInitialSession } from "./patient.utils";
 import { Patient } from "./patient.types";
 
 describe("Patient Utilities", () => {
@@ -122,6 +122,64 @@ describe("Patient Utilities", () => {
 
       expect(parsed.get("uuid1")).toBe("<p>Notas de la sesión</p>");
       expect(parsed.get("uuid1")).not.toMatch(/^(\s*<\/div>\s*)+/);
+    });
+
+    it("should exclude future scheduled sessions that have no clinical notes from rebuilt history", () => {
+      const refDate = new Date("2026-10-28T12:00:00.000Z");
+      const sessions = [
+        { uuid: "past1", dateTime: "2026-10-21T14:00:00.000Z", status: "completed" },
+        { uuid: "today1", dateTime: "2026-10-28T14:00:00.000Z", status: "scheduled" },
+        { uuid: "futureEmpty", dateTime: "2026-12-31T14:00:00.000Z", status: "scheduled" },
+        { uuid: "futureWithNotes", dateTime: "2026-11-15T14:00:00.000Z", status: "scheduled" },
+      ];
+
+      const sessionContents = new Map([
+        ["past1", "<p>Evolución previa</p>"],
+        ["today1", "<p>Evolución de hoy</p>"],
+        ["futureEmpty", "<div style=\"...\">Escribí la evolución clínica aquí...</div>"],
+        ["futureWithNotes", "<p>Plan terapéutico futuro preparado</p>"],
+      ]);
+
+      const rebuilt = rebuildClinicalHistory(sessions, sessionContents, refDate);
+      expect(rebuilt).toContain("id=\"session-anchor-past1\"");
+      expect(rebuilt).toContain("id=\"session-anchor-today1\"");
+      expect(rebuilt).toContain("id=\"session-anchor-futureWithNotes\"");
+      expect(rebuilt).not.toContain("id=\"session-anchor-futureEmpty\"");
+    });
+  });
+
+  describe("findInitialSession", () => {
+    const refDate = new Date("2026-10-28T12:00:00.000Z");
+    const sessions = [
+      { uuid: "s-past", dateTime: "2026-10-21T14:00:00.000Z", status: "completed" },
+      { uuid: "s-today", dateTime: "2026-10-28T14:00:00.000Z", status: "scheduled" },
+      { uuid: "s-future-near", dateTime: "2026-11-04T14:00:00.000Z", status: "scheduled" },
+      { uuid: "s-future-far", dateTime: "2026-12-31T14:00:00.000Z", status: "scheduled" },
+    ];
+
+    it("should prioritize targetSessionUuid when provided", () => {
+      const result = findInitialSession(sessions, "s-future-far", refDate);
+      expect(result?.uuid).toBe("s-future-far");
+    });
+
+    it("should select today's session if one is scheduled for today", () => {
+      const result = findInitialSession(sessions, null, refDate);
+      expect(result?.uuid).toBe("s-today");
+    });
+
+    it("should select the most recent past session if there is no session today", () => {
+      const withoutToday = sessions.filter(s => s.uuid !== "s-today");
+      const result = findInitialSession(withoutToday, null, refDate);
+      expect(result?.uuid).toBe("s-past");
+    });
+
+    it("should select the closest upcoming future session if only future sessions exist", () => {
+      const onlyFuture = [
+        { uuid: "s-future-near", dateTime: "2026-11-04T14:00:00.000Z", status: "scheduled" },
+        { uuid: "s-future-far", dateTime: "2026-12-31T14:00:00.000Z", status: "scheduled" },
+      ];
+      const result = findInitialSession(onlyFuture, null, refDate);
+      expect(result?.uuid).toBe("s-future-near");
     });
   });
 

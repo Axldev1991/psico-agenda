@@ -10,7 +10,7 @@ interface AppointmentCardProps {
   slot: CalendarSlot;
   onUpdateStatus: (slot: CalendarSlot, status: Session["status"]) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
-  onNavigateToPatientDetail: (patientUuid: string) => void;
+  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
 
@@ -132,7 +132,7 @@ export function AppointmentCard({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => onNavigateToPatientDetail(slot.patientUuid)}
+            onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid)}
             className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-sm flex items-center gap-1"
             title="Ver ficha del paciente"
           >

@@ -100,10 +100,10 @@ function HomeContent() {
     }
   };
 
-  const handleNavigateByUuid = (patientUuid: string) => {
+  const handleNavigateByUuid = (patientUuid: string, sessionUuid?: string) => {
     const patient = patients.find((p) => p.uuid === patientUuid);
     if (patient) {
-      navigateToPatientDetail(patient);
+      navigateToPatientDetail(patient, sessionUuid);
     }
   };
 

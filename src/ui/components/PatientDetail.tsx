@@ -4,7 +4,8 @@ import { useRef, useState, useMemo, useEffect } from "react";
 import { Patient } from "../../domain/patient.types";
 import { RichTextEditor } from "./RichTextEditor";
 import { usePatientDetail } from "../hooks/usePatientDetail";
-import { extractHighlights } from "../../domain/patient.utils";
+import { extractHighlights, findInitialSession } from "../../domain/patient.utils";
+import { useUIState } from "../context/UIContext";
 import { SessionSidebar } from "./SessionSidebar";
 import { ActiveSessionHeader } from "./ActiveSessionHeader";
 import { CeciForm } from "./CeciForm";
@@ -42,6 +43,7 @@ function cleanHtmlText(html: string): string {
 }
 
 export function PatientDetail({ patient: initialPatient, onBack, onEdit }: PatientDetailProps) {
+  const { targetSessionUuidForDetail, setTargetSessionUuidForDetail } = useUIState();
   const {
     patient,
     sortedSessions,
@@ -61,7 +63,13 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     handleCeciChange,
     changeSessionColor,
     changeSessionDescription,
-  } = usePatientDetail(initialPatient);
+  } = usePatientDetail(initialPatient, targetSessionUuidForDetail);
+
+  useEffect(() => {
+    if (targetSessionUuidForDetail) {
+      setTargetSessionUuidForDetail(null);
+    }
+  }, [targetSessionUuidForDetail, setTargetSessionUuidForDetail]);
 
   const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -121,7 +129,8 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     if (filteredSessions.length > 0) {
       const isSelectedInFiltered = filteredSessions.some((s) => s.uuid === selectedSessionUuid);
       if (!isSelectedInFiltered) {
-        setSelectedSessionUuid(filteredSessions[0].uuid);
+        const fallback = findInitialSession(filteredSessions);
+        setSelectedSessionUuid(fallback?.uuid || filteredSessions[0].uuid);
       }
     } else {
       setSelectedSessionUuid(null);

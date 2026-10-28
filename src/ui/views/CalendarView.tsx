@@ -8,7 +8,7 @@ import { useUIState } from "../context/UIContext";
 import { CalendarSlot } from "../../domain/agenda.types";
 
 interface CalendarViewProps {
-  onNavigateToPatientDetail: (patientUuid: string) => void;
+  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
 }
 
 export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {

@@ -90,13 +90,85 @@ export function parseClinicalHistory(html: string): Map<string, string> {
 }
 
 /**
+ * Finds the most relevant session to display initially when opening a patient file:
+ * 1. Target session if explicitly provided.
+ * 2. Session scheduled or attended TODAY.
+ * 3. Most recent session in the past.
+ * 4. Closest upcoming session in the future.
+ */
+export function findInitialSession<T extends { uuid: string; dateTime: string; status: string }>(
+  sessions: T[],
+  targetSessionUuid?: string | null,
+  referenceDate: Date = new Date()
+): T | null {
+  if (!sessions || sessions.length === 0) return null;
+
+  // 1. Si hay un UUID objetivo explícito y existe en las sesiones
+  if (targetSessionUuid) {
+    const matched = sessions.find((s) => s.uuid === targetSessionUuid);
+    if (matched) return matched;
+  }
+
+  const todayStr = referenceDate.toDateString();
+
+  // 2. Sesión agendada o registrada para el día de HOY
+  const todaySession = sessions.find(
+    (s) => new Date(s.dateTime).toDateString() === todayStr
+  );
+  if (todaySession) return todaySession;
+
+  const refTime = referenceDate.getTime();
+
+  // 3. Sesión pasada más reciente (que ya haya ocurrido o sea previa a hoy)
+  const pastSessions = sessions
+    .filter((s) => new Date(s.dateTime).getTime() <= refTime)
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+  if (pastSessions.length > 0) return pastSessions[0];
+
+  // 4. Si solo hay sesiones futuras, tomar la más próxima a hoy en el tiempo
+  const futureSessions = sessions
+    .filter((s) => new Date(s.dateTime).getTime() > refTime)
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  if (futureSessions.length > 0) return futureSessions[0];
+
+  return sessions[0];
+}
+
+/**
  * Rebuilds unified clinical history HTML inserting standard session headers.
+ * Avoids including future scheduled sessions that do not have actual clinical notes.
  */
 export function rebuildClinicalHistory(
   sessions: { uuid: string; dateTime: string; status: string }[],
-  sessionContents: Map<string, string>
+  sessionContents: Map<string, string>,
+  referenceDate: Date = new Date()
 ): string {
-  const oldestFirst = [...sessions].sort(
+  const endOfRefDay = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+
+  // Filtrar para no incorporar turnos futuros 'scheduled' que no tengan notas
+  const sessionsToInclude = sessions.filter((s) => {
+    if (sessionContents.has(s.uuid)) {
+      const content = sessionContents.get(s.uuid) || "";
+      const text = content.replace(/<[^>]*>/g, "").trim();
+      if (text && text !== "Escribí la evolución clínica aquí...") {
+        return true;
+      }
+    }
+    if (s.status !== "scheduled") {
+      return true;
+    }
+    return new Date(s.dateTime).getTime() <= endOfRefDay;
+  });
+
+  const oldestFirst = [...sessionsToInclude].sort(
     (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
   );
 
