@@ -427,14 +427,14 @@ export async function seedDemoData() {
       updatedAt: new Date().toISOString(),
     },
 
-    // --- SESIONES DE LA SEMANA ACTUAL Y FUTURAS HASTA FIN DE AÑO (Lunes a Viernes, Máx 4/día) ---
+    // --- SESIONES DE LA SEMANA ACTUAL (Lunes a Viernes, Máx 4/día) ---
   ];
 
-  const endOfYear = new Date(2026, 11, 31);
   let currentWeekMonday = new Date(monday.getTime());
   let weekCount = 0;
 
-  while (currentWeekMonday <= endOfYear) {
+  // Solo generamos físicamente las sesiones de la semana actual
+  while (weekCount < 1) {
     const getIsoDateForDayInWeek = (daysOffset: number, timeStr: string) => {
       const d = new Date(currentWeekMonday.getTime());
       d.setDate(currentWeekMonday.getDate() + daysOffset);

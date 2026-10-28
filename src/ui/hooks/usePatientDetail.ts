@@ -23,11 +23,33 @@ export function usePatientDetail(
     [patient.uuid]
   ) || [];
 
+  const now = new Date();
+  const endOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+
+  // En la ficha clínica solo deben figurar las sesiones que ya ocurrieron (pasadas o de hoy),
+  // o que ya fueron atendidas/canceladas, o que tengan notas redactadas.
+  const clinicalSessions = useMemo(() => {
+    return sessions.filter((s) => {
+      const isPastOrToday = new Date(s.dateTime).getTime() <= endOfToday;
+      const isNotScheduled = s.status !== "scheduled";
+      const hasRealNotes = !!(s.notes && s.notes.replace(/<[^>]*>/g, "").trim());
+      return isPastOrToday || isNotScheduled || hasRealNotes;
+    });
+  }, [sessions, endOfToday]);
+
   const sortedSessions = useMemo(() => {
-    return [...sessions].sort(
+    return [...clinicalSessions].sort(
       (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
     );
-  }, [sessions]);
+  }, [clinicalSessions]);
 
   const [selectedSessionUuid, setSelectedSessionUuid] = useState<string | null>(null);
   const [sessionContents, setSessionContents] = useState<Map<string, string>>(new Map());
@@ -53,10 +75,10 @@ export function usePatientDetail(
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  const latestStateRef = useRef({ patient, sessions, googleToken, selectedSessionUuid });
+  const latestStateRef = useRef({ patient, sessions, googleToken, selectedSessionUuid, clinicalSessions });
   useEffect(() => {
-    latestStateRef.current = { patient, sessions, googleToken, selectedSessionUuid };
-  }, [patient, sessions, googleToken, selectedSessionUuid]);
+    latestStateRef.current = { patient, sessions, googleToken, selectedSessionUuid, clinicalSessions };
+  }, [patient, sessions, googleToken, selectedSessionUuid, clinicalSessions]);
 
   // Auto-descarga al ingresar al expediente si no está en caché local
   useEffect(() => {
@@ -99,7 +121,7 @@ export function usePatientDetail(
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       try {
-        const fullHtml = rebuildClinicalHistory(sessions, sessionContentsRef.current);
+        const fullHtml = rebuildClinicalHistory(clinicalSessions, sessionContentsRef.current);
         const updatedPatient = {
           ...patient,
           clinicalHistory: fullHtml,
@@ -158,7 +180,16 @@ export function usePatientDetail(
   // Garantizar guardado local/sincronización al desmontar el componente (salir de la ficha)
   useEffect(() => {
     return () => {
-      const { patient: currentPatient, sessions: currentSessions, googleToken: currentToken, selectedSessionUuid: currentSessionUuid } = latestStateRef.current;
+      const {
+        patient: currentPatient,
+        clinicalSessions: currentClinical,
+        currentSessions,
+        googleToken: currentToken,
+        selectedSessionUuid: currentSessionUuid,
+      } = {
+        ...latestStateRef.current,
+        currentSessions: latestStateRef.current.sessions,
+      };
 
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -166,7 +197,7 @@ export function usePatientDetail(
         // Forzar guardado local inmediato de emergencia
         const forceLocalSave = async () => {
           try {
-            const latestHistory = rebuildClinicalHistory(currentSessions, sessionContentsRef.current);
+            const latestHistory = rebuildClinicalHistory(currentClinical, sessionContentsRef.current);
             const updatedPatient = {
               ...currentPatient,
               clinicalHistory: latestHistory,
@@ -222,74 +253,45 @@ export function usePatientDetail(
 
   // Seleccionar automáticamente la sesión activa inicial (priorizando objetivo, hoy o pasada reciente)
   useEffect(() => {
-    if (sessions.length > 0) {
+    if (clinicalSessions.length > 0) {
       if (targetSessionUuid) {
-        const target = sessions.find((s) => s.uuid === targetSessionUuid);
+        const target = clinicalSessions.find((s) => s.uuid === targetSessionUuid);
         if (target) {
           setSelectedSessionUuid(target.uuid);
           return;
         }
       }
-      if (!selectedSessionUuid) {
-        const initial = findInitialSession(sessions, targetSessionUuid);
+      if (!selectedSessionUuid || !clinicalSessions.some(s => s.uuid === selectedSessionUuid)) {
+        const initial = findInitialSession(clinicalSessions, targetSessionUuid);
         if (initial) {
           setSelectedSessionUuid(initial.uuid);
         }
       }
+    } else {
+      setSelectedSessionUuid(null);
     }
-  }, [sessions, selectedSessionUuid, targetSessionUuid]);
+  }, [clinicalSessions, selectedSessionUuid, targetSessionUuid]);
 
   // AUTO-PREPEND & CLEANUP LOGIC:
   // Prepend past/today sessions, and clean up empty future placeholder sessions
   useEffect(() => {
-    if (sessions.length === 0 || !patient || patient.isHistoryLoaded === false) return;
+    if (!patient || patient.isHistoryLoaded === false) return;
 
     let currentHistory = patient.clinicalHistory || "";
     const parsed = parseClinicalHistory(currentHistory);
     let mapModified = false;
 
-    const now = new Date();
-    const endOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999
-    ).getTime();
-
-    // 1. Limpieza preventiva: si existen sesiones futuras que solo tengan el placeholder por defecto, las removemos
+    // 1. Limpieza preventiva: si existen sesiones futuras que no sean clínicas, las removemos
     sessions.forEach((session) => {
-      const isFutureScheduled =
-        new Date(session.dateTime).getTime() > endOfToday &&
-        session.status === "scheduled" &&
-        session.uuid !== selectedSessionUuid;
-
-      if (isFutureScheduled && parsed.has(session.uuid)) {
-        const content = parsed.get(session.uuid) || "";
-        const cleanContent = content.replace(/<[^>]*>/g, "").trim();
-        if (!cleanContent || cleanContent === "Escribí la evolución clínica aquí...") {
-          parsed.delete(session.uuid);
-          mapModified = true;
-        }
+      const isClinical = clinicalSessions.some((cs) => cs.uuid === session.uuid);
+      if (!isClinical && parsed.has(session.uuid)) {
+        parsed.delete(session.uuid);
+        mapModified = true;
       }
     });
 
-    // 2. Solo incorporar sesiones elegibles:
-    // - Pasadas o del día de hoy
-    // - O no programadas (completadas, canceladas, ausentes)
-    // - O la sesión actualmente seleccionada en pantalla
-    // - O que ya tengan notas personalizadas
-    const eligibleSessions = sessions.filter((s) => {
-      const isPastOrToday = new Date(s.dateTime).getTime() <= endOfToday;
-      const isNotScheduled = s.status !== "scheduled";
-      const isSelected = s.uuid === selectedSessionUuid;
-      const alreadyHasNotes = parsed.has(s.uuid);
-      return isPastOrToday || isNotScheduled || isSelected || alreadyHasNotes;
-    });
-
-    eligibleSessions.forEach((session) => {
+    // 2. Solo incorporar las sesiones clínicas válidas
+    clinicalSessions.forEach((session) => {
       if (!parsed.has(session.uuid)) {
         parsed.set(
           session.uuid,
@@ -300,12 +302,12 @@ export function usePatientDetail(
     });
 
     if (mapModified) {
-      const fullHtml = rebuildClinicalHistory(eligibleSessions, parsed);
+      const fullHtml = rebuildClinicalHistory(clinicalSessions, parsed);
       const updatedPatient = { ...patient, clinicalHistory: fullHtml };
       patientRepo.save(updatedPatient);
       setSessionContents(parsed);
     }
-  }, [sessions, patient.uuid, patient.isHistoryLoaded, selectedSessionUuid]);
+  }, [sessions, clinicalSessions, patient.uuid, patient.isHistoryLoaded]);
 
   const handleHistoryChange = (newHtml: string) => {
     if (!selectedSessionUuid) return;
@@ -324,7 +326,7 @@ export function usePatientDetail(
     }
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const fullHtml = rebuildClinicalHistory(sessions, newContents);
+        const fullHtml = rebuildClinicalHistory(clinicalSessions, newContents);
         const updatedPatient = {
           ...patient,
           clinicalHistory: fullHtml,
