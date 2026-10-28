@@ -8,6 +8,8 @@ import { Icon } from "./common/Icon";
 import { BrandLogo } from "./navigation/BrandLogo";
 import { DriveCard } from "./navigation/DriveCard";
 import { PrivacyToggleButton } from "./navigation/PrivacyToggleButton";
+import { NotificationBell } from "./navigation/NotificationBell";
+import { AppNotification } from "../../domain/notification.types";
 
 interface AppSidebarProps {
   isMobileMenuOpen: boolean;
@@ -15,6 +17,10 @@ interface AppSidebarProps {
   isBlurred: boolean;
   setIsBlurred: (blurred: boolean | ((prev: boolean) => boolean)) => void;
   recentPatients: Patient[];
+  notifications: AppNotification[];
+  unreadCount: number;
+  onDismissNotification: (id: string) => void;
+  onDismissAllNotifications: () => void;
 }
 
 export function AppSidebar({
@@ -23,6 +29,10 @@ export function AppSidebar({
   isBlurred,
   setIsBlurred,
   recentPatients,
+  notifications,
+  unreadCount,
+  onDismissNotification,
+  onDismissAllNotifications,
 }: AppSidebarProps) {
   const {
     activeTab,
@@ -60,14 +70,23 @@ export function AppSidebar({
         <div className="flex items-center justify-between p-4 border-b border-line h-16">
           <BrandLogo isCollapsed={isSidebarCollapsed} />
 
-          <button
-            type="button"
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="hidden md:flex p-1.5 hover:bg-bg-base rounded-lg text-ink-sub hover:text-ink transition-colors cursor-pointer"
-            title={isSidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-          >
-            <Icon name={isSidebarCollapsed ? "chev-r" : "chev-l"} size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onDismiss={onDismissNotification}
+              onDismissAll={onDismissAllNotifications}
+            />
+
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="hidden md:flex p-1.5 hover:bg-bg-base rounded-lg text-ink-sub hover:text-ink transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+            >
+              <Icon name={isSidebarCollapsed ? "chev-r" : "chev-l"} size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Primary Navigation Links */}

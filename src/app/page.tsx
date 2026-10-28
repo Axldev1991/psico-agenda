@@ -16,6 +16,8 @@ import { SettingsView } from "../ui/views/SettingsView";
 import { Patient } from "../domain/patient.types";
 import { Icon } from "../ui/components/common/Icon";
 import { BrandLogo } from "../ui/components/navigation/BrandLogo";
+import { NotificationBell } from "../ui/components/navigation/NotificationBell";
+import { useNotifications } from "../ui/hooks/useNotifications";
 
 function HomeContent() {
   const { patients, addPatient, updatePatient } = usePatients();
@@ -29,6 +31,12 @@ function HomeContent() {
   } = useCalendar();
   const { errorMessage } = useGoogleDrive();
   const { recentPatientUuids, addRecentPatient } = useRecentPatients();
+  const {
+    notifications,
+    unreadCount,
+    dismiss: dismissNotification,
+    dismissAll: dismissAllNotifications,
+  } = useNotifications(agenda);
 
   const {
     activeTab,
@@ -114,20 +122,29 @@ function HomeContent() {
 
         <BrandLogo size="sm" />
 
-        <button
-          type="button"
-          onClick={() => setIsBlurred((prev) => !prev)}
-          aria-pressed={isBlurred}
-          className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
-            isBlurred
-              ? "bg-primary-tint text-primary border-primary/40"
-              : "bg-surface hover:bg-bg-base text-ink border-line-control"
-          }`}
-          aria-label={isBlurred ? "Revelar datos" : "Ocultar datos"}
-          title={isBlurred ? "Revelar datos" : "Ocultar datos"}
-        >
-          <Icon name={isBlurred ? "eye-off" : "eye"} size={18} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <NotificationBell
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onDismiss={dismissNotification}
+            onDismissAll={dismissAllNotifications}
+          />
+
+          <button
+            type="button"
+            onClick={() => setIsBlurred((prev) => !prev)}
+            aria-pressed={isBlurred}
+            className={`h-9 w-9 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
+              isBlurred
+                ? "bg-primary-tint text-primary border-primary/40"
+                : "bg-surface hover:bg-bg-base text-ink border-line-control"
+            }`}
+            aria-label={isBlurred ? "Revelar datos" : "Ocultar datos"}
+            title={isBlurred ? "Revelar datos" : "Ocultar datos"}
+          >
+            <Icon name={isBlurred ? "eye-off" : "eye"} size={18} />
+          </button>
+        </div>
       </header>
 
       {/* Mobile Backdrop */}
@@ -145,6 +162,10 @@ function HomeContent() {
         isBlurred={isBlurred}
         setIsBlurred={setIsBlurred}
         recentPatients={recentPatients}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onDismissNotification={dismissNotification}
+        onDismissAllNotifications={dismissAllNotifications}
       />
 
       {/* Main Content Area */}

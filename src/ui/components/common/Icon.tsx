@@ -30,7 +30,8 @@ export type IconName =
   | "list"
   | "more"
   | "logout"
-  | "mic";
+  | "mic"
+  | "bell";
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -171,6 +172,12 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     <>
       <rect x="9" y="3" width="6" height="11" rx="3" />
       <path d="M5 10a7 7 0 0 0 14 0M12 18v3M8 21h8" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </>
   ),
 };
