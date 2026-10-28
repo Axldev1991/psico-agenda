@@ -36,7 +36,7 @@ describe('docx-exporter', () => {
     it('should generate valid HTML containing patient and session info', () => {
       const html = generateSessionWordHtml(dummyPatient, dummySession);
       expect(html).toContain('Juan Perez');
-      expect(html).toContain('ID: p-123');
+      expect(html).toContain('p-123');
       expect(html).toContain('Atendido / Realizado'); // completed status
       expect(html).toContain('5.000'); // 5000 ARS formatted
     });
@@ -67,9 +67,8 @@ describe('docx-exporter', () => {
         notes: '# Title\n## Subtitle\n**Bold** and *Italic*\nNormal line',
       };
       const html = generateSessionWordHtml(dummyPatient, session);
-      expect(html).toContain('<h1 style="color: #1e1b4b;');
+      expect(html).toContain('font-family: Georgia, \'Times New Roman\', serif;');
       expect(html).toContain('Title</h1>');
-      expect(html).toContain('<h2 style="color: #4f46e5;');
       expect(html).toContain('Subtitle</h2>');
       expect(html).toContain('<strong>Bold</strong>');
       expect(html).toContain('<em>Italic</em>');
@@ -94,9 +93,9 @@ describe('docx-exporter', () => {
     it('should generate valid HTML containing patient history', () => {
       const html = generateFullHistoryWordHtml(dummyPatient);
       expect(html).toContain('Juan Perez');
-      expect(html).toContain('ID: p-123');
-      expect(html).toContain('OSDE (N° 123456)');
-      expect(html).toContain('1122334455 | juan@example.com');
+      expect(html).toContain('p-123');
+      expect(html).toContain('OSDE · N° 123456');
+      expect(html).toContain('1122334455 · juan@example.com');
       expect(html).toContain('<p>Historial previo</p>');
     });
 
@@ -110,16 +109,17 @@ describe('docx-exporter', () => {
       };
       const html = generateFullHistoryWordHtml(patientWithoutInfo);
       expect(html).toContain('Particular'); // health insurance
-      expect(html).toContain('— | —'); // phone | email
+      expect(html).toContain('—'); // contact
     });
 
     it('should handle missing affiliate number but existing health insurance', () => {
-        const patientWithoutAffiliate = {
-            ...dummyPatient,
-            affiliateNumber: undefined,
-        };
-        const html = generateFullHistoryWordHtml(patientWithoutAffiliate);
-        expect(html).toContain('OSDE (N° Particular)');
+      const patientWithoutAffiliate = {
+        ...dummyPatient,
+        affiliateNumber: undefined,
+      };
+      const html = generateFullHistoryWordHtml(patientWithoutAffiliate);
+      expect(html).toContain('OSDE');
+      expect(html).not.toContain('OSDE (N° Particular)');
     });
 
     it('should handle fallback for empty clinical history', () => {

@@ -68,15 +68,14 @@ export function parseClinicalHistory(html: string): Map<string, string> {
   const sessionContents = new Map<string, string>();
   if (!html) return sessionContents;
 
-  // Match the complete session header up to the closing </div> of the anchor (or end-session-anchor marker)
-  // The header contains an inner div for "Estado", so it ends with </div>\s*</div> or the end comment.
+  // Match the complete session header up to the closing end-session-anchor marker or closing </div>
   const anchorRegex =
-    /<div\s+id="session-anchor-([^"]+)"[\s\S]*?Estado:[\s\S]*?<\/div>\s*<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?|<div\s+id="session-anchor-([^"]+)"[^>]*>([\s\S]*?)<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?/gi;
+    /<div\s+id="session-anchor-([^"]+)"[\s\S]*?<!--\s*end-session-anchor-\1\s*-->|<div\s+id="session-anchor-([^"]+)"[\s\S]*?Estado:[\s\S]*?<\/div>\s*<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?|<div\s+id="session-anchor-([^"]+)"[^>]*>([\s\S]*?)<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?/gi;
   const matches = [...html.matchAll(anchorRegex)];
 
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
-    const uuid = match[1] || match[2];
+    const uuid = match[1] || match[2] || match[3];
     const startIndex = match.index! + match[0].length;
     const endIndex = i + 1 < matches.length ? matches[i + 1].index! : html.length;
     let contentHtml = html.substring(startIndex, endIndex);
@@ -185,27 +184,23 @@ export function rebuildClinicalHistory(
       minute: "2-digit",
     });
     const sessionNumber = index + 1;
+    const statusLabel =
+      session.status === "completed"
+        ? "Atendido"
+        : session.status === "cancelled"
+        ? "Cancelado"
+        : session.status === "missed"
+        ? "Ausente"
+        : "Programado";
 
-    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top: 35px; margin-bottom: 12px; font-family: Arial, sans-serif;">
-      <table style="width: 100%; border-collapse: collapse; border-bottom: 1px solid #cbd5e1; margin-bottom: 8px;">
-        <tr>
-          <td style="padding-bottom: 6px; vertical-align: bottom;">
-            <span style="font-size: 8.5pt; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Evolución Clínica</span><br/>
-            <strong style="font-size: 13pt; color: #1e293b;">Sesión N° ${sessionNumber}</strong>
-          </td>
-          <td style="padding-bottom: 6px; text-align: right; vertical-align: bottom; font-size: 9.5pt; color: #64748b;">
-            ${sessionDate}
-          </td>
-        </tr>
-      </table>
-      <div style="font-size: 8.5pt; color: #64748b; margin-bottom: 15px;">
-        Estado: <span style="font-weight: bold; color: #475569;">${session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}</span>
-      </div>
-    </div><!-- end-session-anchor-${session.uuid} -->`;
+    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin: 0; padding: 0;">
+  <p style="margin-top: 26pt; margin-right: 0; margin-bottom: 0; margin-left: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 14pt; font-weight: bold; line-height: 1.25; color: #1E2A32; page-break-after: avoid;">Sesión N° ${sessionNumber}</p>
+  <p style="margin-top: 2pt; margin-right: 0; margin-bottom: 12pt; margin-left: 0; padding-bottom: 5pt; border-bottom: 1.5pt solid #2C5F6B; font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #566670; page-break-after: avoid;">Evolución clínica · ${sessionDate} · <strong style="color: #1E2A32;">${statusLabel}</strong></p>
+</div><!-- end-session-anchor-${session.uuid} -->`;
 
     const contentHtml =
       sessionContents.get(session.uuid) ||
-      `<div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155; min-height: 20px;">Escribí la evolución clínica aquí...</div><br/>`;
+      `<div style="font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1E2A32; min-height: 20px;">Escribí la evolución clínica aquí...</div><br/>`;
 
     fullHtml = headerHtml + "\n" + contentHtml + "\n" + fullHtml;
   });

@@ -1,19 +1,57 @@
 import { Patient } from '../../domain/patient.types';
 import { Session } from '../../domain/session.types';
 
+const INK = '#1E2A32';       // texto principal
+const INK_2 = '#566670';     // texto secundario
+const RULE = '#B8C4C8';      // líneas finas de separación
+const PRIMARY = '#2C5F6B';   // acento petróleo
+const SERIF = "Georgia, 'Times New Roman', serif";
+const SANS = "Calibri, 'Segoe UI', Arial, sans-serif";
+
+function esc(s: unknown): string {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function parseNotesToHtml(notes?: string): string {
-  if (!notes) return 'Sin anotaciones clínicas.';
-  // Si ya es HTML enriquecido, lo dejamos pasar tal cual
+  if (!notes) return '<p style="margin: 0; color: #566670; font-style: italic;">Sin anotaciones clínicas.</p>';
   if (notes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(notes)) {
     return notes;
   }
-  // Fallback para texto plano y Markdown
   return notes
     .replace(/\n/g, '<br/>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/## (.*?)(<br\/>|$)/g, '<h2 style="color: #4f46e5; font-family: Arial, sans-serif; font-size: 14pt; margin-top: 14pt; margin-bottom: 4pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt;">$1</h2>')
-    .replace(/# (.*?)(<br\/>|$)/g, '<h1 style="color: #1e1b4b; font-family: Arial, sans-serif; font-size: 16pt; margin-top: 18pt; margin-bottom: 8pt;">$1</h1>');
+    .replace(/## (.*?)(<br\/>|$)/g, `<h2 style="font-family: ${SERIF}; font-size: 13pt; color: ${PRIMARY}; margin-top: 14pt; margin-bottom: 4pt; border-bottom: 1pt solid ${RULE}; padding-bottom: 2pt;">$1</h2>`)
+    .replace(/# (.*?)(<br\/>|$)/g, `<h1 style="font-family: ${SERIF}; font-size: 15pt; color: ${INK}; margin-top: 18pt; margin-bottom: 6pt;">$1</h1>`);
+}
+
+function formatSessionStatus(status: Session['status']): string {
+  switch (status) {
+    case 'completed': return 'Atendido / Realizado';
+    case 'cancelled': return 'Cancelado';
+    case 'missed': return 'Ausente / No asistió';
+    case 'scheduled': return 'Programado';
+    default: return status;
+  }
+}
+
+function coverageText(patient: Patient): string {
+  const os = patient.healthInsurance?.trim();
+  const num = patient.affiliateNumber?.trim();
+  if (os && num) return `${os} · N° ${num}`;
+  if (os) return os;
+  return 'Particular';
+}
+
+function contactText(patient: Patient): string {
+  const parts = [patient.phone?.trim(), patient.email?.trim()].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
 }
 
 export function generateSessionWordHtml(patient: Patient, session: Session): string {
@@ -27,6 +65,8 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
   });
 
   const notesHtml = parseNotesToHtml(session.notes);
+  const statusStr = formatSessionStatus(session.status);
+  const priceStr = `$${(session.priceAtSession ?? 0).toLocaleString('es-AR')} ARS`;
 
   return `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
@@ -34,7 +74,7 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
           xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="utf-8">
-      <title>Evolución Clínica - ${patient.fullName}</title>
+      <title>Evolución Clínica - ${esc(patient.fullName)}</title>
       <!--[if gte mso 9]>
       <xml>
         <w:WordDocument>
@@ -46,110 +86,76 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
       <![endif]-->
       <style>
         @page {
-          size: 8.5in 11in;
-          margin: 1.0in 1.0in 1.0in 1.0in;
-          mso-header-margin: .5in;
-          mso-footer-margin: .5in;
-          mso-paper-source: 0;
+          size: 21cm 29.7cm;
+          margin: 2.2cm 2.3cm 2.4cm 2.3cm;
+          mso-header-margin: 1.2cm;
+          mso-footer-margin: 1.2cm;
         }
         body {
-          font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+          font-family: ${SANS};
           font-size: 11pt;
-          line-height: 1.6;
-          color: #334155;
+          line-height: 1.5;
+          color: ${INK};
           background-color: #ffffff;
         }
-        .header-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 24pt;
-          border-bottom: 2px solid #4f46e5;
-        }
-        .header-title {
-          font-family: 'Outfit', Arial, sans-serif;
-          font-size: 18pt;
-          font-weight: bold;
-          color: #1e1b4b;
-          padding-bottom: 6pt;
-        }
-        .header-subtitle {
-          font-size: 9pt;
-          color: #64748b;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .meta-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20pt;
-          background-color: #f8fafc;
-        }
-        .meta-table td {
-          padding: 8pt 10pt;
-          border: 1px solid #e2e8f0;
-          font-size: 10pt;
-        }
-        .meta-label {
-          font-weight: bold;
-          color: #475569;
-          width: 25%;
-          background-color: #f1f5f9;
-        }
-        .meta-value {
-          color: #0f172a;
-        }
-        .notes-container {
-          margin-top: 12pt;
-          padding: 12pt;
-          border-left: 3px solid #cbd5e1;
-          background-color: #fafafa;
-        }
-        .footer-note {
-          margin-top: 40pt;
-          border-top: 1px solid #e2e8f0;
-          padding-top: 10pt;
-          font-size: 8.5pt;
-          color: #94a3b8;
-          text-align: center;
-        }
+        h1, h2, h3 { font-family: ${SERIF}; }
       </style>
     </head>
-    <body>
-      <!-- Cabecera Profesional -->
-      <div style="font-family: Arial, sans-serif; margin-bottom: 25px; border-bottom: 1px solid #cbd5e1; padding-bottom: 15px;">
-        <h1 style="font-size: 18pt; font-weight: bold; color: #1e293b; margin: 0; letter-spacing: -0.5px;">PSICO-AGENDA</h1>
-        <p style="font-size: 9pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0 0;">Registro Profesional de Evolución Clínica</p>
-      </div>
+    <body style="font-family: ${SANS}; font-size: 11pt; line-height: 1.5; color: ${INK};">
 
-      <!-- Datos del Paciente y la Sesión -->
-      <div style="font-family: Arial, sans-serif; font-size: 10pt; color: #475569; margin-bottom: 35px; border-bottom: 1px solid #cbd5e1; padding-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 20px;">
-              <span style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: bold;">Paciente</span><br/>
-              <strong style="font-size: 14pt; color: #1e293b;">${patient.fullName}</strong><br/>
-              <span style="font-size: 8.5pt; color: #64748b;">ID: ${patient.uuid}</span>
-            </td>
-            <td style="width: 50%; vertical-align: top; border-left: 1px solid #cbd5e1; padding-left: 20px; font-size: 9.5pt; line-height: 1.5; color: #334155;">
-              <span style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: bold;">Sesión Registrada</span><br/>
-              <strong>Fecha:</strong> ${dateFormatted}<br/>
-              <strong>Costo Pactado:</strong> $${(session.priceAtSession ?? 0).toLocaleString('es-AR')} ARS<br/>
-              <strong>Estado:</strong> ${session.status === 'completed' ? 'Atendido / Realizado' : session.status === 'cancelled' ? 'Cancelado' : session.status === 'missed' ? 'Ausente / No asistió' : 'Programado'}
-            </td>
-          </tr>
-        </table>
-      </div>
+      <!-- CABECERA -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 18pt;">
+        <tr>
+          <td style="vertical-align: bottom; padding: 0 0 6pt 0; border-bottom: 2pt solid ${PRIMARY};">
+            <span style="font-family: ${SERIF}; font-size: 15pt; font-weight: bold; color: ${INK}; letter-spacing: 0.2pt;">PSICO-AGENDA</span>
+            <span style="font-family: ${SANS}; font-size: 9pt; color: ${INK_2}; margin-left: 8pt; text-transform: uppercase; letter-spacing: 0.8pt;">Registro de Evolución Clínica</span>
+          </td>
+          <td style="vertical-align: bottom; text-align: right; padding: 0 0 6pt 0; border-bottom: 2pt solid ${PRIMARY}; font-family: ${SANS}; font-size: 9pt; color: ${INK_2};">
+            Documento de uso profesional
+          </td>
+        </tr>
+      </table>
 
-      <!-- Contenido Clínico de la Nota -->
-      <div style="margin-top: 30px; font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #334155;">
+      <!-- FICHA DEL PACIENTE Y SESIÓN -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 22pt; font-family: ${SANS}; font-size: 10pt; line-height: 1.45;">
+        <tr>
+          <td style="width: 54%; vertical-align: top; padding: 0 16pt 0 0;">
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6pt; color: ${INK_2}; font-weight: bold; margin-bottom: 3pt;">Paciente</div>
+            <div style="font-family: ${SERIF}; font-size: 14pt; font-weight: bold; color: ${INK}; margin-bottom: 4pt;">${esc(patient.fullName)}</div>
+            <div style="font-size: 9pt; color: ${INK_2};">ID: <span style="font-family: Consolas, monospace; font-size: 8.5pt;">${esc(patient.uuid)}</span></div>
+            <div style="font-size: 9.5pt; color: ${INK}; margin-top: 3pt;"><strong>Cobertura:</strong> ${esc(coverageText(patient))}</div>
+          </td>
+          <td style="width: 46%; vertical-align: top; padding: 0 0 0 16pt; border-left: 1pt solid ${RULE}; font-size: 9.5pt; color: ${INK};">
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6pt; color: ${INK_2}; font-weight: bold; margin-bottom: 3pt;">Detalle de la Sesión</div>
+            <div style="margin-bottom: 2pt;"><strong>Fecha:</strong> ${esc(dateFormatted)}</div>
+            <div style="margin-bottom: 2pt;"><strong>Honorarios:</strong> ${priceStr}</div>
+            <div><strong>Estado:</strong> ${esc(statusStr)}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- TÍTULO DE EVOLUCIÓN -->
+      <p style="margin: 20pt 0 6pt 0; padding-bottom: 4pt; border-bottom: 1.5pt solid ${PRIMARY}; font-family: ${SERIF}; font-size: 13pt; font-weight: bold; color: ${INK};">
+        Evolución Clínica
+      </p>
+
+      <!-- CUERPO DE LA NOTA -->
+      <div style="margin-top: 10pt; font-family: ${SANS}; font-size: 11pt; line-height: 1.55; color: ${INK};">
         ${notesHtml}
       </div>
 
-      <!-- Pie de Página -->
-      <div style="margin-top: 60px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 8.5pt; color: #94a3b8; text-align: center; font-family: Arial, sans-serif;">
-        Documento generado bajo los estándares de soberanía de datos del proyecto PSICO-AGENDA.<br/>
-        Fecha de exportación: ${new Date().toLocaleString('es-AR')}
-      </div>
+      <!-- PIE DE PÁGINA MSO -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 40pt;">
+        <tr>
+          <td style="border-top: 0.75pt solid ${RULE}; padding-top: 8pt; font-family: ${SANS}; font-size: 8.5pt; color: ${INK_2};">
+            PSICO-AGENDA · Documento clínico confidencial · Exportado el ${new Date().toLocaleString('es-AR')}
+          </td>
+          <td style="border-top: 0.75pt solid ${RULE}; padding-top: 8pt; font-family: ${SANS}; font-size: 8.5pt; color: ${INK_2}; text-align: right;">
+            <!--[if supportFields]>Página <span style='mso-element:field-begin'></span> PAGE <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span> de <span style='mso-element:field-begin'></span> NUMPAGES <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span><![endif]-->
+          </td>
+        </tr>
+      </table>
+
     </body>
     </html>
   `;
@@ -158,7 +164,6 @@ export function generateSessionWordHtml(patient: Patient, session: Session): str
 export function exportSessionToWord(patient: Patient, session: Session) {
   const htmlContent = generateSessionWordHtml(patient, session);
 
-  // Crear y disparar la descarga en el cliente
   const blob = new Blob(['\ufeff' + htmlContent], {
     type: 'application/msword;charset=utf-8',
   });
@@ -166,7 +171,6 @@ export function exportSessionToWord(patient: Patient, session: Session) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   
-  // Limpiar el nombre del paciente para el archivo
   const safeName = patient.fullName.toLowerCase().replace(/[^a-z0-9]/g, '_');
   const sessionDateStr = session.dateTime.split('T')[0];
   
@@ -179,13 +183,17 @@ export function exportSessionToWord(patient: Patient, session: Session) {
 }
 
 export function generateFullHistoryWordHtml(patient: Patient): string {
+  const clinicalHistoryContent = patient.clinicalHistory?.trim()
+    ? patient.clinicalHistory
+    : `<p style="margin: 0; color: ${INK_2}; font-style: italic;">Sin anotaciones registradas aún.</p>`;
+
   return `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
           xmlns:w="urn:schemas-microsoft-com:office:word" 
           xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="utf-8">
-      <title>Historial Clínico Completo - ${patient.fullName}</title>
+      <title>Historial Clínico Completo - ${esc(patient.fullName)}</title>
       <!--[if gte mso 9]>
       <xml>
         <w:WordDocument>
@@ -197,54 +205,69 @@ export function generateFullHistoryWordHtml(patient: Patient): string {
       <![endif]-->
       <style>
         @page {
-          size: 8.5in 11in;
-          margin: 1.0in 1.0in 1.0in 1.0in;
-          mso-header-margin: .5in;
-          mso-footer-margin: .5in;
+          size: 21cm 29.7cm;
+          margin: 2.2cm 2.3cm 2.4cm 2.3cm;
+          mso-header-margin: 1.2cm;
+          mso-footer-margin: 1.2cm;
         }
         body {
-          font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+          font-family: ${SANS};
           font-size: 11pt;
-          line-height: 1.6;
-          color: #334155;
+          line-height: 1.5;
+          color: ${INK};
+          background-color: #ffffff;
         }
+        h1, h2, h3 { font-family: ${SERIF}; }
       </style>
     </head>
-    <body>
-      <!-- Cabecera Profesional -->
-      <div style="font-family: Arial, sans-serif; margin-bottom: 25px; border-bottom: 1px solid #cbd5e1; padding-bottom: 15px;">
-        <h1 style="font-size: 20pt; font-weight: bold; color: #1e293b; margin: 0; letter-spacing: -0.5px;">PSICO-AGENDA</h1>
-        <p style="font-size: 10pt; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0 0;">Historial Clínico Consolidado</p>
+    <body style="font-family: ${SANS}; font-size: 11pt; line-height: 1.5; color: ${INK};">
+
+      <!-- CABECERA -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 18pt;">
+        <tr>
+          <td style="vertical-align: bottom; padding: 0 0 6pt 0; border-bottom: 2pt solid ${PRIMARY};">
+            <span style="font-family: ${SERIF}; font-size: 16pt; font-weight: bold; color: ${INK}; letter-spacing: 0.2pt;">PSICO-AGENDA</span>
+            <span style="font-family: ${SANS}; font-size: 9pt; color: ${INK_2}; margin-left: 8pt; text-transform: uppercase; letter-spacing: 0.8pt;">Historial Clínico Consolidado</span>
+          </td>
+          <td style="vertical-align: bottom; text-align: right; padding: 0 0 6pt 0; border-bottom: 2pt solid ${PRIMARY}; font-family: ${SANS}; font-size: 9pt; color: ${INK_2};">
+            Documento de uso profesional
+          </td>
+        </tr>
+      </table>
+
+      <!-- FICHA DEL PACIENTE -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 24pt; font-family: ${SANS}; font-size: 10pt; line-height: 1.45;">
+        <tr>
+          <td style="width: 54%; vertical-align: top; padding: 0 16pt 0 0;">
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6pt; color: ${INK_2}; font-weight: bold; margin-bottom: 3pt;">Paciente</div>
+            <div style="font-family: ${SERIF}; font-size: 15pt; font-weight: bold; color: ${INK}; margin-bottom: 4pt;">${esc(patient.fullName)}</div>
+            <div style="font-size: 9pt; color: ${INK_2};">ID: <span style="font-family: Consolas, monospace; font-size: 8.5pt;">${esc(patient.uuid)}</span></div>
+          </td>
+          <td style="width: 46%; vertical-align: top; padding: 0 0 0 16pt; border-left: 1pt solid ${RULE}; font-size: 9.5pt; color: ${INK};">
+            <div style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6pt; color: ${INK_2}; font-weight: bold; margin-bottom: 3pt;">Ficha Clínica</div>
+            <div style="margin-bottom: 2pt;"><strong>Cobertura:</strong> ${esc(coverageText(patient))}</div>
+            <div><strong>Contacto:</strong> ${esc(contactText(patient))}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- HISTORIAL CLÍNICO -->
+      <div style="margin-top: 10pt; font-family: ${SANS}; font-size: 11pt; line-height: 1.55; color: ${INK};">
+        ${clinicalHistoryContent}
       </div>
 
-      <!-- Datos de Ficha del Paciente -->
-      <div style="font-family: Arial, sans-serif; font-size: 10pt; color: #475569; margin-bottom: 35px; border-bottom: 1px solid #cbd5e1; padding-bottom: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 20px;">
-              <span style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: bold;">Paciente</span><br/>
-              <strong style="font-size: 14pt; color: #1e293b;">${patient.fullName}</strong><br/>
-              <span style="font-size: 8.5pt; color: #64748b;">ID: ${patient.uuid}</span>
-            </td>
-            <td style="width: 50%; vertical-align: top; border-left: 1px solid #cbd5e1; padding-left: 20px; font-size: 9.5pt; line-height: 1.5; color: #334155;">
-              <span style="font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: bold;">Ficha Clínica</span><br/>
-              <strong>Cobertura:</strong> ${patient.healthInsurance ? `${patient.healthInsurance} (N° ${patient.affiliateNumber || "Particular"})` : "Particular"}<br/>
-              <strong>Contacto:</strong> ${patient.phone || "—"} | ${patient.email || "—"}
-            </td>
-          </tr>
-        </table>
-      </div>
+      <!-- PIE DE PÁGINA MSO -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 40pt;">
+        <tr>
+          <td style="border-top: 0.75pt solid ${RULE}; padding-top: 8pt; font-family: ${SANS}; font-size: 8.5pt; color: ${INK_2};">
+            PSICO-AGENDA · Documento clínico confidencial · Exportado el ${new Date().toLocaleString('es-AR')}
+          </td>
+          <td style="border-top: 0.75pt solid ${RULE}; padding-top: 8pt; font-family: ${SANS}; font-size: 8.5pt; color: ${INK_2}; text-align: right;">
+            <!--[if supportFields]>Página <span style='mso-element:field-begin'></span> PAGE <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span> de <span style='mso-element:field-begin'></span> NUMPAGES <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span><![endif]-->
+          </td>
+        </tr>
+      </table>
 
-      <!-- Contenido Clínico del Historial -->
-      <div style="margin-top: 10px;">
-        ${patient.clinicalHistory || '<span style="color: #94a3b8; font-style: italic;">Sin anotaciones registradas aún.</span>'}
-      </div>
-
-      <!-- Pie de Página -->
-      <div style="margin-top: 50px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 8.5pt; color: #94a3b8; text-align: center; font-family: Arial, sans-serif;">
-        Documento clínico oficial exportado bajo estándares de soberanía y privacidad de PSICO-AGENDA.<br/>
-        Fecha del reporte: ${new Date().toLocaleString('es-AR')}
-      </div>
     </body>
     </html>
   `;
