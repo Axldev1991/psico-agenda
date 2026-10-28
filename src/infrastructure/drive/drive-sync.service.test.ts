@@ -26,6 +26,8 @@ const {
   mockGetPunctuationConfigs,
   mockSaveAllPunctuationConfigs,
   mockGetByPatient,
+  mockGetAvailabilitySettings,
+  mockSaveAvailabilitySettings,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -48,6 +50,8 @@ const {
   mockGetPunctuationConfigs: vi.fn(),
   mockSaveAllPunctuationConfigs: vi.fn(),
   mockGetByPatient: vi.fn(),
+  mockGetAvailabilitySettings: vi.fn(),
+  mockSaveAvailabilitySettings: vi.fn(),
 }));
 
 vi.mock('./google-drive.repository', () => {
@@ -96,6 +100,8 @@ vi.mock('../db/dexie-settings.repository', () => {
       saveAllMovementConfigs = mockSaveAllMovementConfigs;
       getPunctuationConfigs = mockGetPunctuationConfigs;
       saveAllPunctuationConfigs = mockSaveAllPunctuationConfigs;
+      getAvailabilitySettings = mockGetAvailabilitySettings;
+      saveAvailabilitySettings = mockSaveAvailabilitySettings;
     }
   };
 });
@@ -109,6 +115,13 @@ describe('DriveSyncService', () => {
     mockGetByPatient.mockResolvedValue([]);
     mockGetMovementConfigs.mockResolvedValue([]);
     mockGetPunctuationConfigs.mockResolvedValue([]);
+    mockGetAvailabilitySettings.mockResolvedValue({
+      weekly: {},
+      defaultSessionDurationMinutes: 50,
+      intervalStepMinutes: 60,
+      absencePeriods: [],
+    });
+    mockSaveAvailabilitySettings.mockResolvedValue(undefined);
     service = new DriveSyncService();
   });
 
@@ -395,5 +408,53 @@ describe('DriveSyncService', () => {
       expect(docUploadCall).toBeDefined();
       expect(docUploadCall![3]).toContain('<h1>Test Clinical History Content</h1>');
     });
+
+    it('should sync availabilitySettings and absence periods into index-db.json and save locally', async () => {
+      mockGetAll.mockResolvedValue([]);
+      mockGetAvailabilitySettings.mockResolvedValue({
+        weekly: { 1: { enabled: true, ranges: [{ start: '09:00', end: '13:00' }] } },
+        defaultSessionDurationMinutes: 50,
+        intervalStepMinutes: 60,
+        absencePeriods: [{ id: 'abs-1', startDate: '2026-12-20', endDate: '2026-12-31', reason: 'Vacaciones' }],
+      });
+
+      mockDownloadFile.mockImplementation(async (_folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [],
+            recurrenceRules: [],
+            availabilitySettings: {
+              weekly: { 2: { enabled: true, ranges: [{ start: '14:00', end: '18:00' }] } },
+              defaultSessionDurationMinutes: 45,
+              intervalStepMinutes: 60,
+              absencePeriods: [{ id: 'abs-2', startDate: '2027-01-10', endDate: '2027-01-20', reason: 'Congreso' }],
+            },
+            exportedAt: '2026-07-20T10:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Verify merged availability was saved locally
+      expect(mockSaveAvailabilitySettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultSessionDurationMinutes: 45,
+          absencePeriods: expect.arrayContaining([
+            expect.objectContaining({ id: 'abs-1' }),
+            expect.objectContaining({ id: 'abs-2' }),
+          ]),
+        })
+      );
+
+      // Verify index-db.json uploaded to Drive contains merged availabilitySettings
+      const indexUploadCall = mockUploadFile.mock.calls.find(call => call[1] === 'index-db.json');
+      expect(indexUploadCall).toBeDefined();
+      const uploadedIndex = JSON.parse(indexUploadCall![3]);
+      expect(uploadedIndex.availabilitySettings).toBeDefined();
+      expect(uploadedIndex.availabilitySettings.absencePeriods).toHaveLength(2);
+    });
   });
 });
+

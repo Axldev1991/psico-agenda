@@ -3,6 +3,8 @@ import { DexiePatientRepository } from "../db/dexie-patient.repository";
 import { DexieSessionRepository } from "../db/dexie-session.repository";
 import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from "../../domain/session.types";
+import { AvailabilitySettings } from "../../domain/availability.types";
+import { mergeAvailabilitySettings } from "../../domain/availability.service";
 import { driveLogger } from "./drive-logger";
 import { mergeSessionsByLWW } from "./drive-sync-merger";
 import { container } from "../container";
@@ -137,6 +139,7 @@ export class DriveSyncService {
     const settingsRepo = container.getSettingsRepository();
     const localSettings = await settingsRepo.getMovementConfigs();
     const localPunctuation = await settingsRepo.getPunctuationConfigs();
+    const localAvailability = await settingsRepo.getAvailabilitySettings();
 
     // 2. Descargar Datos de la Nube (index-db.json o migración desde backup viejo)
     driveLogger.log("info", "Descargando índice de base de datos de la nube...");
@@ -161,6 +164,7 @@ export class DriveSyncService {
     let remoteRecurrence: RecurrenceRule[] = [];
     let remoteSettings: MovementConfig[] = [];
     let remotePunctuation: PunctuationConfig[] = [];
+    let remoteAvailability: AvailabilitySettings | undefined = undefined;
  
     if (remoteIndexStr) {
       const indexData = JSON.parse(remoteIndexStr);
@@ -168,6 +172,7 @@ export class DriveSyncService {
       remoteRecurrence = indexData.recurrenceRules || [];
       remoteSettings = indexData.movementConfigs || [];
       remotePunctuation = indexData.punctuationConfigs || [];
+      remoteAvailability = indexData.availabilitySettings;
     } else if (isMigrating && remoteBackupData) {
       remotePatients = remoteBackupData.patients || [];
       remoteRecurrence = remoteBackupData.recurrenceRules || [];
@@ -348,6 +353,8 @@ export class DriveSyncService {
     if (mergedPunctuation.length > 0) {
       await settingsRepo.saveAllPunctuationConfigs(mergedPunctuation);
     }
+    const mergedAvailability = mergeAvailabilitySettings(localAvailability, remoteAvailability);
+    await settingsRepo.saveAvailabilitySettings(mergedAvailability);
  
     // Crear index-db.json despojando las historias clínicas detalladas
     const indexPatients = mergedPatients.map(p => {
@@ -360,6 +367,7 @@ export class DriveSyncService {
       recurrenceRules: mergedRecurrence,
       movementConfigs: mergedSettings,
       punctuationConfigs: mergedPunctuation,
+      availabilitySettings: mergedAvailability,
       exportedAt: new Date().toISOString()
     };
 

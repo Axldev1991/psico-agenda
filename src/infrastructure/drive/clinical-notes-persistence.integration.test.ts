@@ -21,6 +21,8 @@ const {
   mockSaveAllMovementConfigs,
   mockGetPunctuationConfigs,
   mockSaveAllPunctuationConfigs,
+  mockGetAvailabilitySettings,
+  mockSaveAvailabilitySettings,
   mockGetOrCreateFolder,
   mockDownloadFileFromFolder,
   mockUploadFileToFolder,
@@ -44,6 +46,8 @@ const {
   mockSaveAllMovementConfigs: vi.fn(),
   mockGetPunctuationConfigs: vi.fn(),
   mockSaveAllPunctuationConfigs: vi.fn(),
+  mockGetAvailabilitySettings: vi.fn(),
+  mockSaveAvailabilitySettings: vi.fn(),
   mockGetOrCreateFolder: vi.fn(),
   mockDownloadFileFromFolder: vi.fn(),
   mockUploadFileToFolder: vi.fn(),
@@ -93,6 +97,8 @@ vi.mock('../db/dexie-settings.repository', () => ({
     saveAllMovementConfigs = mockSaveAllMovementConfigs;
     getPunctuationConfigs = mockGetPunctuationConfigs;
     saveAllPunctuationConfigs = mockSaveAllPunctuationConfigs;
+    getAvailabilitySettings = mockGetAvailabilitySettings;
+    saveAvailabilitySettings = mockSaveAvailabilitySettings;
   },
 }));
 
@@ -108,6 +114,13 @@ describe('Clinical Notes Persistence & Drive Sync E2E Integration', () => {
     mockSaveAllMovementConfigs.mockResolvedValue(undefined);
     mockGetPunctuationConfigs.mockResolvedValue([]);
     mockSaveAllPunctuationConfigs.mockResolvedValue(undefined);
+    mockGetAvailabilitySettings.mockResolvedValue({
+      weekly: {},
+      defaultSessionDurationMinutes: 50,
+      intervalStepMinutes: 60,
+      absencePeriods: [],
+    });
+    mockSaveAvailabilitySettings.mockResolvedValue(undefined);
 
     mockGetOrCreateFolder.mockImplementation(async (name: string) => `folder-${name}`);
     mockFindFolderBySuffix.mockResolvedValue(null);

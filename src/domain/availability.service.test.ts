@@ -8,6 +8,7 @@ import {
   getDefaultAvailabilitySettings,
   isDateInAbsence,
   validateAbsencePeriod,
+  mergeAvailabilitySettings,
 } from './availability.service';
 import { TimeRange, DaySchedule, WeeklyAvailability, AbsencePeriod } from './availability.types';
 
@@ -261,4 +262,31 @@ describe('availability.service (TDD)', () => {
       expect(res.error).toContain('motivo');
     });
   });
+
+  describe('mergeAvailabilitySettings', () => {
+    it('returns local if remote is undefined', () => {
+      const local = getDefaultAvailabilitySettings();
+      expect(mergeAvailabilitySettings(local, undefined)).toEqual(local);
+    });
+
+    it('unions absence periods from local and remote without duplicates', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.absencePeriods = [
+        { id: '1', startDate: '2026-11-01', endDate: '2026-11-05', reason: 'Vacaciones 1' },
+      ];
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.defaultSessionDurationMinutes = 45;
+      remote.absencePeriods = [
+        { id: '1', startDate: '2026-11-01', endDate: '2026-11-05', reason: 'Vacaciones 1' },
+        { id: '2', startDate: '2026-12-20', endDate: '2026-12-31', reason: 'Receso Navidad' },
+      ];
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.defaultSessionDurationMinutes).toBe(45);
+      expect(merged.absencePeriods).toHaveLength(2);
+      expect((merged.absencePeriods || []).map((a: AbsencePeriod) => a.id)).toEqual(['1', '2']);
+    });
+  });
 });
+

@@ -9,6 +9,7 @@ export class PsicoAgendaDatabase extends Dexie {
   recurrenceRules!: Table<RecurrenceRule>;
   movementConfigs!: Table<MovementConfig>;
   punctuationConfigs!: Table<PunctuationConfig>;
+  appSettings!: Table<{ key: string; value: any }>;
 
   constructor() {
     super('PsicoAgendaDB');
@@ -54,6 +55,16 @@ export class PsicoAgendaDatabase extends Dexie {
       recurrenceRules: 'patientUuid',
       movementConfigs: 'key',
       punctuationConfigs: 'key'
+    });
+
+    // Versión 7: Persistencia de disponibilidad, duración y recesos/vacaciones
+    this.version(7).stores({
+      patients: 'uuid, fullName, createdAt, status, isHistoryLoaded, type',
+      sessions: 'uuid, patientUuid, dateTime, status',
+      recurrenceRules: 'patientUuid',
+      movementConfigs: 'key',
+      punctuationConfigs: 'key',
+      appSettings: 'key'
     });
   }
 }

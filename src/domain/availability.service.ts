@@ -182,3 +182,35 @@ export function validateAbsencePeriod(period: Partial<AbsencePeriod>): { valid: 
   }
   return { valid: true };
 }
+
+/**
+ * Merges local and remote AvailabilitySettings (used during cloud sync):
+ * - Absence periods are unioned by id (or by date range and reason).
+ * - Remote weekly schedule and durations take precedence if provided, falling back to local.
+ */
+export function mergeAvailabilitySettings(
+  local: AvailabilitySettings,
+  remote?: AvailabilitySettings
+): AvailabilitySettings {
+  if (!remote) return local;
+  if (!local) return remote;
+
+  const absenceMap = new Map<string, AbsencePeriod>();
+  (local.absencePeriods || []).forEach((a) => {
+    const key = a.id || `${a.startDate}_${a.endDate}_${a.reason}`;
+    absenceMap.set(key, a);
+  });
+  (remote.absencePeriods || []).forEach((a) => {
+    const key = a.id || `${a.startDate}_${a.endDate}_${a.reason}`;
+    absenceMap.set(key, a);
+  });
+
+  return {
+    weekly: remote.weekly ? { ...local.weekly, ...remote.weekly } : local.weekly,
+    defaultSessionDurationMinutes:
+      remote.defaultSessionDurationMinutes || local.defaultSessionDurationMinutes,
+    intervalStepMinutes: remote.intervalStepMinutes || local.intervalStepMinutes,
+    absencePeriods: Array.from(absenceMap.values()),
+  };
+}
+

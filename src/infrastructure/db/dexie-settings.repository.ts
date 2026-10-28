@@ -154,37 +154,73 @@ export class DexieSettingsRepository implements ISettingsRepository {
   // Métodos para AvailabilitySettings (Disponibilidad y Duración de Sesión)
   async getAvailabilitySettings(): Promise<AvailabilitySettings> {
     const defaults = getDefaultAvailabilitySettings();
-    if (typeof window === "undefined" || !window.localStorage) {
-      return defaults;
+
+    // 1. Intentar leer desde Dexie (IndexedDB)
+    try {
+      const record = await db.appSettings.get("availability");
+      if (record && record.value && typeof record.value === "object" && record.value.weekly) {
+        const val = record.value;
+        const res: AvailabilitySettings = {
+          weekly: { ...defaults.weekly, ...val.weekly },
+          defaultSessionDurationMinutes: val.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
+          intervalStepMinutes: val.intervalStepMinutes || defaults.intervalStepMinutes,
+          absencePeriods: Array.isArray(val.absencePeriods) ? val.absencePeriods : [],
+        };
+        // Sincronizar en localStorage como caché
+        if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            window.localStorage.setItem("psico_availability_settings", JSON.stringify(res));
+          } catch {}
+        }
+        return res;
+      }
+    } catch (e) {
+      console.warn("Falla al recuperar disponibilidad desde Dexie:", e);
     }
 
-    try {
-      const stored = window.localStorage.getItem("psico_availability_settings");
-      if (!stored) return defaults;
-      const parsed = JSON.parse(stored);
-      if (!parsed || typeof parsed !== "object" || !parsed.weekly) {
-        return defaults;
+    // 2. Fallback y auto-migración desde localStorage si existían datos previos
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem("psico_availability_settings");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object" && parsed.weekly) {
+            const migrated: AvailabilitySettings = {
+              weekly: { ...defaults.weekly, ...parsed.weekly },
+              defaultSessionDurationMinutes: parsed.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
+              intervalStepMinutes: parsed.intervalStepMinutes || defaults.intervalStepMinutes,
+              absencePeriods: Array.isArray(parsed.absencePeriods) ? parsed.absencePeriods : [],
+            };
+            // Migrar a Dexie en segundo plano
+            db.appSettings.put({ key: "availability", value: migrated }).catch((err) => {
+              console.warn("Falla al migrar disponibilidad a Dexie:", err);
+            });
+            return migrated;
+          }
+        }
+      } catch (e) {
+        console.warn("Falla al recuperar disponibilidad desde localStorage, usando valores por defecto:", e);
       }
-      return {
-        weekly: { ...defaults.weekly, ...parsed.weekly },
-        defaultSessionDurationMinutes: parsed.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
-        intervalStepMinutes: parsed.intervalStepMinutes || defaults.intervalStepMinutes,
-        absencePeriods: Array.isArray(parsed.absencePeriods) ? parsed.absencePeriods : [],
-      };
-    } catch (e) {
-      console.warn("Falla al recuperar disponibilidad desde localStorage, usando valores por defecto:", e);
-      return defaults;
     }
+
+    return defaults;
   }
 
   async saveAvailabilitySettings(settings: AvailabilitySettings): Promise<void> {
-    if (typeof window === "undefined" || !window.localStorage) {
-      return;
-    }
+    // 1. Guardar en Dexie (IndexedDB)
     try {
-      window.localStorage.setItem("psico_availability_settings", JSON.stringify(settings));
+      await db.appSettings.put({ key: "availability", value: settings });
     } catch (e) {
-      console.error("Error al persistir disponibilidad en localStorage:", e);
+      console.error("Error al persistir disponibilidad en Dexie:", e);
+    }
+
+    // 2. Guardar en localStorage como caché síncrona
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem("psico_availability_settings", JSON.stringify(settings));
+      } catch (e) {
+        console.error("Error al persistir disponibilidad en localStorage:", e);
+      }
     }
   }
 }
