@@ -111,6 +111,18 @@ describe("Patient Utilities", () => {
       expect(rebuilt).toContain("<p>Evolución de sesión 1</p>");
       expect(rebuilt).toContain("<p>Evolución de sesión 2</p>");
     });
+
+    it("should not introduce stray closing div or leading blank lines when parsing rebuilt history", () => {
+      const sessions = [
+        { uuid: "uuid1", dateTime: "2026-05-10T10:00:00.000Z", status: "completed" },
+      ];
+      const initialMap = new Map([["uuid1", "<p>Notas de la sesión</p>"]]);
+      const rebuilt = rebuildClinicalHistory(sessions, initialMap);
+      const parsed = parseClinicalHistory(rebuilt);
+
+      expect(parsed.get("uuid1")).toBe("<p>Notas de la sesión</p>");
+      expect(parsed.get("uuid1")).not.toMatch(/^(\s*<\/div>\s*)+/);
+    });
   });
 
   describe("extractHighlights", () => {

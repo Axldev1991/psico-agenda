@@ -72,8 +72,26 @@ export function RichTextEditor({
 
   const executeCommand = (command: string, value: string = "") => {
     if (typeof document !== "undefined") {
+      try {
+        document.execCommand("styleWithCSS", false, "true");
+      } catch (e) {}
       document.execCommand(command, false, value);
       // Mantener el foco
+      editorRef.current?.focus();
+      triggerChange();
+    }
+  };
+
+  const executeHighlight = (color: string) => {
+    if (typeof document !== "undefined") {
+      try {
+        document.execCommand("styleWithCSS", false, "true");
+      } catch (e) {}
+      // En Chrome/WebKit hiliteColor aplica el color de fondo al texto seleccionado
+      const success = document.execCommand("hiliteColor", false, color);
+      if (!success) {
+        document.execCommand("backColor", false, color);
+      }
       editorRef.current?.focus();
       triggerChange();
     }
@@ -111,6 +129,7 @@ export function RichTextEditor({
             {/* Botón Negrita */}
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand("bold")}
               className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Negrita (Ctrl+B)"
@@ -121,6 +140,7 @@ export function RichTextEditor({
             {/* Botón Cursiva */}
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand("italic")}
               className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink italic flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Cursiva (Ctrl+I)"
@@ -131,6 +151,7 @@ export function RichTextEditor({
             {/* Botón Subrayado */}
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand("underline")}
               className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink underline flex items-center justify-center cursor-pointer transition-colors text-xs"
               title="Subrayado (Ctrl+U)"
@@ -142,6 +163,7 @@ export function RichTextEditor({
             <div className="flex items-center gap-1.5 ml-1">
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={isSpeechSupported ? toggleListening : undefined}
                 disabled={!isSpeechSupported}
                 className={`h-8 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all duration-300 text-xs border font-medium ${
@@ -181,7 +203,8 @@ export function RichTextEditor({
                 <button
                   key={color.key}
                   type="button"
-                  onClick={() => executeCommand("backColor", color.color)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => executeHighlight(color.color)}
                   style={{ backgroundColor: color.color }}
                   className="h-5 w-5 rounded-full border border-line cursor-pointer hover:scale-110 transition-transform shadow-xs"
                   title={`Resaltar como: ${color.label}`}
@@ -189,13 +212,17 @@ export function RichTextEditor({
               ))}
 
               {/* Selector de color personalizado */}
-              <div className="relative h-6 w-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform group cursor-pointer" title="Color de resaltado a elección">
+              <div 
+                className="relative h-6 w-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform group cursor-pointer" 
+                title="Color de resaltado a elección"
+                onMouseDown={(e) => e.preventDefault()}
+              >
                 <input
                   type="color"
                   value={customColor}
                   onChange={(e) => {
                     setCustomColor(e.target.value);
-                    executeCommand("backColor", e.target.value);
+                    executeHighlight(e.target.value);
                   }}
                   className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
                 />
@@ -208,7 +235,8 @@ export function RichTextEditor({
               {/* Botón Limpiar Resaltador */}
               <button
                 type="button"
-                onClick={() => executeCommand("backColor", "transparent")}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => executeHighlight("transparent")}
                 className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted hover:text-danger flex items-center justify-center cursor-pointer transition-colors text-xs ml-1"
                 title="Quitar Resaltador"
               >
@@ -222,6 +250,7 @@ export function RichTextEditor({
             <div className="flex items-center gap-1 bg-surface border border-line rounded-xl p-0.5 shadow-xs">
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setFontSize((prev) => Math.max(14, prev - 1))}
                 className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-sm"
                 title="Achicar letra (Zoom Out)"
@@ -233,6 +262,7 @@ export function RichTextEditor({
               </span>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setFontSize((prev) => Math.min(32, prev + 1))}
                 className="h-8 w-8 rounded-lg hover:bg-sand-light text-ink font-bold flex items-center justify-center cursor-pointer transition-colors text-sm"
                 title="Agrandar letra (Zoom In)"
@@ -243,6 +273,7 @@ export function RichTextEditor({
 
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => executeCommand("removeFormat")}
               className="inline-flex items-center gap-1 text-[10px] text-ink-muted hover:text-ink font-semibold px-2 py-1 rounded hover:bg-sand-light transition-all cursor-pointer"
               title="Limpiar todos los estilos de la selección"
@@ -266,7 +297,7 @@ export function RichTextEditor({
             if (onBlur) onBlur();
           }}
           onInput={triggerChange}
-           className={`w-full overflow-y-auto overflow-x-hidden wrap-break-word text-ink focus:outline-none font-sans leading-relaxed whitespace-pre-wrap select-text cursor-text ${
+          className={`w-full overflow-y-auto overflow-x-hidden wrap-break-word text-ink focus:outline-none font-sans leading-relaxed select-text cursor-text ${
             isContinuous 
               ? "p-2 min-h-10 max-h-200" 
               : "p-4 min-h-37.5 max-h-100"

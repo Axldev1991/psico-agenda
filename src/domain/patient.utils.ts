@@ -68,18 +68,21 @@ export function parseClinicalHistory(html: string): Map<string, string> {
   const sessionContents = new Map<string, string>();
   if (!html) return sessionContents;
 
-  const anchorRegex = /<div\s+id="session-anchor-([^"]+)"[^>]*>([\s\S]*?)<\/div>/gi;
+  // Match the complete session header up to the closing </div> of the anchor (or end-session-anchor marker)
+  // The header contains an inner div for "Estado", so it ends with </div>\s*</div> or the end comment.
+  const anchorRegex =
+    /<div\s+id="session-anchor-([^"]+)"[\s\S]*?Estado:[\s\S]*?<\/div>\s*<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?|<div\s+id="session-anchor-([^"]+)"[^>]*>([\s\S]*?)<\/div>(?:<!--\s*end-session-anchor-[^>]*-->)?/gi;
   const matches = [...html.matchAll(anchorRegex)];
 
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
-    const uuid = match[1];
+    const uuid = match[1] || match[2];
     const startIndex = match.index! + match[0].length;
     const endIndex = i + 1 < matches.length ? matches[i + 1].index! : html.length;
     let contentHtml = html.substring(startIndex, endIndex);
 
-    // Clean up surrounding whitespace/newlines
-    contentHtml = contentHtml.trim();
+    // Strip any orphan closing </div> tags left from prior regex bugs or malformed HTML
+    contentHtml = contentHtml.replace(/^(\s*<\/div>\s*)+/gi, "").trim();
     sessionContents.set(uuid, contentHtml);
   }
 
@@ -126,7 +129,7 @@ export function rebuildClinicalHistory(
       <div style="font-size: 8.5pt; color: #64748b; margin-bottom: 15px;">
         Estado: <span style="font-weight: bold; color: #475569;">${session.status === "completed" ? "Atendido" : session.status === "cancelled" ? "Cancelado" : "Programado"}</span>
       </div>
-    </div>`;
+    </div><!-- end-session-anchor-${session.uuid} -->`;
 
     const contentHtml =
       sessionContents.get(session.uuid) ||
