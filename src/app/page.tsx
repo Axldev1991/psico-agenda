@@ -19,7 +19,7 @@ import { BrandLogo } from "../ui/components/navigation/BrandLogo";
 
 function HomeContent() {
   const { patients, addPatient, updatePatient } = usePatients();
-  const { addManualSession, addRecurrence } = useCalendar();
+  const { addManualSession, addRecurrence, agenda } = useCalendar();
   const { errorMessage } = useGoogleDrive();
   const { recentPatientUuids, addRecentPatient } = useRecentPatients();
 
@@ -177,6 +177,7 @@ function HomeContent() {
         isOpen={isSessionModalOpen}
         onClose={closeSessionModal}
         patients={patients}
+        bookedSlots={agenda}
         onCreateManual={addManualSession}
         onCreateRecurrence={addRecurrence}
       />

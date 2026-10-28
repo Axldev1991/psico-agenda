@@ -11,6 +11,7 @@ import {
   SwapSlotsParams,
 } from "../../../domain/agenda.types";
 import { findAvailableSlots } from "../../../domain/agenda.service";
+import { useAvailabilitySettings } from "../../hooks/useAvailabilitySettings";
 import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
 import { DateInput } from "../common/DateInput";
@@ -42,6 +43,7 @@ export function RescheduleModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { showToast } = useUIState();
+  const { settings } = useAvailabilitySettings();
 
   useEffect(() => {
     if (slot) {
@@ -72,11 +74,11 @@ export function RescheduleModal({
     return findAvailableSlots({
       targetDate,
       bookedSlots,
-      startHour: 8,
-      endHour: 20,
-      slotDurationMinutes: 50,
+      slotDurationMinutes: settings.defaultSessionDurationMinutes,
+      intervalStepMinutes: settings.intervalStepMinutes,
+      weeklyAvailability: settings.weekly,
     });
-  }, [targetDateStr, targetDate, bookedSlots]);
+  }, [targetDateStr, targetDate, bookedSlots, settings]);
 
   const swapCandidates = useMemo(() => {
     if (!slot) return [];

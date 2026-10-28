@@ -4,9 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
 import { MovementRow } from "./settings/MovementRow";
+import { AvailabilitySettingsTab } from "./settings/AvailabilitySettingsTab";
 import { Icon } from "./common/Icon";
 
 export function SettingsPanel() {
+  const [settingsTab, setSettingsTab] = useState<"availability" | "categories">("availability");
   const {
     movementConfigs,
     punctuationConfigs,
@@ -121,124 +123,166 @@ export function SettingsPanel() {
           Configuración de la clínica
         </h1>
         <p className="text-sm text-ink-sub mt-1">
-          Ajustá los nombres y colores de los movimientos clínicos y de las puntuaciones (resaltados del editor de sesiones).
+          Ajustá la disponibilidad y duración de sesiones, así como los movimientos clínicos y puntuaciones.
         </p>
+
+        {/* Navigation Tabs */}
+        <div
+          role="tablist"
+          aria-label="Secciones de configuración"
+          className="flex border-b border-line pt-4 gap-6 overflow-x-auto"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={settingsTab === "availability"}
+            onClick={() => setSettingsTab("availability")}
+            className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              settingsTab === "availability"
+                ? "border-primary text-primary"
+                : "border-transparent text-ink-sub hover:text-ink"
+            }`}
+          >
+            <Icon name="calendar" size={16} />
+            <span>Disponibilidad y Turnos</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={settingsTab === "categories"}
+            onClick={() => setSettingsTab("categories")}
+            className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              settingsTab === "categories"
+                ? "border-primary text-primary"
+                : "border-transparent text-ink-sub hover:text-ink"
+            }`}
+          >
+            <Icon name="settings" size={16} />
+            <span>Movimientos y Puntuaciones</span>
+          </button>
+        </div>
       </header>
 
-      {/* Section 1: Movimientos de consulta */}
-      <details
-        className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs"
-        open
-      >
-        <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
-          <span>Movimientos de consulta</span>
-          <span className="text-ink-sub transition-transform group-open:rotate-180">
-            <Icon name="chev-d" size={16} />
-          </span>
-        </summary>
+      {settingsTab === "availability" ? (
+        <AvailabilitySettingsTab />
+      ) : (
+        <div className="space-y-6">
+          {/* Section 1: Movimientos de consulta */}
+          <details
+            className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs"
+            open
+          >
+            <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
+              <span>Movimientos de consulta</span>
+              <span className="text-ink-sub transition-transform group-open:rotate-180">
+                <Icon name="chev-d" size={16} />
+              </span>
+            </summary>
 
-        <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
-            <div className="col-span-5">Nombre del movimiento</div>
-            <div className="col-span-2 text-center">Color</div>
-            <div className="col-span-4 text-center">Vista previa</div>
-            <div className="col-span-1 text-center">Acción</div>
-          </div>
+            <div className="p-5 space-y-4">
+              <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
+                <div className="col-span-5">Nombre del movimiento</div>
+                <div className="col-span-2 text-center">Color</div>
+                <div className="col-span-4 text-center">Vista previa</div>
+                <div className="col-span-1 text-center">Acción</div>
+              </div>
 
-          <div className="divide-y divide-line/60">
-            {localConfigs.map((config) => (
-              <MovementRow
-                key={config.key}
-                label={config.label}
-                color={config.color}
-                onLabelChange={(val) => handleLabelChange(config.key, val)}
-                onColorChange={(val) => handleColorChange(config.key, val)}
-                onDelete={() => handleDeleteMovement(config.key)}
-                canDelete={localConfigs.length > 1}
-              />
-            ))}
-          </div>
+              <div className="divide-y divide-line/60">
+                {localConfigs.map((config) => (
+                  <MovementRow
+                    key={config.key}
+                    label={config.label}
+                    color={config.color}
+                    onLabelChange={(val) => handleLabelChange(config.key, val)}
+                    onColorChange={(val) => handleColorChange(config.key, val)}
+                    onDelete={() => handleDeleteMovement(config.key)}
+                    canDelete={localConfigs.length > 1}
+                  />
+                ))}
+              </div>
 
-          <div className="pt-2">
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddMovement}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="plus" size={14} />
+                  <span>Agregar movimiento</span>
+                </button>
+              </div>
+            </div>
+          </details>
+
+          {/* Section 2: Puntuaciones (Editor) */}
+          <details className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs">
+            <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
+              <span>Puntuaciones (resaltados del editor)</span>
+              <span className="text-ink-sub transition-transform group-open:rotate-180">
+                <Icon name="chev-d" size={16} />
+              </span>
+            </summary>
+
+            <div className="p-5 space-y-4">
+              <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
+                <div className="col-span-5">Nombre de la puntuación</div>
+                <div className="col-span-2 text-center">Color</div>
+                <div className="col-span-4 text-center">Vista previa</div>
+                <div className="col-span-1 text-center">Acción</div>
+              </div>
+
+              <div className="divide-y divide-line/60">
+                {localPunctuation.map((config) => (
+                  <MovementRow
+                    key={config.key}
+                    label={config.label}
+                    color={config.color}
+                    onLabelChange={(val) => handlePunctuationLabelChange(config.key, val)}
+                    onColorChange={(val) => handlePunctuationColorChange(config.key, val)}
+                    onDelete={() => handleDeletePunctuation(config.key)}
+                    canDelete={localPunctuation.length > 1}
+                  />
+                ))}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleAddPunctuation}
+                  className="w-full py-2 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="plus" size={14} />
+                  <span>Agregar puntuación</span>
+                </button>
+              </div>
+            </div>
+          </details>
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={handleAddMovement}
-              className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              onClick={handleSave}
+              disabled={saveStatus === "saving"}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
             >
-              <Icon name="plus" size={14} />
-              <span>Agregar movimiento</span>
+              {saveStatus === "saving" ? (
+                <>
+                  <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : saveStatus === "saved" ? (
+                <>
+                  <Icon name="check" size={15} />
+                  <span>Guardado con éxito</span>
+                </>
+              ) : (
+                <span>Guardar cambios</span>
+              )}
             </button>
           </div>
         </div>
-      </details>
-
-      {/* Section 2: Puntuaciones (Editor) */}
-      <details className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs">
-        <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
-          <span>Puntuaciones (resaltados del editor)</span>
-          <span className="text-ink-sub transition-transform group-open:rotate-180">
-            <Icon name="chev-d" size={16} />
-          </span>
-        </summary>
-
-        <div className="p-5 space-y-4">
-          <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
-            <div className="col-span-5">Nombre de la puntuación</div>
-            <div className="col-span-2 text-center">Color</div>
-            <div className="col-span-4 text-center">Vista previa</div>
-            <div className="col-span-1 text-center">Acción</div>
-          </div>
-
-          <div className="divide-y divide-line/60">
-            {localPunctuation.map((config) => (
-              <MovementRow
-                key={config.key}
-                label={config.label}
-                color={config.color}
-                onLabelChange={(val) => handlePunctuationLabelChange(config.key, val)}
-                onColorChange={(val) => handlePunctuationColorChange(config.key, val)}
-                onDelete={() => handleDeletePunctuation(config.key)}
-                canDelete={localPunctuation.length > 1}
-              />
-            ))}
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleAddPunctuation}
-              className="w-full py-2 rounded-xl border border-dashed border-primary/40 hover:border-primary text-primary text-sm font-semibold bg-primary-tint/20 hover:bg-primary-tint/40 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              <Icon name="plus" size={14} />
-              <span>Agregar puntuación</span>
-            </button>
-          </div>
-        </div>
-      </details>
-
-      {/* Footer Actions */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saveStatus === "saving"}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-        >
-          {saveStatus === "saving" ? (
-            <>
-              <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
-              <span>Guardando...</span>
-            </>
-          ) : saveStatus === "saved" ? (
-            <>
-              <Icon name="check" size={15} />
-              <span>Guardado con éxito</span>
-            </>
-          ) : (
-            <span>Guardar cambios</span>
-          )}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

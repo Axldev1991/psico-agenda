@@ -1,6 +1,7 @@
 import { Session, RecurrenceRule } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
+import { WeeklyAvailability } from "./availability.types";
 
 export interface CalendarSlot {
   uuid?: string; // Present if already persisted as a physical Session in DB
@@ -45,6 +46,7 @@ export interface FindAvailableSlotsParams {
   endHour?: number;            // Default 20 (20:00)
   slotDurationMinutes?: number;// Default 50
   intervalStepMinutes?: number;// Default 60
+  weeklyAvailability?: WeeklyAvailability;
 }
 
 export type RescheduleScope = 'eventual' | 'permanent';

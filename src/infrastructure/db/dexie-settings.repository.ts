@@ -1,5 +1,7 @@
 import { ISettingsRepository } from "../../repositories/settings.repository";
 import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
+import { AvailabilitySettings } from "../../domain/availability.types";
+import { getDefaultAvailabilitySettings } from "../../domain/availability.service";
 import { db } from "./dexie.db";
 
 export class DexieSettingsRepository implements ISettingsRepository {
@@ -148,4 +150,41 @@ export class DexieSettingsRepository implements ISettingsRepository {
       await db.punctuationConfigs.bulkAdd(configs);
     });
   }
+
+  // Métodos para AvailabilitySettings (Disponibilidad y Duración de Sesión)
+  async getAvailabilitySettings(): Promise<AvailabilitySettings> {
+    const defaults = getDefaultAvailabilitySettings();
+    if (typeof window === "undefined" || !window.localStorage) {
+      return defaults;
+    }
+
+    try {
+      const stored = window.localStorage.getItem("psico_availability_settings");
+      if (!stored) return defaults;
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== "object" || !parsed.weekly) {
+        return defaults;
+      }
+      return {
+        weekly: { ...defaults.weekly, ...parsed.weekly },
+        defaultSessionDurationMinutes: parsed.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
+        intervalStepMinutes: parsed.intervalStepMinutes || defaults.intervalStepMinutes,
+      };
+    } catch (e) {
+      console.warn("Falla al recuperar disponibilidad desde localStorage, usando valores por defecto:", e);
+      return defaults;
+    }
+  }
+
+  async saveAvailabilitySettings(settings: AvailabilitySettings): Promise<void> {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    try {
+      window.localStorage.setItem("psico_availability_settings", JSON.stringify(settings));
+    } catch (e) {
+      console.error("Error al persistir disponibilidad en localStorage:", e);
+    }
+  }
 }
+

@@ -6,8 +6,9 @@ import { es } from "date-fns/locale";
 import { RRule } from "rrule";
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
-import { RecurrenceCadence } from "../../domain/agenda.types";
-import { buildRRuleString } from "../../domain/agenda.service";
+import { RecurrenceCadence, CalendarSlot } from "../../domain/agenda.types";
+import { buildRRuleString, findAvailableSlots, findConflictingSlot } from "../../domain/agenda.service";
+import { useAvailabilitySettings } from "../hooks/useAvailabilitySettings";
 import { useUIState } from "../context/UIContext";
 import { Icon } from "./common/Icon";
 import { DateInput } from "./common/DateInput";
@@ -16,6 +17,7 @@ interface SessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   patients: Patient[];
+  bookedSlots?: CalendarSlot[];
   onCreateManual: (data: {
     patientUuid: string;
     dateTime: string;
@@ -46,13 +48,16 @@ export function SessionModal({
   isOpen,
   onClose,
   patients,
+  bookedSlots = [],
   onCreateManual,
   onCreateRecurrence,
 }: SessionModalProps) {
+  const { settings } = useAvailabilitySettings();
   const [selectedPatientUuid, setSelectedPatientUuid] = useState("");
   const [isRecurrent, setIsRecurrent] = useState(false);
   const [sessionDate, setSessionDate] = useState("");
   const [sessionTime, setSessionTime] = useState("16:00");
+  const [isException, setIsException] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([0]);
   const [cadence, setCadence] = useState<RecurrenceCadence>("weekly");
 
@@ -97,7 +102,7 @@ export function SessionModal({
         patientUuid: selectedPatientUuid,
         startDate: sessionDate,
         startTime: sessionTime,
-        durationMinutes: 50,
+        durationMinutes: settings.defaultSessionDurationMinutes,
         daysOfWeek: selectedDays,
         cadence,
       });
@@ -117,10 +122,60 @@ export function SessionModal({
     setIsRecurrent(false);
     setSessionDate("");
     setSessionTime("16:00");
+    setIsException(false);
     setSelectedDays([0]);
     setCadence("weekly");
     onClose();
   };
+
+  const availableSlots = useMemo(() => {
+    if (!sessionDate) return [];
+    try {
+      const targetDate = new Date(`${sessionDate}T00:00:00`);
+      if (isNaN(targetDate.getTime())) return [];
+      return findAvailableSlots({
+        targetDate,
+        bookedSlots,
+        slotDurationMinutes: settings.defaultSessionDurationMinutes,
+        intervalStepMinutes: settings.intervalStepMinutes,
+        weeklyAvailability: settings.weekly,
+      });
+    } catch {
+      return [];
+    }
+  }, [sessionDate, bookedSlots, settings]);
+
+  const conflictingSlot = useMemo(() => {
+    if (!sessionDate || !sessionTime || !bookedSlots || bookedSlots.length === 0) {
+      return undefined;
+    }
+    try {
+      const slotDateTime = new Date(`${sessionDate}T${sessionTime}:00`);
+      if (isNaN(slotDateTime.getTime())) return undefined;
+      return findConflictingSlot(
+        slotDateTime,
+        settings.defaultSessionDurationMinutes,
+        bookedSlots
+      );
+    } catch {
+      return undefined;
+    }
+  }, [sessionDate, sessionTime, bookedSlots, settings.defaultSessionDurationMinutes]);
+
+  const conflictingPatientName = useMemo(() => {
+    if (!conflictingSlot) return "";
+    const p = patients.find((pat) => pat.uuid === conflictingSlot.patientUuid);
+    return p ? p.fullName : "otro paciente";
+  }, [conflictingSlot, patients]);
+
+  useEffect(() => {
+    if (!isException && availableSlots.length > 0) {
+      const matches = availableSlots.some((s) => s.time === sessionTime);
+      if (!matches) {
+        setSessionTime(availableSlots[0].time);
+      }
+    }
+  }, [availableSlots, isException, sessionTime]);
 
   const selectedDaysSummary = selectedDays
     .map((d) => WEEKDAYS.find((w) => w.index === d)?.name)
@@ -231,7 +286,7 @@ export function SessionModal({
           </div>
 
           {/* Row 2: Date & Time Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
             <div>
               <label htmlFor="modal-date" className="text-sm font-semibold text-ink block mb-1.5">
                 {isRecurrent ? "Fecha de inicio *" : "Fecha del turno *"}
@@ -245,19 +300,94 @@ export function SessionModal({
             </div>
 
             <div>
-              <label htmlFor="modal-time" className="text-sm font-semibold text-ink block mb-1.5">
-                Hora <span className="text-primary font-bold">*</span>
-              </label>
-              <input
-                id="modal-time"
-                type="time"
-                required
-                value={sessionTime}
-                onChange={(e) => setSessionTime(e.target.value)}
-                className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="modal-time" className="text-sm font-semibold text-ink">
+                  Hora <span className="text-primary font-bold">*</span>
+                </label>
+                {sessionDate && availableSlots.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsException(!isException)}
+                    className="text-xs text-primary hover:underline font-medium cursor-pointer transition-colors"
+                  >
+                    {isException ? "Ver horarios disponibles" : "Horario fuera de agenda"}
+                  </button>
+                )}
+              </div>
+
+              {/* Slot Pills or Manual Time Input */}
+              {!isException && sessionDate && availableSlots.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 border border-line rounded-lg bg-bg-base/40">
+                    {availableSlots.map((slot) => {
+                      const isSelected = sessionTime === slot.time;
+                      return (
+                        <button
+                          key={slot.time}
+                          type="button"
+                          onClick={() => setSessionTime(slot.time)}
+                          className={`px-2.5 py-1 text-sm font-medium rounded-md transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-primary text-surface font-semibold shadow-xs"
+                              : "bg-surface text-ink border border-line hover:border-line-control hover:bg-bg-base"
+                          }`}
+                        >
+                          {slot.time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-ink-sub">
+                    <span>Hora elegida:</span>
+                    <input
+                      id="modal-time"
+                      type="time"
+                      required
+                      value={sessionTime}
+                      onChange={(e) => setSessionTime(e.target.value)}
+                      className="bg-surface border border-line rounded-lg px-2.5 py-1 text-ink text-sm font-medium focus:outline-none focus:border-primary cursor-pointer transition-colors"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <input
+                    id="modal-time"
+                    type="time"
+                    required
+                    value={sessionTime}
+                    onChange={(e) => setSessionTime(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                  />
+                  {sessionDate && (
+                    <p className="text-xs text-ink-sub flex items-center gap-1">
+                      <Icon name="alert" size={13} className="text-amber-500 shrink-0" />
+                      {isException
+                        ? "Modo excepción: podés asignar cualquier hora fuera de tu disponibilidad normal."
+                        : "No tenés horarios libres según tu disponibilidad para este día. Podés ingresar un horario excepcional."}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Collision Warning Alert */}
+          {conflictingSlot && (
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 text-sm animate-in fade-in duration-150"
+            >
+              <Icon name="alert" size={18} className="shrink-0 mt-0.5 text-amber-600" />
+              <div className="leading-tight">
+                <span className="font-semibold block mb-0.5">Superposición de horarios</span>
+                <span>
+                  Ya existe un turno agendado para <strong className="font-semibold">{conflictingPatientName}</strong> a las{" "}
+                  {format(conflictingSlot.dateTime, "HH:mm")} hs. Podés continuar si se trata de una excepción deliberada.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Row 3: Recurrence Options (2 Columns) */}
           {isRecurrent && (

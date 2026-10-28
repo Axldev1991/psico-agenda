@@ -1,7 +1,8 @@
 import { RRule } from "rrule";
 import { parseISO, isSameDay } from "date-fns";
-import { CalendarSlot, ComputeAgendaSlotsParams } from "./agenda.types";
+import { CalendarSlot, ComputeAgendaSlotsParams, FindAvailableSlotsParams } from "./agenda.types";
 import { getHoliday } from "./holidays";
+import { isSlotWithinAvailability } from "./availability.service";
 
 /**
  * Computes calendar slots for a given time interval by combining:
@@ -168,21 +169,17 @@ export function buildRRuleString(options: {
 /**
  * Computes unbooked, free consultation slots for a given day within working clinical hours.
  */
-export function findAvailableSlots(params: {
-  targetDate: Date;
-  bookedSlots: CalendarSlot[];
-  startHour?: number;          // Default 8 (08:00)
-  endHour?: number;            // Default 20 (20:00)
-  slotDurationMinutes?: number;// Default 50
-  intervalStepMinutes?: number;// Default 60
-}): { time: string; dateTime: Date; formattedTime: string }[] {
+export function findAvailableSlots(
+  params: FindAvailableSlotsParams
+): { time: string; dateTime: Date; formattedTime: string }[] {
   const {
     targetDate,
     bookedSlots,
-    startHour = 8,
-    endHour = 20,
+    startHour: customStartHour,
+    endHour: customEndHour,
     slotDurationMinutes = 50,
     intervalStepMinutes = 60,
+    weeklyAvailability,
   } = params;
 
   const available: { time: string; dateTime: Date; formattedTime: string }[] = [];
@@ -190,15 +187,35 @@ export function findAvailableSlots(params: {
   const month = targetDate.getMonth();
   const day = targetDate.getDate();
 
+  // If weekly availability is supplied, check if the day is enabled
+  const daySchedule = weeklyAvailability ? weeklyAvailability[targetDate.getDay()] : undefined;
+  if (weeklyAvailability) {
+    if (!daySchedule || !daySchedule.enabled || !daySchedule.ranges || daySchedule.ranges.length === 0) {
+      return [];
+    }
+  }
+
+  const startHour = customStartHour ?? 8;
+  const endHour = customEndHour ?? 20;
+
   // Find all active booked slots on this day (ignoring cancelled slots)
   const activeDaySlots = bookedSlots.filter(
     (s) => isSameDay(s.dateTime, targetDate) && s.status !== 'cancelled'
   );
 
-  for (let hour = startHour; hour < endHour; hour++) {
+  // Search range: if weeklyAvailability is provided, scan between 06:00 and 23:00 or custom bounds
+  const loopStartHour = weeklyAvailability ? 6 : startHour;
+  const loopEndHour = weeklyAvailability ? 23 : endHour;
+
+  for (let hour = loopStartHour; hour < loopEndHour; hour++) {
     for (let minute = 0; minute < 60; minute += intervalStepMinutes) {
       const slotStart = new Date(year, month, day, hour, minute, 0, 0);
       const slotEnd = new Date(slotStart.getTime() + slotDurationMinutes * 60 * 1000);
+
+      // If weekly availability is enabled, check if slot falls strictly inside one of the day's ranges
+      if (daySchedule && !isSlotWithinAvailability(slotStart, slotDurationMinutes, daySchedule)) {
+        continue;
+      }
 
       // Check collision with any existing active booked appointment
       const hasConflict = activeDaySlots.some((booked) => {
@@ -228,3 +245,24 @@ export function findAvailableSlots(params: {
   return available;
 }
 
+/**
+ * Checks if a proposed appointment time interval overlaps with any existing active booked slot.
+ */
+export function findConflictingSlot(
+  slotStart: Date,
+  durationMinutes: number,
+  bookedSlots: CalendarSlot[]
+): CalendarSlot | undefined {
+  const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60 * 1000);
+
+  return bookedSlots.find((booked) => {
+    if (booked.status === 'cancelled') return false;
+    if (!isSameDay(booked.dateTime, slotStart)) return false;
+
+    const bookedStart = new Date(booked.dateTime).getTime();
+    const bookedDuration = booked.durationMinutes || 50;
+    const bookedEnd = bookedStart + bookedDuration * 60 * 1000;
+
+    return slotStart.getTime() < bookedEnd && slotEnd.getTime() > bookedStart;
+  });
+}

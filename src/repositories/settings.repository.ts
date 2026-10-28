@@ -1,4 +1,5 @@
 import { MovementConfig, PunctuationConfig } from '../domain/session.types';
+import { AvailabilitySettings } from '../domain/availability.types';
 
 export interface ISettingsRepository {
   getMovementConfigs(): Promise<MovementConfig[]>;
@@ -8,4 +9,7 @@ export interface ISettingsRepository {
   getPunctuationConfigs(): Promise<PunctuationConfig[]>;
   savePunctuationConfig(config: PunctuationConfig): Promise<void>;
   saveAllPunctuationConfigs(configs: PunctuationConfig[]): Promise<void>;
+
+  getAvailabilitySettings(): Promise<AvailabilitySettings>;
+  saveAvailabilitySettings(settings: AvailabilitySettings): Promise<void>;
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeAgendaSlots, buildRRuleString, findAvailableSlots } from "./agenda.service";
+import { computeAgendaSlots, buildRRuleString, findAvailableSlots, findConflictingSlot } from "./agenda.service";
 import { RecurrenceRule, Session } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
@@ -314,6 +314,116 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(availableTimes).not.toContain("10:00");
       expect(availableTimes).toContain("11:00");
       expect(availableTimes).toContain("12:00");
+    });
+
+    it("restricts slots based on weekly availability and split shifts", () => {
+      // 2026-10-14 is a Wednesday (day 3)
+      const targetWednesday = new Date(2026, 9, 14);
+
+      const weekly = {
+        0: { enabled: false, ranges: [] },
+        1: { enabled: false, ranges: [] },
+        2: { enabled: false, ranges: [] },
+        3: {
+          enabled: true,
+          ranges: [
+            { start: "09:00", end: "12:00" },
+            { start: "16:00", end: "19:00" },
+          ],
+        },
+        4: { enabled: false, ranges: [] },
+        5: { enabled: false, ranges: [] },
+        6: { enabled: false, ranges: [] },
+      };
+
+      const available = findAvailableSlots({
+        targetDate: targetWednesday,
+        bookedSlots: [],
+        slotDurationMinutes: 50,
+        intervalStepMinutes: 60,
+        weeklyAvailability: weekly,
+      });
+
+      const times = available.map((s) => s.time);
+      // Morning shift (09:00 - 12:00): 09:00 and 10:00, 11:00 (11:00 to 11:50 fits before 12:00)
+      expect(times).toContain("09:00");
+      expect(times).toContain("10:00");
+      expect(times).toContain("11:00");
+
+      // Midday gap (12:00 to 16:00) should NOT have slots
+      expect(times).not.toContain("12:00");
+      expect(times).not.toContain("13:00");
+      expect(times).not.toContain("14:00");
+      expect(times).not.toContain("15:00");
+
+      // Afternoon shift (16:00 - 19:00): 16:00, 17:00, 18:00
+      expect(times).toContain("16:00");
+      expect(times).toContain("17:00");
+      expect(times).toContain("18:00");
+      expect(times).not.toContain("19:00");
+    });
+
+    it("returns empty array if target day is disabled in weekly availability", () => {
+      // 2026-10-18 is Sunday (day 0)
+      const targetSunday = new Date(2026, 9, 18);
+
+      const weekly = {
+        0: { enabled: false, ranges: [{ start: "10:00", end: "14:00" }] },
+        1: { enabled: true, ranges: [{ start: "10:00", end: "14:00" }] },
+        2: { enabled: true, ranges: [] },
+        3: { enabled: true, ranges: [] },
+        4: { enabled: true, ranges: [] },
+        5: { enabled: true, ranges: [] },
+        6: { enabled: false, ranges: [] },
+      };
+
+      const available = findAvailableSlots({
+        targetDate: targetSunday,
+        bookedSlots: [],
+        weeklyAvailability: weekly,
+      });
+
+      expect(available).toEqual([]);
+    });
+  });
+
+  describe("findConflictingSlot", () => {
+    const existingSlot = {
+      patientUuid: "p-1",
+      patientName: "Juan Pérez",
+      dateTime: new Date(2026, 9, 14, 10, 0, 0), // 10:00 to 10:50
+      durationMinutes: 50,
+      status: "scheduled" as const,
+      price: 25000,
+      isRecurrent: false,
+    };
+
+    it("returns the conflicting slot when proposed slot overlaps", () => {
+      // Overlap: 10:30 to 11:20 (overlaps with 10:00-10:50)
+      const proposedStart = new Date(2026, 9, 14, 10, 30, 0);
+      const conflict = findConflictingSlot(proposedStart, 50, [existingSlot]);
+      expect(conflict).toBeDefined();
+      expect(conflict?.patientName).toBe("Juan Pérez");
+    });
+
+    it("returns undefined when proposed slot is right after existing without overlap", () => {
+      // 10:50 to 11:40
+      const proposedStart = new Date(2026, 9, 14, 10, 50, 0);
+      const conflict = findConflictingSlot(proposedStart, 50, [existingSlot]);
+      expect(conflict).toBeUndefined();
+    });
+
+    it("ignores cancelled appointments", () => {
+      const cancelledSlot = { ...existingSlot, status: "cancelled" as const };
+      const proposedStart = new Date(2026, 9, 14, 10, 20, 0);
+      const conflict = findConflictingSlot(proposedStart, 50, [cancelledSlot]);
+      expect(conflict).toBeUndefined();
+    });
+
+    it("ignores appointments on other days", () => {
+      const otherDay = new Date(2026, 9, 15, 10, 20, 0);
+      const conflict = findConflictingSlot(otherDay, 50, [existingSlot]);
+      expect(conflict).toBeUndefined();
     });
   });
 });
