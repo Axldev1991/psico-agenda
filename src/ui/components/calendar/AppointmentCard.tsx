@@ -27,6 +27,7 @@ export function AppointmentCard({
   const isCancelled = slot.status === "cancelled";
   const isCompleted = slot.status === "completed";
   const isMissed = slot.status === "missed";
+  const isSuspended = !!slot.isSuspended;
 
   // Status badge config
   let badgeClass = "bg-primary-tint text-primary";
@@ -34,7 +35,12 @@ export function AppointmentCard({
   let badgeLabel = "Agendado";
   let barColor = "bg-primary";
 
-  if (isCompleted) {
+  if (isSuspended) {
+    badgeClass = "bg-amber-500/15 text-amber-800 border border-amber-300/60";
+    badgeIcon = "alert";
+    badgeLabel = "Suspendido por receso";
+    barColor = "bg-amber-400";
+  } else if (isCompleted) {
     badgeClass = "bg-ok-tint text-ok";
     badgeIcon = "check";
     badgeLabel = "Atendido";
@@ -53,8 +59,12 @@ export function AppointmentCard({
 
   return (
     <article
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-surface rounded-xl border border-line shadow-xs transition-colors hover:border-line-control/60 ${
-        isCancelled ? "opacity-75 bg-bg-base/40" : ""
+      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border shadow-xs transition-colors hover:border-line-control/60 ${
+        isCancelled
+          ? "opacity-75 bg-bg-base/40 border-line"
+          : isSuspended
+          ? "bg-amber-500/5 border-amber-200/80"
+          : "bg-surface border-line"
       }`}
     >
       <div className="flex items-start sm:items-center gap-3.5 min-w-0">
@@ -76,7 +86,7 @@ export function AppointmentCard({
             <h4
               data-sensitive
               className={`font-semibold text-base text-ink truncate ${
-                isCancelled ? "line-through text-ink-sub" : ""
+                isCancelled || isSuspended ? "line-through text-ink-sub" : ""
               }`}
             >
               {slot.patientName}
@@ -94,7 +104,12 @@ export function AppointmentCard({
           <div className="flex items-center gap-1.5 text-sm text-ink-sub mt-0.5">
             <Icon name="pin" size={13} />
             <span>Sesión individual · Presencial</span>
-            {slot.holiday && (
+            {slot.absence && (
+              <span className="text-amber-800 text-sm font-medium ml-1">
+                (🏖️ {slot.absence.reason})
+              </span>
+            )}
+            {slot.holiday && !slot.absence && (
               <span className="text-warn text-sm font-medium ml-1">
                 (Feriado: {slot.holiday.name})
               </span>

@@ -3,6 +3,7 @@ import {
   DaySchedule,
   WeeklyAvailability,
   AvailabilitySettings,
+  AbsencePeriod,
 } from './availability.types';
 
 /**
@@ -134,5 +135,50 @@ export function getDefaultAvailabilitySettings(): AvailabilitySettings {
     weekly,
     defaultSessionDurationMinutes: 50,
     intervalStepMinutes: 60,
+    absencePeriods: [],
   };
+}
+
+/**
+ * Checks if a given Date falls within any active absence period (inclusive of startDate and endDate).
+ */
+export function isDateInAbsence(
+  date: Date,
+  absences?: AbsencePeriod[]
+): AbsencePeriod | undefined {
+  if (!date || !absences || absences.length === 0) return undefined;
+  if (isNaN(date.getTime())) return undefined;
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const targetDateStr = `${y}-${m}-${d}`;
+
+  return absences.find((absence) => {
+    if (!absence.startDate || !absence.endDate) return false;
+    return targetDateStr >= absence.startDate && targetDateStr <= absence.endDate;
+  });
+}
+
+/**
+ * Validates an absence period:
+ * - startDate and endDate must be valid ISO YYYY-MM-DD
+ * - startDate must be <= endDate
+ * - reason must not be empty
+ */
+export function validateAbsencePeriod(period: Partial<AbsencePeriod>): { valid: boolean; error?: string } {
+  if (!period) return { valid: false, error: 'El período no puede estar vacío.' };
+  if (!period.startDate || !/^\d{4}-\d{2}-\d{2}$/.test(period.startDate)) {
+    return { valid: false, error: 'Fecha de inicio inválida.' };
+  }
+  if (!period.endDate || !/^\d{4}-\d{2}-\d{2}$/.test(period.endDate)) {
+    return { valid: false, error: 'Fecha de fin inválida.' };
+  }
+  if (period.startDate > period.endDate) {
+    return { valid: false, error: 'La fecha de inicio debe ser anterior o igual a la de fin.' };
+  }
+  if (!period.reason || !period.reason.trim()) {
+    return { valid: false, error: 'Debés ingresar un motivo para el período de receso.' };
+  }
+  return { valid: true };
 }

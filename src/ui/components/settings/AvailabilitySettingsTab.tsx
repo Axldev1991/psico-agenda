@@ -3,6 +3,7 @@
 import React from "react";
 import { useAvailabilitySettings } from "../../hooks/useAvailabilitySettings";
 import { DayScheduleRow } from "./DayScheduleRow";
+import { AbsencePeriodsManager } from "./AbsencePeriodsManager";
 import { Icon } from "../common/Icon";
 
 const DAYS_ORDER = [
@@ -34,6 +35,8 @@ export function AvailabilitySettingsTab() {
     removeRange,
     copyDaySchedule,
     updateSessionDuration,
+    addAbsencePeriod,
+    removeAbsencePeriod,
     save,
   } = useAvailabilitySettings();
 
@@ -115,6 +118,13 @@ export function AvailabilitySettingsTab() {
           })}
         </div>
       </div>
+
+      {/* Recess and Vacation Periods card */}
+      <AbsencePeriodsManager
+        absencePeriods={settings.absencePeriods || []}
+        onAddPeriod={addAbsencePeriod}
+        onRemovePeriod={removeAbsencePeriod}
+      />
 
       {/* Save button bar */}
       <div className="flex items-center justify-end gap-3 pt-2">

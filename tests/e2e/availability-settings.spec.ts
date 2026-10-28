@@ -97,4 +97,62 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
     await sessionModal.getByRole("button", { name: "Cancelar" }).click();
     await expect(sessionModal).not.toBeVisible();
   });
+
+  test("permite configurar un período de receso/vacaciones y alerta en SessionModal", async ({ page }) => {
+    // 1. Navegar a Configuración
+    await page.getByRole("button", { name: "Configuración" }).click();
+
+    // 2. Verificar sección de Períodos de receso y vacaciones
+    await expect(page.getByText("Períodos de receso y vacaciones")).toBeVisible();
+
+    // 3. Abrir formulario de nuevo período
+    const newPeriodBtn = page.getByRole("button", { name: /Nuevo período/i });
+    await expect(newPeriodBtn).toBeVisible();
+    await newPeriodBtn.click();
+
+    // 4. Llenar fechas y motivo (ej. 20/11/2026 al 25/11/2026, "Congreso Anual")
+    const startDateInput = page.locator("#absence-start-date");
+    const endDateInput = page.locator("#absence-end-date");
+    const reasonInput = page.locator("#absence-reason");
+
+    await startDateInput.fill("20/11/2026");
+    await endDateInput.fill("25/11/2026");
+    await reasonInput.fill("Congreso Anual");
+
+    // 5. Guardar período
+    await page.getByRole("button", { name: /Guardar período/i }).click();
+
+    // 6. Verificar que aparece en la lista
+    await expect(page.getByText("Congreso Anual")).toBeVisible();
+
+    // 6b. Persistir disponibilidad
+    await page.getByRole("button", { name: /Guardar disponibilidad/i }).click();
+    await expect(page.getByText("Disponibilidad guardada")).toBeVisible();
+
+    // 7. Ir a Agenda y abrir SessionModal
+    await page.getByRole("button", { name: "Agenda" }).click();
+    await page.getByRole("button", { name: "Programar turno" }).first().click();
+
+    const sessionModal = page.getByRole("dialog");
+    await expect(sessionModal).toBeVisible();
+
+    // 8. Ingresar una fecha dentro del período de receso (22/11/2026)
+    const modalDate = sessionModal.locator("#modal-date");
+    await modalDate.fill("22/11/2026");
+
+    // 9. Verificar que aparece el banner de alerta de receso
+    await expect(sessionModal.getByText("Período de receso / vacaciones")).toBeVisible();
+    await expect(sessionModal.getByText(/Congreso Anual/i)).toBeVisible();
+
+    // 10. Cerrar modal y limpiar el período creado en Configuración
+    await sessionModal.getByRole("button", { name: "Cancelar" }).click();
+    await page.getByRole("button", { name: "Configuración" }).click();
+
+    const deleteBtn = page.getByRole("button", { name: /Eliminar período/i }).first();
+    await expect(deleteBtn).toBeVisible();
+    await deleteBtn.click();
+    await expect(page.getByText("Congreso Anual")).not.toBeVisible();
+    await page.getByRole("button", { name: /Guardar disponibilidad/i }).click();
+  });
 });
+

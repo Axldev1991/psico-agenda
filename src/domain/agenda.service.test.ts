@@ -425,5 +425,57 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       const conflict = findConflictingSlot(otherDay, 50, [existingSlot]);
       expect(conflict).toBeUndefined();
     });
+
+    it("ignores suspended appointments (e.g. suspended by vacation)", () => {
+      const suspendedSlot = { ...existingSlot, isSuspended: true };
+      const proposedStart = new Date(2026, 9, 14, 10, 30, 0);
+      const conflict = findConflictingSlot(proposedStart, 50, [suspendedSlot]);
+      expect(conflict).toBeUndefined();
+    });
+  });
+
+  describe("Absence and Vacation Integration", () => {
+    const absences = [
+      {
+        id: "abs-1",
+        startDate: "2026-10-14",
+        endDate: "2026-10-16",
+        reason: "Vacaciones",
+      },
+    ];
+
+    it("returns empty available slots if target date falls in an absence period", () => {
+      const targetDate = new Date(2026, 9, 14); // Wednesday Oct 14
+      const available = findAvailableSlots({
+        targetDate,
+        bookedSlots: [],
+        absencePeriods: absences,
+      });
+
+      expect(available).toEqual([]);
+    });
+
+    it("tags recurring slots as isSuspended and sets absence if falling inside vacation period", () => {
+      const weeklyRule: RecurrenceRule = {
+        patientUuid: "p-1",
+        rruleString: "DTSTART:20261001T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE",
+        startDate: "2026-10-01",
+        startTime: "10:00",
+        durationMinutes: 50,
+      };
+
+      const slots = computeAgendaSlots({
+        intervalStart, // 2026-10-12 to 2026-10-18
+        intervalEnd,
+        recurrenceRules: [weeklyRule],
+        dbSessions: [],
+        patients: [mockPatient],
+        absencePeriods: absences,
+      });
+
+      expect(slots).toHaveLength(1);
+      expect(slots[0].isSuspended).toBe(true);
+      expect(slots[0].absence?.reason).toBe("Vacaciones");
+    });
   });
 });

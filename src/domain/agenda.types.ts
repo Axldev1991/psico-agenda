@@ -1,7 +1,7 @@
 import { Session, RecurrenceRule } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
-import { WeeklyAvailability } from "./availability.types";
+import { WeeklyAvailability, AbsencePeriod } from "./availability.types";
 
 export interface CalendarSlot {
   uuid?: string; // Present if already persisted as a physical Session in DB
@@ -14,6 +14,8 @@ export interface CalendarSlot {
   notes?: string;
   isRecurrent: boolean;
   holiday?: Holiday;
+  isSuspended?: boolean;
+  absence?: AbsencePeriod;
 }
 
 export interface ComputeAgendaSlotsParams {
@@ -23,6 +25,7 @@ export interface ComputeAgendaSlotsParams {
   dbSessions: Session[];
   patients: Patient[];
   holidays?: Holiday[];
+  absencePeriods?: AbsencePeriod[];
 }
 
 export type RecurrenceCadence = 'weekly' | 'biweekly' | 'monthly';
@@ -47,6 +50,7 @@ export interface FindAvailableSlotsParams {
   slotDurationMinutes?: number;// Default 50
   intervalStepMinutes?: number;// Default 60
   weeklyAvailability?: WeeklyAvailability;
+  absencePeriods?: AbsencePeriod[];
 }
 
 export type RescheduleScope = 'eventual' | 'permanent';

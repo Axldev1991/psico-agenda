@@ -169,6 +169,7 @@ export class DexieSettingsRepository implements ISettingsRepository {
         weekly: { ...defaults.weekly, ...parsed.weekly },
         defaultSessionDurationMinutes: parsed.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
         intervalStepMinutes: parsed.intervalStepMinutes || defaults.intervalStepMinutes,
+        absencePeriods: Array.isArray(parsed.absencePeriods) ? parsed.absencePeriods : [],
       };
     } catch (e) {
       console.warn("Falla al recuperar disponibilidad desde localStorage, usando valores por defecto:", e);

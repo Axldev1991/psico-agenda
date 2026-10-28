@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
 import { Patient } from "../../domain/patient.types";
-import { Session } from "../../domain/session.types";
+import { Session, RecurrenceRule } from "../../domain/session.types";
+import { Holiday } from "../../domain/holidays";
 import { RecurrenceCadence, CalendarSlot } from "../../domain/agenda.types";
-import { buildRRuleString, findAvailableSlots, findConflictingSlot } from "../../domain/agenda.service";
+import { buildRRuleString, findAvailableSlots, findConflictingSlot, computeAgendaSlots } from "../../domain/agenda.service";
 import { useAvailabilitySettings } from "../hooks/useAvailabilitySettings";
 import { useUIState } from "../context/UIContext";
+import { isDateInAbsence } from "../../domain/availability.service";
 import { Icon } from "./common/Icon";
 import { DateInput } from "./common/DateInput";
 
@@ -18,6 +20,9 @@ interface SessionModalProps {
   onClose: () => void;
   patients: Patient[];
   bookedSlots?: CalendarSlot[];
+  dbSessions?: Session[];
+  recurrenceRules?: RecurrenceRule[];
+  holidays?: Holiday[];
   onCreateManual: (data: {
     patientUuid: string;
     dateTime: string;
@@ -49,10 +54,13 @@ export function SessionModal({
   onClose,
   patients,
   bookedSlots = [],
+  dbSessions = [],
+  recurrenceRules = [],
+  holidays = [],
   onCreateManual,
   onCreateRecurrence,
 }: SessionModalProps) {
-  const { settings } = useAvailabilitySettings();
+  const { settings, reload } = useAvailabilitySettings();
   const [selectedPatientUuid, setSelectedPatientUuid] = useState("");
   const [isRecurrent, setIsRecurrent] = useState(false);
   const [sessionDate, setSessionDate] = useState("");
@@ -65,12 +73,13 @@ export function SessionModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    reload();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, reload]);
 
   const toggleDay = (dayIndex: number) => {
     setSelectedDays((prev) => {
@@ -128,6 +137,44 @@ export function SessionModal({
     onClose();
   };
 
+  const effectiveBookedSlots = useMemo(() => {
+    if (!sessionDate) return bookedSlots;
+    try {
+      const target = new Date(`${sessionDate}T00:00:00`);
+      if (isNaN(target.getTime())) return bookedSlots;
+
+      if (dbSessions.length > 0 || recurrenceRules.length > 0) {
+        const weekStart = startOfWeek(target, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(target, { weekStartsOn: 1 });
+        return computeAgendaSlots({
+          intervalStart: weekStart,
+          intervalEnd: weekEnd,
+          recurrenceRules,
+          dbSessions,
+          patients,
+          holidays,
+          absencePeriods: settings?.absencePeriods,
+        });
+      }
+    } catch {
+      // fallback
+    }
+    return bookedSlots;
+  }, [sessionDate, dbSessions, recurrenceRules, patients, holidays, bookedSlots, settings?.absencePeriods]);
+
+  const activeAbsence = useMemo(() => {
+    if (!sessionDate || !settings?.absencePeriods || settings.absencePeriods.length === 0) {
+      return undefined;
+    }
+    try {
+      const target = new Date(`${sessionDate}T00:00:00`);
+      if (isNaN(target.getTime())) return undefined;
+      return isDateInAbsence(target, settings.absencePeriods);
+    } catch {
+      return undefined;
+    }
+  }, [sessionDate, settings?.absencePeriods]);
+
   const availableSlots = useMemo(() => {
     if (!sessionDate) return [];
     try {
@@ -135,18 +182,19 @@ export function SessionModal({
       if (isNaN(targetDate.getTime())) return [];
       return findAvailableSlots({
         targetDate,
-        bookedSlots,
+        bookedSlots: effectiveBookedSlots,
         slotDurationMinutes: settings.defaultSessionDurationMinutes,
         intervalStepMinutes: settings.intervalStepMinutes,
         weeklyAvailability: settings.weekly,
+        absencePeriods: settings.absencePeriods,
       });
     } catch {
       return [];
     }
-  }, [sessionDate, bookedSlots, settings]);
+  }, [sessionDate, effectiveBookedSlots, settings]);
 
   const conflictingSlot = useMemo(() => {
-    if (!sessionDate || !sessionTime || !bookedSlots || bookedSlots.length === 0) {
+    if (!sessionDate || !sessionTime || !effectiveBookedSlots || effectiveBookedSlots.length === 0) {
       return undefined;
     }
     try {
@@ -155,12 +203,12 @@ export function SessionModal({
       return findConflictingSlot(
         slotDateTime,
         settings.defaultSessionDurationMinutes,
-        bookedSlots
+        effectiveBookedSlots
       );
     } catch {
       return undefined;
     }
-  }, [sessionDate, sessionTime, bookedSlots, settings.defaultSessionDurationMinutes]);
+  }, [sessionDate, sessionTime, effectiveBookedSlots, settings.defaultSessionDurationMinutes]);
 
   const conflictingPatientName = useMemo(() => {
     if (!conflictingSlot) return "";
@@ -351,14 +399,19 @@ export function SessionModal({
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <input
-                    id="modal-time"
-                    type="time"
-                    required
-                    value={sessionTime}
-                    onChange={(e) => setSessionTime(e.target.value)}
-                    className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="modal-time"
+                      type="time"
+                      required
+                      value={sessionTime}
+                      onChange={(e) => setSessionTime(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                    />
+                    <span className="text-sm font-semibold text-ink-sub shrink-0 px-2.5 py-2 bg-bg-base border border-line rounded-lg">
+                      {sessionTime} hs
+                    </span>
+                  </div>
                   {sessionDate && (
                     <p className="text-xs text-ink-sub flex items-center gap-1">
                       <Icon name="alert" size={13} className="text-amber-500 shrink-0" />
@@ -371,6 +424,24 @@ export function SessionModal({
               )}
             </div>
           </div>
+
+          {/* Absence / Recess Alert */}
+          {activeAbsence && (
+            <div
+              role="alert"
+              className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 text-sm animate-in fade-in duration-150"
+            >
+              <Icon name="alert" size={18} className="shrink-0 mt-0.5 text-amber-600" />
+              <div className="leading-tight">
+                <span className="font-semibold block mb-0.5">Período de receso / vacaciones</span>
+                <span>
+                  Esta fecha coincide con un receso programado:{" "}
+                  <strong className="font-semibold">{activeAbsence.reason || "Vacaciones"}</strong> (del{" "}
+                  {activeAbsence.startDate} al {activeAbsence.endDate}). Podés programar el turno si se trata de una atención excepcional.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Collision Warning Alert */}
           {conflictingSlot && (

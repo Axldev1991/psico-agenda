@@ -6,8 +6,10 @@ import {
   copySchedule,
   isSlotWithinAvailability,
   getDefaultAvailabilitySettings,
+  isDateInAbsence,
+  validateAbsencePeriod,
 } from './availability.service';
-import { TimeRange, DaySchedule, WeeklyAvailability } from './availability.types';
+import { TimeRange, DaySchedule, WeeklyAvailability, AbsencePeriod } from './availability.types';
 
 describe('availability.service (TDD)', () => {
   describe('timeToMinutes', () => {
@@ -167,6 +169,96 @@ describe('availability.service (TDD)', () => {
       // Weekend disabled by default
       expect(defaults.weekly[0].enabled).toBe(false); // Sun
       expect(defaults.weekly[6].enabled).toBe(false); // Sat
+    });
+  });
+
+  describe('isDateInAbsence', () => {
+    const absences: AbsencePeriod[] = [
+      {
+        id: 'abs-1',
+        startDate: '2026-11-10',
+        endDate: '2026-11-20',
+        reason: 'Vacaciones de primavera',
+      },
+      {
+        id: 'abs-2',
+        startDate: '2026-12-05',
+        endDate: '2026-12-05',
+        reason: 'Congreso Internacional',
+      },
+    ];
+
+    it('returns the active absence period if date falls inside range', () => {
+      const insideDate = new Date(2026, 10, 15); // 2026-11-15
+      const result = isDateInAbsence(insideDate, absences);
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('abs-1');
+      expect(result?.reason).toBe('Vacaciones de primavera');
+    });
+
+    it('returns the active absence on exact boundary dates (inclusive)', () => {
+      const startDate = new Date(2026, 10, 10); // 2026-11-10
+      expect(isDateInAbsence(startDate, absences)?.id).toBe('abs-1');
+
+      const endDate = new Date(2026, 10, 20); // 2026-11-20
+      expect(isDateInAbsence(endDate, absences)?.id).toBe('abs-1');
+
+      const singleDay = new Date(2026, 11, 5); // 2026-12-05
+      expect(isDateInAbsence(singleDay, absences)?.id).toBe('abs-2');
+    });
+
+    it('returns undefined if date falls outside all absence ranges', () => {
+      const before = new Date(2026, 10, 9); // 2026-11-09
+      expect(isDateInAbsence(before, absences)).toBeUndefined();
+
+      const after = new Date(2026, 10, 21); // 2026-11-21
+      expect(isDateInAbsence(after, absences)).toBeUndefined();
+    });
+
+    it('returns undefined for empty, null, or invalid inputs', () => {
+      expect(isDateInAbsence(new Date(), [])).toBeUndefined();
+      expect(isDateInAbsence(new Date('invalid'), absences)).toBeUndefined();
+    });
+  });
+
+  describe('validateAbsencePeriod', () => {
+    it('returns valid for well-formed periods', () => {
+      expect(
+        validateAbsencePeriod({
+          startDate: '2026-11-10',
+          endDate: '2026-11-20',
+          reason: 'Vacaciones',
+        })
+      ).toEqual({ valid: true });
+
+      // Single day absence is valid
+      expect(
+        validateAbsencePeriod({
+          startDate: '2026-11-10',
+          endDate: '2026-11-10',
+          reason: 'Día de estudio',
+        })
+      ).toEqual({ valid: true });
+    });
+
+    it('returns invalid if start date is after end date', () => {
+      const res = validateAbsencePeriod({
+        startDate: '2026-11-20',
+        endDate: '2026-11-10',
+        reason: 'Vacaciones',
+      });
+      expect(res.valid).toBe(false);
+      expect(res.error).toContain('La fecha de inicio debe ser anterior o igual a la de fin');
+    });
+
+    it('returns invalid if reason is missing or whitespace', () => {
+      const res = validateAbsencePeriod({
+        startDate: '2026-11-10',
+        endDate: '2026-11-20',
+        reason: '   ',
+      });
+      expect(res.valid).toBe(false);
+      expect(res.error).toContain('motivo');
     });
   });
 });

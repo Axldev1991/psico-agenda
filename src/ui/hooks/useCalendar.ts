@@ -14,12 +14,14 @@ import { container } from '../../infrastructure/container';
 import { Session, RecurrenceRule } from '../../domain/session.types';
 import { Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence } from '../../domain/agenda.types';
+import { AbsencePeriod } from '../../domain/availability.types';
 import { computeAgendaSlots, buildRRuleString } from '../../domain/agenda.service';
 
 export type { CalendarSlot };
 
 const sessionRepo = container.getSessionRepository();
 const patientRepo = container.getPatientRepository();
+const settingsRepo = container.getSettingsRepository();
 
 const BA_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
@@ -83,6 +85,21 @@ export function useCalendar() {
     loadHolidays();
   }, [currentDate]);
 
+  // 5. Cargar períodos de ausencia / vacaciones
+  const [absencePeriods, setAbsencePeriods] = useState<AbsencePeriod[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    settingsRepo.getAvailabilitySettings().then((s) => {
+      if (mounted) {
+        setAbsencePeriods(s.absencePeriods || []);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Calcular la agenda de la semana delegando en el Servicio de Dominio puro
   const agenda = useMemo(() => {
     return computeAgendaSlots({
@@ -92,8 +109,9 @@ export function useCalendar() {
       dbSessions,
       patients,
       holidays,
+      absencePeriods,
     });
-  }, [weekStart, weekEnd, recurrenceRules, dbSessions, patients, holidays]);
+  }, [weekStart, weekEnd, recurrenceRules, dbSessions, patients, holidays, absencePeriods]);
 
   // --- Funciones del Controlador ---
   
@@ -384,6 +402,7 @@ export function useCalendar() {
     patients,
     holidays,
     dbSessions,
-    recurrenceRules
+    recurrenceRules,
+    absencePeriods,
   };
 }

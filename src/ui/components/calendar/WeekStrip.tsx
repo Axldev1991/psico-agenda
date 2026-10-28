@@ -5,6 +5,8 @@ import { format, isSameDay, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarSlot } from "../../../domain/agenda.types";
 import { Holiday, getHoliday } from "../../../domain/holidays";
+import { AbsencePeriod } from "../../../domain/availability.types";
+import { isDateInAbsence } from "../../../domain/availability.service";
 
 interface WeekStripProps {
   weekDays: Date[];
@@ -12,6 +14,7 @@ interface WeekStripProps {
   onSelectDate: (day: Date) => void;
   agenda: CalendarSlot[];
   holidays: Holiday[];
+  absencePeriods?: AbsencePeriod[];
 }
 
 export function WeekStrip({
@@ -20,6 +23,7 @@ export function WeekStrip({
   onSelectDate,
   agenda,
   holidays,
+  absencePeriods = [],
 }: WeekStripProps) {
   return (
     <div
@@ -32,6 +36,7 @@ export function WeekStrip({
         const isTodayDay = isToday(day);
         const count = agenda.filter((slot) => isSameDay(slot.dateTime, day)).length;
         const holiday = getHoliday(day, holidays);
+        const absence = isDateInAbsence(day, absencePeriods);
 
         let containerClass =
           "bg-surface border-line text-ink hover:bg-bg-base/70";
@@ -42,6 +47,10 @@ export function WeekStrip({
           containerClass = "bg-primary border-primary text-surface shadow-xs";
           subTextClass = "text-surface/85";
           countClass = "bg-surface/20 text-surface";
+        } else if (absence) {
+          containerClass = "bg-amber-500/10 border-amber-300 text-ink hover:bg-amber-500/15";
+          subTextClass = "text-amber-800 font-semibold";
+          countClass = "bg-amber-500/20 text-amber-800";
         } else if (isTodayDay) {
           containerClass = "bg-primary-tint/40 border-primary/50 text-ink";
           subTextClass = "text-primary font-semibold";
@@ -82,6 +91,14 @@ export function WeekStrip({
                   title={holiday.name}
                 >
                   Feriado
+                </span>
+              )}
+              {absence && !holiday && (
+                <span
+                  className="text-[11px] px-1.5 py-0.5 bg-amber-500/25 text-amber-900 rounded font-semibold"
+                  title={`Receso: ${absence.reason}`}
+                >
+                  Receso
                 </span>
               )}
               {count > 0 && (

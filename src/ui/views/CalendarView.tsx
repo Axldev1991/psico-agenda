@@ -28,6 +28,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     rescheduleSlot,
     swapSlots,
     patients,
+    absencePeriods,
   } = useCalendar();
 
   const { openSessionModal } = useUIState();
@@ -65,6 +66,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         patients={patients}
         onNavigateToPatientDetail={onNavigateToPatientDetail}
         onOpenRescheduleModal={handleOpenReschedule}
+        absencePeriods={absencePeriods}
       />
 
       <RescheduleModal

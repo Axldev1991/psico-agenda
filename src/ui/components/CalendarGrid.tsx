@@ -5,6 +5,8 @@ import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarSlot } from "../../domain/agenda.types";
 import { Holiday, getHoliday } from "../../domain/holidays";
+import { AbsencePeriod } from "../../domain/availability.types";
+import { isDateInAbsence } from "../../domain/availability.service";
 import { Session } from "../../domain/session.types";
 import { Patient } from "../../domain/patient.types";
 import { CalendarHeader } from "./calendar/CalendarHeader";
@@ -30,6 +32,7 @@ interface CalendarGridProps {
   patients?: Patient[];
   onNavigateToPatientDetail: (patientUuid: string) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
+  absencePeriods?: AbsencePeriod[];
 }
 
 export function CalendarGrid({
@@ -49,8 +52,10 @@ export function CalendarGrid({
   patients = [],
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
+  absencePeriods = [],
 }: CalendarGridProps) {
   const currentHoliday = getHoliday(currentDate, holidays);
+  const currentAbsence = isDateInAbsence(currentDate, absencePeriods);
   const dayAppointments = agenda.filter((slot) => isSameDay(slot.dateTime, currentDate));
 
   return (
@@ -74,6 +79,7 @@ export function CalendarGrid({
         onSelectDate={selectDate}
         agenda={agenda}
         holidays={holidays}
+        absencePeriods={absencePeriods}
       />
 
       {/* 3. Main Workspace: Selected Day Appointments + Mini Calendar */}
@@ -81,7 +87,11 @@ export function CalendarGrid({
         {/* Daily Appointments Column */}
         <section
           aria-labelledby="selected-day-title"
-          className="flex-1 w-full bg-surface border border-line rounded-2xl p-5 shadow-xs"
+          className={`flex-1 w-full rounded-2xl p-5 shadow-xs transition-colors ${
+            currentAbsence
+              ? "bg-amber-500/5 border-2 border-dashed border-amber-300"
+              : "bg-surface border border-line"
+          }`}
         >
           {/* Day Heading */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-line gap-2">
@@ -97,11 +107,19 @@ export function CalendarGrid({
               </h2>
             </div>
 
-            {currentHoliday && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-800 self-start sm:self-auto">
-                Feriado: {currentHoliday.name}
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {currentAbsence && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-900 border border-amber-300/80 self-start sm:self-auto shadow-xs">
+                  <span>🏖️ Receso:</span>
+                  <span>{currentAbsence.reason}</span>
+                </span>
+              )}
+              {currentHoliday && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-800 self-start sm:self-auto">
+                  Feriado: {currentHoliday.name}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* List or Empty State */}

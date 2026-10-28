@@ -5,6 +5,7 @@ import {
   DaySchedule,
   TimeRange,
   WeeklyAvailability,
+  AbsencePeriod,
 } from '../../domain/availability.types';
 import {
   getDefaultAvailabilitySettings,
@@ -20,7 +21,17 @@ export function useAvailabilitySettings() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Load initial settings
+  const reload = useCallback(async () => {
+    try {
+      const loaded = await settingsRepo.getAvailabilitySettings();
+      setSettings(loaded);
+      setLoading(false);
+    } catch (e) {
+      console.error('Error reloading availability settings:', e);
+    }
+  }, []);
+
+  // Load initial settings and listen to updates across components
   useEffect(() => {
     let mounted = true;
     settingsRepo.getAvailabilitySettings().then((loaded) => {
@@ -29,10 +40,27 @@ export function useAvailabilitySettings() {
         setLoading(false);
       }
     });
+
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<AvailabilitySettings>;
+      if (customEvent.detail) {
+        setSettings(customEvent.detail);
+      } else {
+        reload();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('availability-settings-updated', handleUpdate);
+    }
+
     return () => {
       mounted = false;
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('availability-settings-updated', handleUpdate);
+      }
     };
-  }, []);
+  }, [reload]);
 
   const updateDayEnabled = useCallback((day: number, enabled: boolean) => {
     setSettings((prev) => {
@@ -149,6 +177,26 @@ export function useAvailabilitySettings() {
     setSaveStatus('idle');
   }, []);
 
+  const addAbsencePeriod = useCallback((period: Omit<AbsencePeriod, 'id'>) => {
+    const newPeriod: AbsencePeriod = {
+      ...period,
+      id: crypto.randomUUID(),
+    };
+    setSettings((prev) => ({
+      ...prev,
+      absencePeriods: [...(prev.absencePeriods || []), newPeriod],
+    }));
+    setSaveStatus('idle');
+  }, []);
+
+  const removeAbsencePeriod = useCallback((id: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      absencePeriods: (prev.absencePeriods || []).filter((p) => p.id !== id),
+    }));
+    setSaveStatus('idle');
+  }, []);
+
   const save = useCallback(async (): Promise<boolean> => {
     // Validate each enabled day
     for (let day = 0; day <= 6; day++) {
@@ -169,6 +217,11 @@ export function useAvailabilitySettings() {
       await settingsRepo.saveAvailabilitySettings(settings);
       setSaveStatus('saved');
       setErrorMessage(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('availability-settings-updated', { detail: settings })
+        );
+      }
       setTimeout(() => setSaveStatus('idle'), 3000);
       return true;
     } catch (e) {
@@ -190,6 +243,9 @@ export function useAvailabilitySettings() {
     removeRange,
     copyDaySchedule,
     updateSessionDuration,
+    addAbsencePeriod,
+    removeAbsencePeriod,
+    reload,
     save,
   };
 }

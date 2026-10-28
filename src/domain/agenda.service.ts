@@ -2,7 +2,7 @@ import { RRule } from "rrule";
 import { parseISO, isSameDay } from "date-fns";
 import { CalendarSlot, ComputeAgendaSlotsParams, FindAvailableSlotsParams } from "./agenda.types";
 import { getHoliday } from "./holidays";
-import { isSlotWithinAvailability } from "./availability.service";
+import { isSlotWithinAvailability, isDateInAbsence } from "./availability.service";
 
 /**
  * Computes calendar slots for a given time interval by combining:
@@ -19,6 +19,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
     dbSessions,
     patients,
     holidays = [],
+    absencePeriods = [],
   } = params;
 
   const agenda: CalendarSlot[] = [];
@@ -62,6 +63,8 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             isSameDay(parseISO(s.dateTime), slotDateTime)
         );
 
+        const activeAbsence = isDateInAbsence(slotDateTime, absencePeriods);
+
         if (dbOverride) {
           agenda.push({
             uuid: dbOverride.uuid,
@@ -74,6 +77,8 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             notes: dbOverride.notes,
             isRecurrent: true,
             holiday: getHoliday(slotDateTime, holidays),
+            isSuspended: !!activeAbsence,
+            absence: activeAbsence,
           });
         } else {
           agenda.push({
@@ -85,6 +90,8 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             price: patient.sessionPrice,
             isRecurrent: true,
             holiday: getHoliday(slotDateTime, holidays),
+            isSuspended: !!activeAbsence,
+            absence: activeAbsence,
           });
         }
       });
@@ -104,6 +111,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
 
       if (!alreadyCovered) {
         const patient = patientMap.get(session.patientUuid);
+        const activeAbsence = isDateInAbsence(sessionDate, absencePeriods);
         agenda.push({
           uuid: session.uuid,
           patientUuid: session.patientUuid,
@@ -115,6 +123,8 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
           notes: session.notes,
           isRecurrent: false,
           holiday: getHoliday(sessionDate, holidays),
+          isSuspended: !!activeAbsence,
+          absence: activeAbsence,
         });
       }
     }
@@ -180,7 +190,13 @@ export function findAvailableSlots(
     slotDurationMinutes = 50,
     intervalStepMinutes = 60,
     weeklyAvailability,
+    absencePeriods,
   } = params;
+
+  // If target date falls within an active absence/recess period, no slots are available
+  if (isDateInAbsence(targetDate, absencePeriods)) {
+    return [];
+  }
 
   const available: { time: string; dateTime: Date; formattedTime: string }[] = [];
   const year = targetDate.getFullYear();
@@ -256,7 +272,7 @@ export function findConflictingSlot(
   const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60 * 1000);
 
   return bookedSlots.find((booked) => {
-    if (booked.status === 'cancelled') return false;
+    if (booked.status === 'cancelled' || booked.isSuspended) return false;
     if (!isSameDay(booked.dateTime, slotStart)) return false;
 
     const bookedStart = new Date(booked.dateTime).getTime();
