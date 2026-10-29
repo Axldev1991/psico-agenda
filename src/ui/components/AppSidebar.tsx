@@ -67,30 +67,62 @@ export function AppSidebar({
       {/* Top Section: Brand & Nav */}
       <div className="flex flex-col shrink-0 min-h-0">
         {/* Brand Header */}
-        <div className="flex items-center justify-between px-3.5 py-3 border-b border-line h-16 shrink-0">
-          <BrandLogo isCollapsed={isSidebarCollapsed} />
-
-          <div className="flex items-center gap-1 shrink-0">
-            <NotificationBell
-              notifications={notifications}
-              unreadCount={unreadCount}
-              onDismiss={onDismissNotification}
-              onDismissAll={onDismissAllNotifications}
-            />
-
+        <div
+          className={`flex items-center border-b border-line h-16 shrink-0 transition-all ${
+            isSidebarCollapsed ? "justify-center px-2" : "justify-between px-3.5 py-3"
+          }`}
+        >
+          {isSidebarCollapsed ? (
             <button
               type="button"
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="hidden md:flex p-1.5 hover:bg-bg-base rounded-lg text-ink-sub hover:text-ink transition-colors cursor-pointer"
-              title={isSidebarCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="group relative flex items-center justify-center h-10 w-10 rounded-xl hover:bg-bg-base transition-colors cursor-pointer"
+              title="Expandir barra lateral"
             >
-              <Icon name={isSidebarCollapsed ? "chev-r" : "chev-l"} size={16} />
+              <BrandLogo isCollapsed={true} size="sm" />
+              <span className="absolute inset-0 bg-primary/10 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-primary font-bold">
+                <Icon name="chev-r" size={18} />
+              </span>
             </button>
-          </div>
+          ) : (
+            <>
+              <BrandLogo isCollapsed={false} />
+
+              <div className="flex items-center gap-1 shrink-0">
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onDismiss={onDismissNotification}
+                  onDismissAll={onDismissAllNotifications}
+                  align="right"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  className="hidden md:flex p-1.5 hover:bg-bg-base rounded-lg text-ink-sub hover:text-ink transition-colors cursor-pointer"
+                  title="Colapsar barra lateral"
+                >
+                  <Icon name="chev-l" size={16} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Primary Navigation Links */}
         <nav className="p-3 space-y-1" aria-label="Principal">
+          {isSidebarCollapsed && (
+            <div className="flex justify-center pb-2 mb-2 border-b border-line">
+              <NotificationBell
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onDismiss={onDismissNotification}
+                onDismissAll={onDismissAllNotifications}
+                align="left"
+              />
+            </div>
+          )}
           <button
             type="button"
             onClick={() => {

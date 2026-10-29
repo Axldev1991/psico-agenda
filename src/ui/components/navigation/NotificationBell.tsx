@@ -9,6 +9,7 @@ interface NotificationBellProps {
   unreadCount: number;
   onDismiss: (id: string) => void;
   onDismissAll: () => void;
+  align?: "left" | "right";
 }
 
 export function NotificationBell({
@@ -16,6 +17,7 @@ export function NotificationBell({
   unreadCount,
   onDismiss,
   onDismissAll,
+  align = "right",
 }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,11 @@ export function NotificationBell({
         <div
           role="dialog"
           aria-label="Panel de notificaciones"
-          className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface border border-line rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+          className={`absolute w-80 sm:w-96 bg-surface border border-line rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in duration-150 ${
+            align === "left"
+              ? "left-0 md:left-full md:top-0 md:mt-0 md:ml-3 slide-in-from-left-2"
+              : "right-0 mt-2 slide-in-from-top-2"
+          }`}
         >
           {/* Header */}
           <div className="p-3.5 border-b border-line flex items-center justify-between bg-surface">
