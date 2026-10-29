@@ -184,11 +184,13 @@ function HomeContent() {
             isBlurred ? "blur-md pointer-events-none select-none" : ""
           }`}
         >
-          {activeTab === "calendar" && (
-            <CalendarView onNavigateToPatientDetail={handleNavigateByUuid} />
-          )}
-          {activeTab === "patients" && <PatientsView />}
-          {activeTab === "settings" && <SettingsView />}
+          <div key={activeTab} className="animate-in fade-in duration-200">
+            {activeTab === "calendar" && (
+              <CalendarView onNavigateToPatientDetail={handleNavigateByUuid} />
+            )}
+            {activeTab === "patients" && <PatientsView />}
+            {activeTab === "settings" && <SettingsView />}
+          </div>
         </main>
       </div>
 

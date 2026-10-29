@@ -17,21 +17,25 @@ export function PatientsView() {
 
   if (selectedPatientForDetail) {
     return (
-      <PatientDetail
-        patient={selectedPatientForDetail}
-        onBack={() => setSelectedPatientForDetail(null)}
-        onEdit={(patient) => openEditPatientModal(patient)}
-      />
+      <div key={selectedPatientForDetail.uuid} className="animate-in fade-in duration-200">
+        <PatientDetail
+          patient={selectedPatientForDetail}
+          onBack={() => setSelectedPatientForDetail(null)}
+          onEdit={(patient) => openEditPatientModal(patient)}
+        />
+      </div>
     );
   }
 
   return (
-    <PatientManager
-      patients={patients}
-      loading={loading}
-      onRemovePatient={removePatient}
-      onOpenPatientModal={openNewPatientModal}
-      onSelectPatient={setSelectedPatientForDetail}
-    />
+    <div key="patient-list" className="animate-in fade-in duration-200">
+      <PatientManager
+        patients={patients}
+        loading={loading}
+        onRemovePatient={removePatient}
+        onOpenPatientModal={openNewPatientModal}
+        onSelectPatient={setSelectedPatientForDetail}
+      />
+    </div>
   );
 }

@@ -213,62 +213,64 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                 </button>
               </div>
 
-              {activeTab === "timeline" ? (
-                <div className="space-y-4">
-                  {/* Barra de Filtros Facetados */}
-                  <PatientSearchFilters
-                    searchQuery={searchQuery}
-                    onSearchQueryChange={setSearchQuery}
-                    selectedMovementFilter={selectedMovementFilter}
-                    onMovementFilterChange={setSelectedMovementFilter}
-                    movementConfigs={movementConfigs}
-                    selectedPunctuationFilter={selectedPunctuationFilter}
-                    onPunctuationFilterChange={setSelectedPunctuationFilter}
-                    punctuationConfigs={configsToUse}
-                    onClearFilters={handleClearFilters}
-                  />
+              <div key={activeTab} className="animate-in fade-in duration-150">
+                {activeTab === "timeline" ? (
+                  <div className="space-y-4">
+                    {/* Barra de Filtros Facetados */}
+                    <PatientSearchFilters
+                      searchQuery={searchQuery}
+                      onSearchQueryChange={setSearchQuery}
+                      selectedMovementFilter={selectedMovementFilter}
+                      onMovementFilterChange={setSelectedMovementFilter}
+                      movementConfigs={movementConfigs}
+                      selectedPunctuationFilter={selectedPunctuationFilter}
+                      onPunctuationFilterChange={setSelectedPunctuationFilter}
+                      punctuationConfigs={configsToUse}
+                      onClearFilters={handleClearFilters}
+                    />
 
-                  <div
-                    ref={editorContainerRef}
-                    className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[75vh] overflow-y-auto space-y-4"
-                  >
-                    <div className="border-b border-line pb-4">
-                      <h3 className="font-serif font-bold text-base text-ink">
-                        Expediente Clínico Unificado
-                      </h3>
-                      <p className="text-sm text-ink-sub mt-0.5">
-                        Formato compatible nativo con Microsoft Word
-                      </p>
+                    <div
+                      ref={editorContainerRef}
+                      className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[75vh] overflow-y-auto space-y-4"
+                    >
+                      <div className="border-b border-line pb-4">
+                        <h3 className="font-serif font-bold text-base text-ink">
+                          Expediente Clínico Unificado
+                        </h3>
+                        <p className="text-sm text-ink-sub mt-0.5">
+                          Formato compatible nativo con Microsoft Word
+                        </p>
+                      </div>
+
+                      {selectedSession && selectedSessionNumber ? (
+                        <div key={selectedSession.uuid} className="space-y-4 animate-in fade-in duration-150">
+                          <ActiveSessionHeader
+                            selectedSession={selectedSession}
+                            selectedSessionNumber={selectedSessionNumber}
+                            selectedSessionDateFormatted={selectedSessionDateFormatted}
+                            changeSessionDescription={changeSessionDescription}
+                            changeSessionColor={changeSessionColor}
+                          />
+
+                          <RichTextEditor
+                            key={selectedSession.uuid}
+                            initialValue={selectedSessionContentHtml}
+                            onChange={handleHistoryChange}
+                            onBlur={triggerAutoSyncIfPending}
+                            placeholder="Comenzá a redactar la evolución clínica de esta sesión..."
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-center py-16 text-base text-ink-sub font-medium bg-bg-base/50 rounded-2xl border border-dashed border-line">
+                          No se encontraron sesiones que coincidan con los filtros de búsqueda.
+                        </div>
+                      )}
                     </div>
-
-                    {selectedSession && selectedSessionNumber ? (
-                      <div className="space-y-4">
-                        <ActiveSessionHeader
-                          selectedSession={selectedSession}
-                          selectedSessionNumber={selectedSessionNumber}
-                          selectedSessionDateFormatted={selectedSessionDateFormatted}
-                          changeSessionDescription={changeSessionDescription}
-                          changeSessionColor={changeSessionColor}
-                        />
-
-                        <RichTextEditor
-                          key={selectedSession.uuid}
-                          initialValue={selectedSessionContentHtml}
-                          onChange={handleHistoryChange}
-                          onBlur={triggerAutoSyncIfPending}
-                          placeholder="Comenzá a redactar la evolución clínica de esta sesión..."
-                        />
-                      </div>
-                    ) : (
-                      <div className="text-center py-16 text-base text-ink-sub font-medium bg-bg-base/50 rounded-2xl border border-dashed border-line">
-                        No se encontraron sesiones que coincidan con los filtros de búsqueda.
-                      </div>
-                    )}
                   </div>
-                </div>
-              ) : (
-                <PatientExtraNotes patientUuid={patient.uuid} />
-              )}
+                ) : (
+                  <PatientExtraNotes patientUuid={patient.uuid} />
+                )}
+              </div>
             </div>
           </div>
         )}
