@@ -38,7 +38,7 @@ test.describe("Fase 1: Core Clínico y Ciclo de Turnos", () => {
     await page.getByRole("button", { name: "Editar ficha" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.locator("#p-phone").fill(updatedPhone);
-    await page.getByRole("button", { name: "Guardar paciente" }).click();
+    await page.getByRole("button", { name: /Guardar cambios|Guardar paciente/i }).click();
 
     // 6. Verificar actualización en el detalle
     await expect(page.getByRole("dialog")).not.toBeVisible();

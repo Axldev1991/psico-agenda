@@ -52,7 +52,7 @@ test.describe("Fase 3: Privacidad, Resiliencia y Accesibilidad Modal", () => {
     await expect(sessionDialog).not.toBeVisible();
   });
 
-  test("debe permitir navegar al expediente clínico unificado y alternar pestañas de evolución y CECI", async ({
+  test("debe permitir navegar al expediente clínico unificado y alternar pestañas de evolución y anotaciones extras", async ({
     page,
   }) => {
     const patientName = `Historial Paciente ${Date.now()}`;
@@ -73,14 +73,13 @@ test.describe("Fase 3: Privacidad, Resiliencia y Accesibilidad Modal", () => {
 
     // 3. Pestaña Expediente Continuo está activa por defecto
     const timelineTab = page.getByRole("button", { name: "Expediente Continuo" });
-    const ceciTab = page.getByRole("button", { name: "Ficha CECI" });
+    const extraNotesTab = page.getByRole("button", { name: "Anotaciones Extras" });
     await expect(timelineTab).toBeVisible();
-    await expect(ceciTab).toBeVisible();
+    await expect(extraNotesTab).toBeVisible();
 
-    // 4. Alternar a Ficha CECI
-    await ceciTab.click();
-    await expect(page.getByText("Ficha del paciente (CECI)")).toBeVisible();
-    await expect(page.locator("#ceci-convive")).toBeVisible();
+    // 4. Alternar a Anotaciones Extras
+    await extraNotesTab.click();
+    await expect(page.getByText("Anotaciones Clínicas Extras")).toBeVisible();
 
     // 5. Volver a Expediente Continuo
     await timelineTab.click();
