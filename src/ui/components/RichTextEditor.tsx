@@ -10,6 +10,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   variant?: "standard" | "continuous";
+  minHeight?: string;
   onBlur?: () => void;
 }
 
@@ -18,6 +19,7 @@ export function RichTextEditor({
   onChange,
   placeholder = "Comenzá a redactar la evolución clínica del paciente...",
   variant = "standard",
+  minHeight = "380px",
   onBlur,
 }: RichTextEditorProps) {
   const { punctuationConfigs } = useSettings();
@@ -300,10 +302,10 @@ export function RichTextEditor({
           className={`w-full overflow-y-auto overflow-x-hidden wrap-break-word text-ink focus:outline-none font-sans leading-relaxed select-text cursor-text ${
             isContinuous 
               ? "p-2 min-h-10 max-h-200" 
-              : "p-4 min-h-37.5 max-h-100"
+              : "p-5 min-h-[380px] max-h-[800px]"
           }`}
           style={{
-            minHeight: isContinuous ? "40px" : "150px",
+            minHeight: isContinuous ? "40px" : minHeight,
             fontSize: `${fontSize}px`,
           }}
         />
@@ -312,7 +314,7 @@ export function RichTextEditor({
         {isEmpty && (
           <div 
             className={`absolute inset-0 text-ink-muted/40 pointer-events-none font-sans ${
-              isContinuous ? "p-2" : "p-4"
+              isContinuous ? "p-2" : "p-5"
             }`}
             style={{ fontSize: `${fontSize}px` }}
           >

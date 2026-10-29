@@ -231,7 +231,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
 
                     <div
                       ref={editorContainerRef}
-                      className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[75vh] overflow-y-auto space-y-4"
+                      className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[82vh] overflow-y-auto space-y-4"
                     >
                       <div className="border-b border-line pb-4">
                         <h3 className="font-serif font-bold text-base text-ink">
