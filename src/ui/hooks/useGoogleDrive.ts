@@ -125,7 +125,21 @@ export function useGoogleDrive() {
   const downloadPatientHistory = async (uuid: string): Promise<void> => {
     if (!googleToken) throw new Error("No hay una sesión activa de Google.");
     await checkSimulatedNetwork();
-    await syncService.downloadPatientHistory(uuid, googleToken);
+    try {
+      await syncService.downloadPatientHistory(uuid, googleToken);
+    } catch (err: any) {
+      const errMessage = err?.message || "";
+      if (
+        errMessage.includes("401") ||
+        errMessage.includes("UNAUTHENTICATED") ||
+        errMessage.includes("Invalid Credentials") ||
+        errMessage.includes("authError")
+      ) {
+        disconnectGoogle();
+        throw new Error("La sesión de Google Drive expiró. Por favor, volvé a conectar tu cuenta.");
+      }
+      throw err;
+    }
   };
 
   const preloadAllForOffline = async () => {
@@ -137,11 +151,26 @@ export function useGoogleDrive() {
       setGlobalState({ syncStatus: "synced", loading: false });
     } catch (err: any) {
       console.error("Error en pre-carga completa offline:", err);
-      setGlobalState({
-        errorMessage: "La pre-carga offline falló: " + err.message,
-        syncStatus: "error",
-        loading: false,
-      });
+      const errMessage = err?.message || "";
+      if (
+        errMessage.includes("401") ||
+        errMessage.includes("UNAUTHENTICATED") ||
+        errMessage.includes("Invalid Credentials") ||
+        errMessage.includes("authError")
+      ) {
+        disconnectGoogle();
+        setGlobalState({
+          errorMessage: "La sesión de Google Drive expiró. Por favor, conectate de nuevo.",
+          syncStatus: "error",
+          loading: false,
+        });
+      } else {
+        setGlobalState({
+          errorMessage: "La pre-carga offline falló: " + err.message,
+          syncStatus: "error",
+          loading: false,
+        });
+      }
     }
   };
 
