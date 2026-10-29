@@ -60,17 +60,17 @@ export function AppSidebar({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 md:sticky md:flex flex-col justify-between bg-surface border-r border-line transition-all duration-300 ease-in-out ${
+      className={`fixed inset-y-0 left-0 z-40 md:sticky md:top-0 md:flex flex-col justify-between bg-surface border-r border-line transition-all duration-300 ease-in-out h-screen max-h-screen overflow-hidden ${
         isMobileMenuOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"
-      } ${isSidebarCollapsed ? "md:w-20" : "md:w-60"} min-h-screen`}
+      } ${isSidebarCollapsed ? "md:w-20" : "md:w-64"}`}
     >
       {/* Top Section: Brand & Nav */}
-      <div className="flex flex-col">
+      <div className="flex flex-col shrink-0 min-h-0">
         {/* Brand Header */}
-        <div className="flex items-center justify-between p-4 border-b border-line h-16">
+        <div className="flex items-center justify-between px-3.5 py-3 border-b border-line h-16 shrink-0">
           <BrandLogo isCollapsed={isSidebarCollapsed} />
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <NotificationBell
               notifications={notifications}
               unreadCount={unreadCount}
@@ -151,7 +151,7 @@ export function AppSidebar({
 
         {/* Recent Patients */}
         {recentPatients.length > 0 && (
-          <div className="p-3 border-t border-line space-y-2">
+          <div className="p-3 border-t border-line space-y-1.5 shrink-0">
             <h4
               className={`text-sm font-semibold text-ink-sub px-3 ${
                 isSidebarCollapsed ? "md:text-center md:px-0 text-xs" : ""
@@ -164,7 +164,7 @@ export function AppSidebar({
                 isSidebarCollapsed ? "flex flex-col items-center" : ""
               }`}
             >
-              {recentPatients.map((p) => {
+              {recentPatients.slice(0, 3).map((p) => {
                 const initials = p.fullName
                   .split(" ")
                   .map((n) => n[0])
@@ -212,7 +212,7 @@ export function AppSidebar({
       </div>
 
       {/* Bottom Section: Drive Card & Privacy */}
-      <div className="p-3 border-t border-line space-y-2.5 bg-surface">
+      <div className="p-3 border-t border-line space-y-2.5 bg-surface shrink-0 mt-auto">
         <DriveCard
           isCollapsed={isSidebarCollapsed}
           googleToken={googleToken}

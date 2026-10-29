@@ -61,20 +61,20 @@ export function DriveCard({
     }
 
     return (
-      <div className="bg-warn-tint border border-warn/30 rounded-xl p-3 text-sm space-y-2">
+      <div className="bg-warn-tint border border-warn/30 rounded-xl p-2.5 text-sm space-y-1.5">
         <div className="flex items-start gap-2 text-warn">
           <Icon name="alert" size={16} className="shrink-0 mt-0.5 text-warn" />
           <div className="leading-tight">
-            <span className="font-semibold block text-ink">Drive sin conectar</span>
-            <span className="text-sm text-ink-sub">
-              Los turnos no se guardan hasta conectar tu cuenta.
+            <span className="font-semibold block text-ink text-sm">Drive sin conectar</span>
+            <span className="text-xs text-ink-sub">
+              Sincronización pausada
             </span>
           </div>
         </div>
         <button
           onClick={onConnect}
           disabled={loading}
-          className="w-full bg-white hover:bg-surface border border-line-control text-ink text-sm font-medium py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          className="w-full bg-white hover:bg-surface border border-line-control text-ink text-sm font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
         >
           <Icon name="cloud" size={14} />
           <span>Conectar Drive</span>

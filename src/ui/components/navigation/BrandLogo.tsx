@@ -23,11 +23,11 @@ export function BrandLogo({
         Ψ
       </div>
       {!isCollapsed && (
-        <div className="flex flex-col leading-tight overflow-hidden">
-          <span className="font-serif font-semibold text-ink text-base tracking-tight">
+        <div className="flex flex-col leading-tight whitespace-nowrap overflow-hidden min-w-0">
+          <span className="font-serif font-semibold text-ink text-base tracking-tight truncate">
             Psico-Agenda
           </span>
-          <span className="font-sans text-sm text-ink-sub">
+          <span className="font-sans text-xs text-ink-sub truncate">
             Gestión clínica
           </span>
         </div>
