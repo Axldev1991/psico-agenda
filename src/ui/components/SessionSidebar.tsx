@@ -10,7 +10,7 @@ interface SessionSidebarProps {
   allSessions: Session[];
   selectedSessionUuid: string | null;
   setSelectedSessionUuid: (uuid: string | null) => void;
-  setActiveTab: (tab: "timeline" | "ceci") => void;
+  setActiveTab: (tab: "timeline" | "notes") => void;
 }
 
 export function SessionSidebar({

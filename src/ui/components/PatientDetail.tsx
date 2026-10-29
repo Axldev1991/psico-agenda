@@ -8,7 +8,6 @@ import { extractHighlights, findInitialSession } from "../../domain/patient.util
 import { useUIState } from "../context/UIContext";
 import { SessionSidebar } from "./SessionSidebar";
 import { ActiveSessionHeader } from "./ActiveSessionHeader";
-import { CeciForm } from "./CeciForm";
 import { useSettings } from "../hooks/useSettings";
 import { PatientDetailHeader } from "./patient-detail/PatientDetailHeader";
 import { PatientArchivedNotice } from "./patient-detail/PatientArchivedNotice";
@@ -61,7 +60,6 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     googleToken,
     handleHistoryChange,
     handleRetryDownload,
-    handleCeciChange,
     changeSessionColor,
     changeSessionDescription,
   } = usePatientDetail(initialPatient, targetSessionUuidForDetail);
@@ -72,7 +70,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     }
   }, [targetSessionUuidForDetail, setTargetSessionUuidForDetail]);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "ceci" | "notes">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "notes">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtros de búsqueda facetada
@@ -199,17 +197,6 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                   <span>Expediente Continuo</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab("ceci")}
-                  className={`pb-2.5 text-base font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
-                    activeTab === "ceci"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-ink-muted hover:text-ink"
-                  }`}
-                >
-                  <Icon name="folder" size={13} />
-                  <span>Ficha CECI</span>
-                </button>
-                <button
                   onClick={() => setActiveTab("notes")}
                   className={`pb-2.5 text-base font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
                     activeTab === "notes"
@@ -280,8 +267,6 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                     )}
                   </div>
                 </div>
-              ) : activeTab === "ceci" ? (
-                <CeciForm patient={patient} handleCeciChange={handleCeciChange} />
               ) : (
                 <PatientExtraNotes patientUuid={patient.uuid} />
               )}
