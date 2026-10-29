@@ -184,6 +184,9 @@ export function ActiveSessionHeader({
               const isSelected =
                 (selectedSession.colorTag || "indigo") === config.key;
               const tag = resolveClinicalTag(config.color);
+              const dotColor = config.color?.startsWith("#")
+                ? config.color
+                : tag.text;
 
               return (
                 <button
@@ -197,13 +200,18 @@ export function ActiveSessionHeader({
                     color: tag.text,
                     borderColor: isSelected ? tag.text : "var(--color-line)",
                   }}
-                  className={`text-xs font-medium px-3 py-1 rounded-full transition-all cursor-pointer border select-none whitespace-nowrap shrink-0 ${
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all cursor-pointer border select-none whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 ${
                     isSelected
                       ? "font-semibold shadow-2xs ring-2 ring-primary/25"
                       : "hover:bg-bg-base text-ink-sub hover:text-ink"
                   }`}
                 >
-                  {config.label}
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs transition-transform"
+                    style={{ backgroundColor: dotColor }}
+                    aria-hidden="true"
+                  />
+                  <span>{config.label}</span>
                 </button>
               );
             })}

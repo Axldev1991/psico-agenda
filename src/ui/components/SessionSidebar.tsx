@@ -126,14 +126,19 @@ export function SessionSidebar({
                   </span>
                   {session.colorTag && (
                     <span
-                      className="text-[11px] font-medium px-2 py-0.5 rounded border"
+                      className="text-[11px] font-medium px-2 py-0.5 rounded border inline-flex items-center gap-1.5"
                       style={{
                         backgroundColor: tag.bg,
                         color: tag.text,
                         borderColor: `${tag.text}33`,
                       }}
                     >
-                      {config.label}
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: config.color?.startsWith("#") ? config.color : tag.text }}
+                        aria-hidden="true"
+                      />
+                      <span>{config.label}</span>
                     </span>
                   )}
                 </div>
