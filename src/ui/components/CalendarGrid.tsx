@@ -148,6 +148,7 @@ export function CalendarGrid({
           dbSessions={dbSessions}
           recurrenceRules={recurrenceRules}
           holidays={holidays}
+          absencePeriods={absencePeriods}
           patients={patients}
           onSelectDate={selectDate}
         />

@@ -24,7 +24,8 @@ import { CalendarSlot } from "../../../domain/agenda.types";
 import { Holiday, getHoliday } from "../../../domain/holidays";
 import { Patient } from "../../../domain/patient.types";
 import { computeAgendaSlots } from "../../../domain/agenda.service";
-
+import { AbsencePeriod } from "../../../domain/availability.types";
+import { isDateInAbsence } from "../../../domain/availability.service";
 
 interface MiniMonthCalendarProps {
   currentDate: Date;
@@ -32,6 +33,7 @@ interface MiniMonthCalendarProps {
   dbSessions: any[];
   recurrenceRules: any[];
   holidays?: Holiday[];
+  absencePeriods?: AbsencePeriod[];
   patients?: Patient[];
   onSelectDate: (date: Date) => void;
 }
@@ -42,6 +44,7 @@ export function MiniMonthCalendar({
   dbSessions,
   recurrenceRules,
   holidays = [],
+  absencePeriods = [],
   patients = [],
   onSelectDate,
 }: MiniMonthCalendarProps) {
@@ -123,8 +126,11 @@ export function MiniMonthCalendar({
         >
           <Icon name="chev-l" size={15} />
         </button>
-        <span className="text-sm font-semibold text-ink capitalize">
-          {format(viewMonth, "MMMM 'de' yyyy", { locale: es })}
+        <span className="text-sm font-semibold text-ink">
+          {(() => {
+            const raw = format(viewMonth, "MMMM 'de' yyyy", { locale: es });
+            return raw.charAt(0).toUpperCase() + raw.slice(1);
+          })()}
         </span>
         <button
           type="button"
@@ -153,7 +159,9 @@ export function MiniMonthCalendar({
       <div className="grid grid-cols-7 gap-1">
         {monthDays.map((day, idx) => {
           const isCurrentMonth = isSameMonth(day, viewMonth);
-          const hasSession = hasSessionOnDay(day);
+          const hasSession = isCurrentMonth ? hasSessionOnDay(day) : false;
+          const holiday = isCurrentMonth ? getHoliday(day, holidays) : undefined;
+          const absence = isCurrentMonth ? isDateInAbsence(day, absencePeriods) : undefined;
           const isSelectedWeek =
             weekDays.length >= 7 &&
             isWithinInterval(day, { start: weekDays[0], end: weekDays[6] });
@@ -161,33 +169,51 @@ export function MiniMonthCalendar({
           const isTodayDay = isToday(day);
 
           let cellBgClass = "hover:bg-bg-base";
-          let textClass = isCurrentMonth ? "text-ink font-medium" : "text-ink-sub/40";
+          let textClass = isCurrentMonth ? "text-ink font-medium" : "text-ink-sub/30";
 
           if (isCurrentDate) {
             cellBgClass = "bg-primary text-surface shadow-xs font-semibold";
             textClass = "text-surface";
           } else if (isTodayDay) {
             cellBgClass = "border border-primary/60 text-primary";
+          } else if (holiday || absence) {
+            cellBgClass = "bg-amber-500/10 hover:bg-amber-500/20 text-amber-900";
+            textClass = "text-amber-800 font-semibold";
           } else if (isSelectedWeek) {
             cellBgClass = "bg-bg-base/70";
           }
+
+          let tooltip = format(day, "d 'de' MMMM", { locale: es });
+          if (holiday) tooltip += ` · Feriado: ${holiday.name}`;
+          if (absence) tooltip += ` · Receso: ${absence.reason}`;
 
           return (
             <button
               key={idx}
               type="button"
               onClick={() => onSelectDate(day)}
+              title={tooltip}
               className={`h-7 w-full flex flex-col items-center justify-center relative rounded-md text-sm transition-colors cursor-pointer ${cellBgClass}`}
             >
               <span className={textClass}>{format(day, "d")}</span>
-              {hasSession && (
+
+              {/* Opción 3: Excepciones señalizadas claramente (Feriados o Recesos) */}
+              {isCurrentMonth && (holiday || absence) ? (
                 <span
                   className={`absolute bottom-0.5 h-1 w-1 rounded-full ${
-                    isCurrentDate ? "bg-surface" : "bg-primary"
+                    isCurrentDate ? "bg-surface" : "bg-amber-600"
                   }`}
                   aria-hidden="true"
                 />
-              )}
+              ) : isCurrentMonth && hasSession ? (
+                /* Opción 2: Barra minimalista de bajo contraste para días con sesiones */
+                <span
+                  className={`absolute bottom-0.5 h-0.5 w-2.5 rounded-full ${
+                    isCurrentDate ? "bg-surface/80" : "bg-primary/25"
+                  }`}
+                  aria-hidden="true"
+                />
+              ) : null}
             </button>
           );
         })}
