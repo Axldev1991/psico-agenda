@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Session } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
 import { resolveClinicalTag } from "../utils/clinical-tags";
+import { Icon } from "./common/Icon";
 
 interface ActiveSessionHeaderProps {
   selectedSession: Session;
@@ -25,6 +26,10 @@ export function ActiveSessionHeader({
   );
   const [lastSessionUuid, setLastSessionUuid] = useState(selectedSession.uuid);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   if (selectedSession.uuid !== lastSessionUuid) {
     setLocalDescription(selectedSession.description || "");
     setLastSessionUuid(selectedSession.uuid);
@@ -39,17 +44,48 @@ export function ActiveSessionHeader({
   const configsToUse =
     movementConfigs.length > 0 ? movementConfigs : defaultConfigs;
 
+  // Chequeo de desborde para el slider horizontal de movimientos
+  const checkScroll = () => {
+    const el = scrollContainerRef.current;
+    if (el) {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [configsToUse]);
+
+  const handleScroll = (direction: "left" | "right") => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: direction === "left" ? -180 : 180,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  // Formato limpio 24hs sin artefactos ni espacios en p. m.
   const dateObj = new Date(selectedSession.dateTime);
   const dayName = dateObj.toLocaleDateString("es-AR", { weekday: "long" });
+  const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
   const dateFormatted = dateObj.toLocaleDateString("es-AR", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-  const timeFormatted = dateObj.toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  const timeFormatted = `${hours}:${minutes}`;
 
   const isCompleted = selectedSession.status === "completed";
   const isCancelled = selectedSession.status === "cancelled";
@@ -63,12 +99,12 @@ export function ActiveSessionHeader({
           <span className="font-mono font-medium">{selectedSessionNumber}</span>
           <span className="text-line-control">|</span>
           <span className="font-semibold text-ink">Día:</span>
-          <span className="capitalize text-ink-sub">
-            {dayName}, {dateFormatted}
+          <span className="text-ink-sub">
+            {dayCapitalized}, {dateFormatted}
           </span>
           <span className="text-line-control">|</span>
           <span className="font-semibold text-ink">Horario:</span>
-          <span className="font-mono text-ink-sub">{timeFormatted} hs</span>
+          <span className="font-mono font-medium text-ink-sub">{timeFormatted} hs</span>
         </div>
 
         <span
@@ -94,7 +130,7 @@ export function ActiveSessionHeader({
       <div className="flex items-center gap-2.5 w-full">
         <label
           htmlFor="session-topic-input"
-          className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75"
+          className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-22"
         >
           Tema:
         </label>
@@ -115,37 +151,70 @@ export function ActiveSessionHeader({
 
       <div className="border-t border-line/60" />
 
-      {/* Row 3: Movement pills */}
-      <div className="flex flex-col sm:flex-row sm:items-start gap-2.5 w-full">
-        <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-18.75 pt-1">
+      {/* Row 3: Movement pills with sliding horizontal scroll */}
+      <div className="flex items-center gap-2.5 w-full min-w-0">
+        <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-22 shrink-0">
           Movimiento:
         </span>
-        <div className="flex flex-wrap gap-1.5 w-full">
-          {configsToUse.map((config) => {
-            const isSelected =
-              (selectedSession.colorTag || "indigo") === config.key;
-            const tag = resolveClinicalTag(config.color);
 
-            return (
-              <button
-                key={config.key}
-                type="button"
-                onClick={() =>
-                  changeSessionColor(selectedSession.uuid, config.key)
-                }
-                style={{
-                  backgroundColor: isSelected ? tag.bg : "transparent",
-                  color: tag.text,
-                  borderColor: isSelected ? tag.text : "var(--line)",
-                }}
-                className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all cursor-pointer border select-none ${
-                  isSelected ? "font-semibold shadow-2xs ring-1 ring-primary/20" : "hover:bg-bg-base text-ink-sub"
-                }`}
-              >
-                {config.label}
-              </button>
-            );
-          })}
+        <div className="relative flex-1 min-w-0 flex items-center gap-1">
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => handleScroll("left")}
+              className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
+              title="Ver movimientos anteriores"
+              aria-label="Ver movimientos anteriores"
+            >
+              <Icon name="chev-l" size={14} />
+            </button>
+          )}
+
+          <div
+            ref={scrollContainerRef}
+            className="flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 scroll-smooth w-full"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {configsToUse.map((config) => {
+              const isSelected =
+                (selectedSession.colorTag || "indigo") === config.key;
+              const tag = resolveClinicalTag(config.color);
+
+              return (
+                <button
+                  key={config.key}
+                  type="button"
+                  onClick={() =>
+                    changeSessionColor(selectedSession.uuid, config.key)
+                  }
+                  style={{
+                    backgroundColor: isSelected ? tag.bg : "transparent",
+                    color: tag.text,
+                    borderColor: isSelected ? tag.text : "var(--color-line)",
+                  }}
+                  className={`text-xs font-medium px-3 py-1 rounded-full transition-all cursor-pointer border select-none whitespace-nowrap shrink-0 ${
+                    isSelected
+                      ? "font-semibold shadow-2xs ring-2 ring-primary/25"
+                      : "hover:bg-bg-base text-ink-sub hover:text-ink"
+                  }`}
+                >
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => handleScroll("right")}
+              className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
+              title="Ver más movimientos"
+              aria-label="Ver más movimientos"
+            >
+              <Icon name="chev-r" size={14} />
+            </button>
+          )}
         </div>
       </div>
     </div>
