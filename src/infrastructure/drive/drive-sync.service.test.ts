@@ -28,6 +28,8 @@ const {
   mockGetByPatient,
   mockGetAvailabilitySettings,
   mockSaveAvailabilitySettings,
+  mockGetExtraNotes,
+  mockSaveAllExtraNotes,
 } = vi.hoisted(() => ({
   mockSave: vi.fn(),
   mockGetAll: vi.fn(),
@@ -52,7 +54,18 @@ const {
   mockGetByPatient: vi.fn(),
   mockGetAvailabilitySettings: vi.fn(),
   mockSaveAvailabilitySettings: vi.fn(),
+  mockGetExtraNotes: vi.fn(),
+  mockSaveAllExtraNotes: vi.fn(),
 }));
+
+vi.mock('../db/dexie-extra-note.repository', () => {
+  return {
+    DexieExtraNoteRepository: class {
+      getAll = mockGetExtraNotes;
+      saveAll = mockSaveAllExtraNotes;
+    }
+  };
+});
 
 vi.mock('./google-drive.repository', () => {
   return {
@@ -111,6 +124,8 @@ describe('DriveSyncService', () => {
   
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetExtraNotes.mockResolvedValue([]);
+    mockSaveAllExtraNotes.mockResolvedValue(undefined);
     mockGetAllSessions.mockResolvedValue([]);
     mockGetByPatient.mockResolvedValue([]);
     mockGetMovementConfigs.mockResolvedValue([]);
@@ -322,6 +337,59 @@ describe('DriveSyncService', () => {
           expect.objectContaining({ uuid: 'sess-remote' }),
         ])
       );
+    });
+
+    it('should sync extraNotes and include them in index-db.json', async () => {
+      const localExtraNote = {
+        uuid: 'note-local',
+        content: 'Local updated note',
+        tags: [],
+        isPinned: false,
+        createdAt: '2026-10-01T00:00:00Z',
+        updatedAt: '2026-10-10T12:00:00Z'
+      };
+
+      const remoteExtraNote = {
+        uuid: 'note-remote',
+        content: 'Remote newer note',
+        tags: [],
+        isPinned: false,
+        createdAt: '2026-10-01T00:00:00Z',
+        updatedAt: '2026-10-11T12:00:00Z'
+      };
+
+      mockGetAll.mockResolvedValue([]);
+      mockGetExtraNotes.mockResolvedValue([localExtraNote]);
+
+      mockDownloadFile.mockImplementation(async (folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [],
+            recurrenceRules: [],
+            extraNotes: [remoteExtraNote],
+            exportedAt: '2026-07-20T10:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Verifies merged extraNotes were saved locally
+      expect(mockSaveAllExtraNotes).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ uuid: 'note-local' }),
+          expect.objectContaining({ uuid: 'note-remote' })
+        ])
+      );
+
+      // Verifies uploaded index-db.json contains merged extraNotes
+      const indexUploadCall = mockUploadFile.mock.calls.find(call => call[1] === 'index-db.json');
+      expect(indexUploadCall).toBeDefined();
+      const uploadedIndex = JSON.parse(indexUploadCall![3]);
+      expect(uploadedIndex.extraNotes).toBeDefined();
+      expect(uploadedIndex.extraNotes.map((n: any) => n.uuid)).toContain('note-local');
+      expect(uploadedIndex.extraNotes.map((n: any) => n.uuid)).toContain('note-remote');
     });
 
     it('should respect DLP Guard and not upload patient if isHistoryLoaded is false', async () => {

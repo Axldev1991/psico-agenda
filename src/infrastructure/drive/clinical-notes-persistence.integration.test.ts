@@ -23,6 +23,8 @@ const {
   mockSaveAllPunctuationConfigs,
   mockGetAvailabilitySettings,
   mockSaveAvailabilitySettings,
+  mockGetExtraNotes,
+  mockSaveAllExtraNotes,
   mockGetOrCreateFolder,
   mockDownloadFileFromFolder,
   mockUploadFileToFolder,
@@ -48,6 +50,8 @@ const {
   mockSaveAllPunctuationConfigs: vi.fn(),
   mockGetAvailabilitySettings: vi.fn(),
   mockSaveAvailabilitySettings: vi.fn(),
+  mockGetExtraNotes: vi.fn(),
+  mockSaveAllExtraNotes: vi.fn(),
   mockGetOrCreateFolder: vi.fn(),
   mockDownloadFileFromFolder: vi.fn(),
   mockUploadFileToFolder: vi.fn(),
@@ -102,12 +106,21 @@ vi.mock('../db/dexie-settings.repository', () => ({
   },
 }));
 
+vi.mock('../db/dexie-extra-note.repository', () => ({
+  DexieExtraNoteRepository: class {
+    getAll = mockGetExtraNotes;
+    saveAll = mockSaveAllExtraNotes;
+  },
+}));
+
 describe('Clinical Notes Persistence & Drive Sync E2E Integration', () => {
   let service: DriveSyncService;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
+    mockGetExtraNotes.mockResolvedValue([]);
+    mockSaveAllExtraNotes.mockResolvedValue(undefined);
     mockGetRecurrenceRules.mockResolvedValue([]);
     mockSaveAllRecurrenceRules.mockResolvedValue(undefined);
     mockGetMovementConfigs.mockResolvedValue([]);

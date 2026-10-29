@@ -5,18 +5,21 @@ import { Patient } from "../../domain/patient.types";
 import { Session, RecurrenceRule, MovementConfig, PunctuationConfig } from "../../domain/session.types";
 import { AvailabilitySettings } from "../../domain/availability.types";
 import { mergeAvailabilitySettings } from "../../domain/availability.service";
+import { ExtraNote } from "../../domain/extra-note.types";
 import { driveLogger } from "./drive-logger";
-import { mergeSessionsByLWW } from "./drive-sync-merger";
+import { mergeSessionsByLWW, mergeExtraNotesByLWW } from "./drive-sync-merger";
 import { container } from "../container";
 
 const driveRepo = container.getDriveRepository();
 const patientRepo = container.getPatientRepository();
 const sessionRepo = container.getSessionRepository();
+const extraNoteRepo = container.getExtraNoteRepository();
 
 interface BackupData {
   patients: Patient[];
   sessions: Session[];
   recurrenceRules: RecurrenceRule[];
+  extraNotes?: ExtraNote[];
   exportedAt: string;
 }
 
@@ -136,6 +139,7 @@ export class DriveSyncService {
     const localPatients = await patientRepo.getAll();
     const localSessions = await sessionRepo.getAll();
     const localRecurrence = await sessionRepo.getRecurrenceRules();
+    const localExtraNotes = await extraNoteRepo.getAll();
     const settingsRepo = container.getSettingsRepository();
     const localSettings = await settingsRepo.getMovementConfigs();
     const localPunctuation = await settingsRepo.getPunctuationConfigs();
@@ -162,6 +166,7 @@ export class DriveSyncService {
 
     let remotePatients: Patient[] = [];
     let remoteRecurrence: RecurrenceRule[] = [];
+    let remoteExtraNotes: ExtraNote[] = [];
     let remoteSettings: MovementConfig[] = [];
     let remotePunctuation: PunctuationConfig[] = [];
     let remoteAvailability: AvailabilitySettings | undefined = undefined;
@@ -170,12 +175,14 @@ export class DriveSyncService {
       const indexData = JSON.parse(remoteIndexStr);
       remotePatients = indexData.patients || [];
       remoteRecurrence = indexData.recurrenceRules || [];
+      remoteExtraNotes = indexData.extraNotes || [];
       remoteSettings = indexData.movementConfigs || [];
       remotePunctuation = indexData.punctuationConfigs || [];
       remoteAvailability = indexData.availabilitySettings;
     } else if (isMigrating && remoteBackupData) {
       remotePatients = remoteBackupData.patients || [];
       remoteRecurrence = remoteBackupData.recurrenceRules || [];
+      remoteExtraNotes = remoteBackupData.extraNotes || [];
     }
 
     // Fusión de Pacientes (Comparando por UUID y updatedAt)
@@ -344,9 +351,13 @@ export class DriveSyncService {
     remotePunctuation.forEach(p => punctuationMap.set(p.key, p));
     const mergedPunctuation = Array.from(punctuationMap.values());
  
+    // Fusión de Extra Notes
+    const mergedExtraNotes = mergeExtraNotesByLWW(localExtraNotes, remoteExtraNotes);
+
     // Escribir datos consolidados localmente
     await patientRepo.saveAll(mergedPatients);
     await sessionRepo.saveAllRecurrenceRules(mergedRecurrence);
+    await extraNoteRepo.saveAll(mergedExtraNotes);
     if (mergedSettings.length > 0) {
       await settingsRepo.saveAllMovementConfigs(mergedSettings);
     }
@@ -365,6 +376,7 @@ export class DriveSyncService {
     const indexData = {
       patients: indexPatients,
       recurrenceRules: mergedRecurrence,
+      extraNotes: mergedExtraNotes,
       movementConfigs: mergedSettings,
       punctuationConfigs: mergedPunctuation,
       availabilitySettings: mergedAvailability,

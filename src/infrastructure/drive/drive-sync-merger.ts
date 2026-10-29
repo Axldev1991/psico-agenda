@@ -1,3 +1,4 @@
+import { ExtraNote } from "../../domain/extra-note.types";
 import { Session } from "../../domain/session.types";
 
 /**
@@ -61,5 +62,43 @@ export function mergeSessionsByLWW(
   // 3. Return array sorted chronologically by dateTime
   return Array.from(sessionMap.values()).sort(
     (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
+  );
+}
+
+/**
+ * Merges local and remote extra clinical notes using granular Last-Write-Wins (LWW) by UUID.
+ * Ties deterministically retain the local version.
+ */
+export function mergeExtraNotesByLWW(
+  localNotes: ExtraNote[] = [],
+  remoteNotes: ExtraNote[] = []
+): ExtraNote[] {
+  const noteMap = new Map<string, ExtraNote>();
+
+  for (const local of localNotes) {
+    if (local.uuid) {
+      noteMap.set(local.uuid, local);
+    }
+  }
+
+  for (const remote of remoteNotes) {
+    if (!remote.uuid) continue;
+
+    const local = noteMap.get(remote.uuid);
+    if (!local) {
+      noteMap.set(remote.uuid, remote);
+      continue;
+    }
+
+    const localTime = parseTimestamp(local.updatedAt || local.createdAt);
+    const remoteTime = parseTimestamp(remote.updatedAt || remote.createdAt);
+
+    if (remoteTime > localTime) {
+      noteMap.set(remote.uuid, remote);
+    }
+  }
+
+  return Array.from(noteMap.values()).sort(
+    (a, b) => parseTimestamp(b.createdAt) - parseTimestamp(a.createdAt)
   );
 }

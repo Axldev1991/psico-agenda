@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { mergeSessionsByLWW } from "./drive-sync-merger";
+import { mergeSessionsByLWW, mergeExtraNotesByLWW } from "./drive-sync-merger";
 import { Session } from "../../domain/session.types";
+import { ExtraNote } from "../../domain/extra-note.types";
 
 describe("mergeSessionsByLWW", () => {
   it("retains newer local session when local.updatedAt > remote.updatedAt", () => {
@@ -144,3 +145,103 @@ describe("mergeSessionsByLWW", () => {
     expect(merged[0].notes).toBe("Local tie");
   });
 });
+
+describe("mergeExtraNotesByLWW", () => {
+  it("retains newer local note when local.updatedAt > remote.updatedAt", () => {
+    const localNote: ExtraNote = {
+      uuid: "n-1",
+      content: "Local updated content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-11T12:00:00Z",
+    };
+
+    const remoteNote: ExtraNote = {
+      uuid: "n-1",
+      content: "Remote old content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-10T10:00:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([localNote], [remoteNote]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].content).toBe("Local updated content");
+  });
+
+  it("updates with newer remote note when remote.updatedAt > local.updatedAt", () => {
+    const localNote: ExtraNote = {
+      uuid: "n-1",
+      content: "Local old content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-09T08:00:00Z",
+    };
+
+    const remoteNote: ExtraNote = {
+      uuid: "n-1",
+      content: "Remote updated content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-11T15:30:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([localNote], [remoteNote]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].content).toBe("Remote updated content");
+  });
+
+  it("unions disjoint notes from both sides", () => {
+    const offlineLocalNote: ExtraNote = {
+      uuid: "n-offline",
+      content: "Offline note",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-11T09:00:00Z",
+      updatedAt: "2026-10-11T09:00:00Z",
+    };
+
+    const remoteNote: ExtraNote = {
+      uuid: "n-remote",
+      content: "Remote note",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-10T12:00:00Z",
+      updatedAt: "2026-10-10T12:00:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([offlineLocalNote], [remoteNote]);
+    expect(merged).toHaveLength(2);
+    expect(merged.map(n => n.uuid)).toContain("n-offline");
+    expect(merged.map(n => n.uuid)).toContain("n-remote");
+  });
+
+  it("resolves ties in favor of local version deterministically", () => {
+    const localNote: ExtraNote = {
+      uuid: "n-tie",
+      content: "Local tie content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-11T10:00:00Z",
+      updatedAt: "2026-10-11T10:00:00Z",
+    };
+
+    const remoteNote: ExtraNote = {
+      uuid: "n-tie",
+      content: "Remote tie content",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-11T10:00:00Z",
+      updatedAt: "2026-10-11T10:00:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([localNote], [remoteNote]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].content).toBe("Local tie content");
+  });
+});
+
