@@ -3,12 +3,14 @@
 import React from "react";
 import { format, addMinutes } from "date-fns";
 import { CalendarSlot } from "../../../domain/agenda.types";
-import { Session } from "../../../domain/session.types";
+import { Session, PaymentStatus, PaymentMethod } from "../../../domain/session.types";
 import { Icon } from "../common/Icon";
+import { AppointmentPaymentBadge } from "./AppointmentPaymentBadge";
 
 interface AppointmentCardProps {
   slot: CalendarSlot;
   onUpdateStatus: (slot: CalendarSlot, status: Session["status"]) => Promise<void>;
+  onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
   onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
@@ -17,6 +19,7 @@ interface AppointmentCardProps {
 export function AppointmentCard({
   slot,
   onUpdateStatus,
+  onUpdatePaymentStatus,
   onRemoveRecurrenceRule,
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
@@ -119,14 +122,25 @@ export function AppointmentCard({
       </div>
 
       {/* Badges and action buttons */}
-      <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-between">
-        {/* Status Badge */}
-        <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}
-        >
-          <Icon name={badgeIcon} size={13} />
-          <span>{badgeLabel}</span>
-        </span>
+      <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status Badge */}
+          <span
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}
+          >
+            <Icon name={badgeIcon} size={13} />
+            <span>{badgeLabel}</span>
+          </span>
+
+          {/* Payment Badge */}
+          {!isCancelled && !isSuspended && onUpdatePaymentStatus && (
+            <AppointmentPaymentBadge
+              paymentStatus={slot.paymentStatus || "pending"}
+              paymentMethod={slot.paymentMethod}
+              onUpdatePayment={(status, method) => onUpdatePaymentStatus(slot, status, method)}
+            />
+          )}
+        </div>
 
         {/* Interactive Controls */}
         <div className="flex items-center gap-1.5">

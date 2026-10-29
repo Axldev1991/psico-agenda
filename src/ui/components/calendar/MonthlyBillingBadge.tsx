@@ -50,11 +50,44 @@ export function MonthlyBillingBadge({ summary, targetMonth }: MonthlyBillingBadg
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-ink-sub">Cobrado (Completados)</span>
-            <span className="font-mono text-primary font-medium">
+            <span className="text-ink-sub">Cobrado</span>
+            <span className="font-mono text-ok font-semibold">
               {currencyFormatter.format(summary.collectedTotal)}
             </span>
           </div>
+          {summary.pendingTotal > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-ink-sub">Pendiente de cobro</span>
+              <span className="font-mono text-warn font-semibold">
+                {currencyFormatter.format(summary.pendingTotal)}
+              </span>
+            </div>
+          )}
+          {summary.byMethod && summary.collectedTotal > 0 && (
+            <div className="bg-bg-base/60 rounded-lg p-2.5 space-y-1.5 text-xs border border-line/60">
+              <span className="font-semibold text-ink-sub block mb-1 uppercase tracking-wider">
+                Desglose por método
+              </span>
+              {summary.byMethod.cash > 0 && (
+                <div className="flex justify-between text-ink">
+                  <span>💵 Efectivo</span>
+                  <span className="font-mono font-medium">{currencyFormatter.format(summary.byMethod.cash)}</span>
+                </div>
+              )}
+              {summary.byMethod.transfer > 0 && (
+                <div className="flex justify-between text-ink">
+                  <span>🏦 Transferencia</span>
+                  <span className="font-mono font-medium">{currencyFormatter.format(summary.byMethod.transfer)}</span>
+                </div>
+              )}
+              {summary.byMethod.mercadopago > 0 && (
+                <div className="flex justify-between text-ink">
+                  <span>📱 Mercado Pago</span>
+                  <span className="font-mono font-medium">{currencyFormatter.format(summary.byMethod.mercadopago)}</span>
+                </div>
+              )}
+            </div>
+          )}
           {summary.unrealizedTotal > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-ink-sub">No realizado (Cancel/Ausente)</span>

@@ -11,7 +11,7 @@ import {
   format,
 } from 'date-fns';
 import { container } from '../../infrastructure/container';
-import { Session, RecurrenceRule } from '../../domain/session.types';
+import { Session, RecurrenceRule, PaymentStatus, PaymentMethod } from '../../domain/session.types';
 import { Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence } from '../../domain/agenda.types';
 import { AbsencePeriod } from '../../domain/availability.types';
@@ -335,6 +335,42 @@ export function useCalendar() {
     }
   };
 
+  const updateSessionPaymentStatus = async (
+    slot: CalendarSlot,
+    paymentStatus: PaymentStatus,
+    paymentMethod?: PaymentMethod
+  ) => {
+    if (slot.uuid) {
+      const existing = await sessionRepo.getByUuid(slot.uuid);
+      if (existing) {
+        existing.paymentStatus = paymentStatus;
+        existing.paymentMethod = paymentStatus === 'paid' ? paymentMethod : undefined;
+        existing.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existing);
+      }
+    } else {
+      const patientSessions = await sessionRepo.getByPatient(slot.patientUuid);
+      const lastSession = patientSessions.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0];
+      const inheritedDescription = lastSession ? lastSession.description : "";
+      const inheritedColorTag = lastSession ? lastSession.colorTag : "indigo";
+
+      const newSession: Session = {
+        uuid: crypto.randomUUID(),
+        patientUuid: slot.patientUuid,
+        dateTime: slot.dateTime.toISOString(),
+        status: slot.status,
+        paymentStatus,
+        paymentMethod: paymentStatus === 'paid' ? paymentMethod : undefined,
+        priceAtSession: slot.price,
+        description: inheritedDescription,
+        colorTag: inheritedColorTag,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await sessionRepo.save(newSession);
+    }
+  };
+
   const removeRecurrenceRule = async (patientUuid: string) => {
     await sessionRepo.deleteRecurrenceRule(patientUuid);
   };
@@ -354,6 +390,7 @@ export function useCalendar() {
     rescheduleSlot,
     swapSlots,
     updateSessionStatus,
+    updateSessionPaymentStatus,
     removeRecurrenceRule,
     patients,
     holidays,

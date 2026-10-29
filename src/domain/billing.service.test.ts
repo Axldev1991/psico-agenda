@@ -5,29 +5,36 @@ import { describe, it, expect } from "vitest";
 describe("Billing Service", () => {
   const targetMonth = new Date("2023-10-15T00:00:00Z");
 
-  const createSlot = (status: CalendarSlot['status'], price: number, dateStr: string): CalendarSlot => ({
+  const createSlot = (
+    status: CalendarSlot['status'],
+    price: number,
+    dateStr: string,
+    paymentStatus: CalendarSlot['paymentStatus'] = 'paid',
+    paymentMethod?: CalendarSlot['paymentMethod']
+  ): CalendarSlot => ({
     patientUuid: "p-1",
     patientName: "John",
     dateTime: new Date(dateStr),
     durationMinutes: 50,
     status,
     price,
+    paymentStatus,
+    paymentMethod,
     isRecurrent: false,
   });
 
   it("computes all zeroes for empty slots", () => {
     const summary = computeMonthlyBilling([], targetMonth);
-    expect(summary).toEqual({
-      projectedTotal: 0,
-      collectedTotal: 0,
-      unrealizedTotal: 0,
-      sessionCount: 0,
-    });
+    expect(summary.projectedTotal).toBe(0);
+    expect(summary.collectedTotal).toBe(0);
+    expect(summary.pendingTotal).toBe(0);
+    expect(summary.unrealizedTotal).toBe(0);
+    expect(summary.sessionCount).toBe(0);
   });
 
   it("computes projected, collected, and unrealized correctly for mixed slots in the target month", () => {
     const slots = [
-      createSlot("completed", 100, "2023-10-01T10:00:00Z"),
+      createSlot("completed", 100, "2023-10-01T10:00:00Z", "paid", "transfer"),
       createSlot("cancelled", 50, "2023-10-05T10:00:00Z"),
       createSlot("missed", 50, "2023-10-10T10:00:00Z"),
       createSlot("scheduled", 200, "2023-10-20T10:00:00Z"),
@@ -40,6 +47,22 @@ describe("Billing Service", () => {
     expect(summary.projectedTotal).toBe(400); // 100 + 50 + 50 + 200
     expect(summary.collectedTotal).toBe(100);
     expect(summary.unrealizedTotal).toBe(100); // 50 (cancelled) + 50 (missed)
+    expect(summary.byMethod?.transfer).toBe(100);
+  });
+
+  it("separates collected vs pending when sessions are completed but not paid", () => {
+    const slots = [
+      createSlot("completed", 120, "2023-10-01T10:00:00Z", "paid", "cash"),
+      createSlot("completed", 80, "2023-10-02T10:00:00Z", "pending"),
+    ];
+
+    const summary = computeMonthlyBilling(slots, targetMonth);
+
+    expect(summary.sessionCount).toBe(2);
+    expect(summary.projectedTotal).toBe(200);
+    expect(summary.collectedTotal).toBe(120);
+    expect(summary.pendingTotal).toBe(80);
+    expect(summary.byMethod?.cash).toBe(120);
   });
 
   it("handles slots without a price gracefully", () => {

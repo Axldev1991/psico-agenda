@@ -1,8 +1,13 @@
+export type PaymentStatus = 'pending' | 'paid';
+export type PaymentMethod = 'cash' | 'transfer' | 'mercadopago';
+
 export interface Session {
   uuid: string;
   patientUuid: string;      // Relación con el Paciente
   dateTime: string;         // Fecha y hora en formato ISO string (ej: "2026-05-28T16:00:00.000Z")
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
   priceAtSession: number;   // Precio histórico cobrado (para no romper la contabilidad retroactiva si suben las tarifas)
   notes?: string;           // Notas breves clínicas
   description?: string;     // Descripción rápida para el índice

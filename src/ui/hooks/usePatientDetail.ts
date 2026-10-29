@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Patient } from "../../domain/patient.types";
+import { PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { container } from "../../infrastructure/container";
 import { useGoogleDrive } from "./useGoogleDrive";
 import { parseClinicalHistory, rebuildClinicalHistory, findInitialSession } from "../../domain/patient.utils";
@@ -443,6 +444,38 @@ export function usePatientDetail(
     }
   };
 
+  // Cambiar estado y método de pago de la sesión
+  const changeSessionPayment = async (
+    sessionUuid: string,
+    status: PaymentStatus,
+    method?: PaymentMethod
+  ) => {
+    try {
+      const targetSession = sessions.find(s => s.uuid === sessionUuid);
+      if (targetSession) {
+        const updatedSession = {
+          ...targetSession,
+          paymentStatus: status,
+          paymentMethod: status === 'paid' ? method : undefined,
+          updatedAt: new Date().toISOString(),
+        };
+        await sessionRepo.save(updatedSession);
+
+        const updatedPatient = {
+          ...patient,
+          updatedAt: new Date().toISOString(),
+        };
+        await patientRepo.save(updatedPatient);
+
+        pendingDriveUploadRef.current = true;
+        setHasPendingDriveUpload(true);
+        triggerAutoSyncIfPending();
+      }
+    } catch (err) {
+      console.error("Error al cambiar el estado de pago de la sesión:", err);
+    }
+  };
+
   return {
     patient,
     sortedSessions,
@@ -463,5 +496,6 @@ export function usePatientDetail(
     handleCeciChange,
     changeSessionColor,
     changeSessionDescription,
+    changeSessionPayment,
   };
 }

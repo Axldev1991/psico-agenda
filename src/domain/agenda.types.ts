@@ -1,4 +1,4 @@
-import { Session, RecurrenceRule } from "./session.types";
+import { Session, RecurrenceRule, PaymentStatus, PaymentMethod } from "./session.types";
 import { Patient } from "./patient.types";
 import { Holiday } from "./holidays";
 import { WeeklyAvailability, AbsencePeriod } from "./availability.types";
@@ -10,6 +10,8 @@ export interface CalendarSlot {
   dateTime: Date;
   durationMinutes: number;
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
   price: number;
   notes?: string;
   isRecurrent: boolean;

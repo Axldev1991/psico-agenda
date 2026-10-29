@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Session } from "../../domain/session.types";
+import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
 import { resolveClinicalTag } from "../utils/clinical-tags";
 import { Icon } from "./common/Icon";
+import { AppointmentPaymentBadge } from "./calendar/AppointmentPaymentBadge";
 
 interface ActiveSessionHeaderProps {
   selectedSession: Session;
@@ -12,6 +13,7 @@ interface ActiveSessionHeaderProps {
   selectedSessionDateFormatted: string;
   changeSessionDescription: (uuid: string, description: string) => void;
   changeSessionColor: (uuid: string, color: string) => void;
+  changeSessionPayment?: (uuid: string, status: PaymentStatus, method?: PaymentMethod) => void;
 }
 
 export function ActiveSessionHeader({
@@ -19,6 +21,7 @@ export function ActiveSessionHeader({
   selectedSessionNumber,
   changeSessionDescription,
   changeSessionColor,
+  changeSessionPayment,
 }: ActiveSessionHeaderProps) {
   const { movementConfigs } = useSettings();
   const [localDescription, setLocalDescription] = useState(
@@ -108,25 +111,37 @@ export function ActiveSessionHeader({
           <span className="font-mono font-medium text-ink-sub">{timeFormatted} hs</span>
         </div>
 
-        <span
-          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider self-start sm:self-auto ${
-            isCompleted
-              ? "bg-ok-tint text-ok"
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <span
+            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+              isCompleted
+                ? "bg-ok-tint text-ok"
+                : isCancelled
+                ? "bg-line/60 text-ink-sub line-through"
+                : isMissed
+                ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                : "bg-warn-tint text-warn"
+            }`}
+          >
+            {isCompleted
+              ? "Atendido"
               : isCancelled
-              ? "bg-line/60 text-ink-sub line-through"
+              ? "Cancelado"
               : isMissed
-              ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-              : "bg-warn-tint text-warn"
-          }`}
-        >
-          {isCompleted
-            ? "Atendido"
-            : isCancelled
-            ? "Cancelado"
-            : isMissed
-            ? "Ausente"
-            : "Programado"}
-        </span>
+              ? "Ausente"
+              : "Programado"}
+          </span>
+
+          {changeSessionPayment && !isCancelled && (
+            <AppointmentPaymentBadge
+              paymentStatus={selectedSession.paymentStatus || "pending"}
+              paymentMethod={selectedSession.paymentMethod}
+              onUpdatePayment={(status, method) =>
+                changeSessionPayment(selectedSession.uuid, status, method)
+              }
+            />
+          )}
+        </div>
       </div>
 
       <div className="border-t border-line/60" />

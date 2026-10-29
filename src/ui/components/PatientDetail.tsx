@@ -62,6 +62,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     handleRetryDownload,
     changeSessionColor,
     changeSessionDescription,
+    changeSessionPayment,
   } = usePatientDetail(initialPatient, targetSessionUuidForDetail);
 
   useEffect(() => {
@@ -250,6 +251,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                             selectedSessionDateFormatted={selectedSessionDateFormatted}
                             changeSessionDescription={changeSessionDescription}
                             changeSessionColor={changeSessionColor}
+                            changeSessionPayment={changeSessionPayment}
                           />
 
                           <RichTextEditor
