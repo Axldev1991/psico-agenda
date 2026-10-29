@@ -23,7 +23,6 @@ export function PatientModal({
   // 1. Identificación y Contacto
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [age, setAge] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -57,13 +56,6 @@ export function PatientModal({
       setSessionPrice(String(patientToEdit.sessionPrice || "20000"));
       setType(patientToEdit.type || "adult");
       setBirthDate(patientToEdit.birthDate || "");
-      if (patientToEdit.birthDate) {
-        setAge(String(calculateAge(patientToEdit.birthDate)));
-      } else if (patientToEdit.age !== undefined && patientToEdit.age !== null) {
-        setAge(String(patientToEdit.age));
-      } else {
-        setAge("");
-      }
       setStatus(patientToEdit.status || "active");
       setCeciConviveCon(patientToEdit.ceciConviveCon || "");
       setCeciFamilia(patientToEdit.ceciFamilia || "");
@@ -84,7 +76,6 @@ export function PatientModal({
       setSessionPrice("20000");
       setType("adult");
       setBirthDate("");
-      setAge("");
       setStatus("active");
       setCeciConviveCon("");
       setCeciFamilia("");
@@ -109,26 +100,15 @@ export function PatientModal({
 
   if (!isOpen) return null;
 
-  // Sincronización inteligente entre fecha de nacimiento y edad
+  // Edad calculada dinámicamente como fuente única de verdad
+  const calculatedAge = birthDate ? calculateAge(birthDate) : null;
+
   const handleBirthDateChange = (val: string) => {
     setBirthDate(val);
     if (val) {
       const calc = calculateAge(val);
       if (!isNaN(calc) && calc >= 0 && calc <= 125) {
-        setAge(String(calc));
         setType(calc < 18 ? "underage" : "adult");
-      }
-    }
-  };
-
-  const handleAgeChange = (val: string) => {
-    setAge(val);
-    const num = parseInt(val, 10);
-    if (!isNaN(num) && num >= 0 && num <= 125) {
-      setType(num < 18 ? "underage" : "adult");
-      if (!birthDate) {
-        const approxYear = new Date().getFullYear() - num;
-        setBirthDate(`${approxYear}-01-01`);
       }
     }
   };
@@ -136,12 +116,6 @@ export function PatientModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || Number(sessionPrice) <= 0) return;
-
-    const parsedAge = age.trim()
-      ? parseInt(age, 10)
-      : birthDate
-      ? calculateAge(birthDate)
-      : undefined;
 
     const patientData = {
       fullName: fullName.trim(),
@@ -153,7 +127,6 @@ export function PatientModal({
       sessionPrice: Number(sessionPrice),
       type,
       birthDate: birthDate.trim() || undefined,
-      age: !isNaN(parsedAge as number) ? parsedAge : undefined,
       status,
       ceciConviveCon: ceciConviveCon.trim() || undefined,
       ceciFamilia: ceciFamilia.trim() || undefined,
@@ -233,10 +206,15 @@ export function PatientModal({
                 />
               </div>
 
-              {/* Fecha de nacimiento */}
+              {/* Fecha de nacimiento + badge de edad dinámico */}
               <div>
-                <label htmlFor="p-birth" className="text-sm font-semibold text-ink block mb-1.5">
-                  Fecha de nacimiento
+                <label htmlFor="p-birth" className="text-sm font-semibold text-ink flex items-center justify-between mb-1.5">
+                  <span>Fecha de nacimiento</span>
+                  {calculatedAge !== null && !isNaN(calculatedAge) && calculatedAge >= 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-tint text-primary font-mono">
+                      {calculatedAge} {calculatedAge === 1 ? "año" : "años"}
+                    </span>
+                  )}
                 </label>
                 <input
                   id="p-birth"
@@ -247,21 +225,20 @@ export function PatientModal({
                 />
               </div>
 
-              {/* Edad */}
+              {/* Grupo de atención */}
               <div>
-                <label htmlFor="p-age" className="text-sm font-semibold text-ink block mb-1.5">
-                  Edad <span className="text-xs font-normal text-ink-sub">(años)</span>
+                <label htmlFor="p-type" className="text-sm font-semibold text-ink block mb-1.5">
+                  Grupo de atención <span className="text-primary font-bold">*</span>
                 </label>
-                <input
-                  id="p-age"
-                  type="number"
-                  min="0"
-                  max="125"
-                  placeholder={birthDate ? String(calculateAge(birthDate)) : "Ej: 34"}
-                  value={age}
-                  onChange={(e) => handleAgeChange(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary text-base transition-colors font-mono"
-                />
+                <select
+                  id="p-type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value as "adult" | "underage")}
+                  className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                >
+                  <option value="adult">Adulto</option>
+                  <option value="underage">Infanto-juvenil</option>
+                </select>
               </div>
 
               {/* Teléfono */}
@@ -295,7 +272,7 @@ export function PatientModal({
               </div>
 
               {/* Domicilio */}
-              <div>
+              <div className="md:col-span-2">
                 <label htmlFor="p-addr" className="text-sm font-semibold text-ink block mb-1.5">
                   Domicilio
                 </label>
@@ -307,22 +284,6 @@ export function PatientModal({
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink placeholder:text-ink-sub/50 focus:outline-none focus:border-primary text-base transition-colors"
                 />
-              </div>
-
-              {/* Grupo de atención */}
-              <div>
-                <label htmlFor="p-type" className="text-sm font-semibold text-ink block mb-1.5">
-                  Grupo de atención <span className="text-primary font-bold">*</span>
-                </label>
-                <select
-                  id="p-type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value as "adult" | "underage")}
-                  className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-                >
-                  <option value="adult">Adulto</option>
-                  <option value="underage">Infanto-juvenil</option>
-                </select>
               </div>
             </div>
           </section>

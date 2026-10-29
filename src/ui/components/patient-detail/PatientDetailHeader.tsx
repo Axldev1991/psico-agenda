@@ -42,7 +42,7 @@ export function PatientDetailHeader({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  const age = patient.birthDate ? calculateAge(patient.birthDate) : (patient.age ?? null);
+  const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
   const isUnderage = patient.type === "underage";
 
   return (

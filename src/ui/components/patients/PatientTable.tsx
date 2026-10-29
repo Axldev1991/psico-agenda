@@ -48,7 +48,7 @@ export function PatientTable({
           </thead>
           <tbody className="divide-y divide-line/60">
             {patients.map((patient) => {
-              const age = patient.birthDate ? calculateAge(patient.birthDate) : (patient.age ?? null);
+              const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
               const isInactive = patient.status === "inactive";
               const isUnderage = patient.type === "underage";
 
@@ -179,7 +179,7 @@ export function PatientTable({
       {/* Mobile Stacked Cards (< 768px) */}
       <div className="block md:hidden divide-y divide-line/60">
         {patients.map((patient) => {
-          const age = patient.birthDate ? calculateAge(patient.birthDate) : (patient.age ?? null);
+          const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
           const isInactive = patient.status === "inactive";
           const isUnderage = patient.type === "underage";
 
