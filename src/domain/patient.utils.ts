@@ -175,27 +175,44 @@ export function rebuildClinicalHistory(
 
   oldestFirst.forEach((session, index) => {
     const anchorId = `session-anchor-${session.uuid}`;
-    const sessionDate = new Date(session.dateTime).toLocaleDateString("es-AR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const sessionDateObj = new Date(session.dateTime);
+    let sessionDate24h = session.dateTime;
+    if (!isNaN(sessionDateObj.getTime())) {
+      const day = new Intl.DateTimeFormat('es-AR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      }).format(sessionDateObj).replace(/^([^,]+),/, '$1');
+      const time = new Intl.DateTimeFormat('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).format(sessionDateObj);
+      sessionDate24h = `${day}, ${time}`;
+    }
+
     const sessionNumber = index + 1;
     const statusLabel =
       session.status === "completed"
-        ? "Atendido"
+        ? "Atendida"
         : session.status === "cancelled"
-        ? "Cancelado"
+        ? "Cancelada"
         : session.status === "missed"
-        ? "Ausente"
-        : "Programado";
+        ? "Ausente / No asistió"
+        : "Programada";
 
-    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin: 0; padding: 0;">
-  <p style="margin-top: 26pt; margin-right: 0; margin-bottom: 0; margin-left: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 14pt; font-weight: bold; line-height: 1.25; color: #1E2A32; page-break-after: avoid;">Sesión N° ${sessionNumber}</p>
-  <p style="margin-top: 2pt; margin-right: 0; margin-bottom: 12pt; margin-left: 0; padding-bottom: 5pt; border-bottom: 1.5pt solid #2C5F6B; font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #566670; page-break-after: avoid;">Evolución clínica · ${sessionDate} · <strong style="color: #1E2A32;">${statusLabel}</strong></p>
+    const headerHtml = `<div id="${anchorId}" contenteditable="false" style="margin-top:0pt; margin-right:0pt; margin-bottom:0pt; margin-left:0pt; padding:0;">
+  <p style="margin-top:0pt; margin-right:0pt; margin-bottom:0pt; margin-left:0pt; font-size:1pt; line-height:20pt; mso-line-height-rule:exactly;">&nbsp;</p>
+  <table border="0" cellspacing="0" cellpadding="0" width="100%" style="width:100%; border-collapse:collapse; border:none;">
+    <tr>
+      <td width="100%" style="border:none; border-bottom:solid #2C5F6B 1.5pt; mso-border-bottom-alt:solid #2C5F6B 1.5pt; padding:0pt 0pt 5pt 0pt;">
+        <p style="margin-top:0pt; margin-right:0pt; margin-bottom:0pt; margin-left:0pt; font-family:Georgia, 'Times New Roman', serif; font-size:13.5pt; font-weight:bold; line-height:1.25; color:#1E2A32; page-break-after:avoid;">Sesión N° ${sessionNumber}</p>
+        <p style="margin-top:2pt; margin-right:0pt; margin-bottom:0pt; margin-left:0pt; font-family:Calibri, 'Segoe UI', Arial, sans-serif; font-size:9.5pt; color:#566670; page-break-after:avoid;">Evolución clínica · ${sessionDate24h} · <strong style="color:#1E2A32;">${statusLabel}</strong></p>
+      </td>
+    </tr>
+  </table>
+  <p style="margin-top:0pt; margin-right:0pt; margin-bottom:0pt; margin-left:0pt; font-size:1pt; line-height:8pt; mso-line-height-rule:exactly;">&nbsp;</p>
 </div><!-- end-session-anchor-${session.uuid} -->`;
 
     const contentHtml =
