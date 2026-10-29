@@ -277,13 +277,15 @@ export function PatientExtraNotes({ patientUuid }: PatientExtraNotesProps) {
         <div className="space-y-3.5">
           {displayedNotes.map((note) => {
             const isEditing = editingUuid === note.uuid;
-            const dateStr = new Date(note.createdAt).toLocaleDateString("es-AR", {
+            const noteDate = new Date(note.createdAt);
+            const noteDay = noteDate.toLocaleDateString("es-AR", {
               day: "2-digit",
               month: "short",
               year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
             });
+            const noteHours = String(noteDate.getHours()).padStart(2, "0");
+            const noteMinutes = String(noteDate.getMinutes()).padStart(2, "0");
+            const dateStr = `${noteDay}, ${noteHours}:${noteMinutes} hs`;
 
             return (
               <div

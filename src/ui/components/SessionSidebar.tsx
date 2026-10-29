@@ -50,12 +50,11 @@ export function SessionSidebar({
         <div className="space-y-1.5">
           {sortedSessions.map((session, index) => {
             const sessionDate = new Date(session.dateTime);
-            const dateFormatted = sessionDate.toLocaleDateString("es-AR", {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+            const day = String(sessionDate.getDate()).padStart(2, "0");
+            const month = String(sessionDate.getMonth() + 1).padStart(2, "0");
+            const hours = String(sessionDate.getHours()).padStart(2, "0");
+            const minutes = String(sessionDate.getMinutes()).padStart(2, "0");
+            const dateFormatted = `${day}/${month}, ${hours}:${minutes}`;
 
             const absoluteIndex = allSessions.findIndex(
               (s) => s.uuid === session.uuid
@@ -74,6 +73,7 @@ export function SessionSidebar({
             const isSelected = selectedSessionUuid === session.uuid;
             const isCompleted = session.status === "completed";
             const isCancelled = session.status === "cancelled";
+            const isMissed = session.status === "missed";
 
             return (
               <button
@@ -99,6 +99,8 @@ export function SessionSidebar({
                         ? "bg-ok-tint text-ok"
                         : isCancelled
                         ? "bg-line/60 text-ink-sub line-through"
+                        : isMissed
+                        ? "bg-rose-500/15 text-rose-600"
                         : "bg-warn-tint text-warn"
                     }`}
                   >
@@ -106,6 +108,8 @@ export function SessionSidebar({
                       ? "Atendido"
                       : isCancelled
                       ? "Cancelado"
+                      : isMissed
+                      ? "Ausente"
                       : "Programado"}
                   </span>
                 </div>

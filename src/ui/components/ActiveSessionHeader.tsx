@@ -89,6 +89,7 @@ export function ActiveSessionHeader({
 
   const isCompleted = selectedSession.status === "completed";
   const isCancelled = selectedSession.status === "cancelled";
+  const isMissed = selectedSession.status === "missed";
 
   return (
     <div className="bg-surface border border-line border-l-4 border-l-primary rounded-2xl p-4 shadow-xs space-y-3 select-none">
@@ -113,6 +114,8 @@ export function ActiveSessionHeader({
               ? "bg-ok-tint text-ok"
               : isCancelled
               ? "bg-line/60 text-ink-sub line-through"
+              : isMissed
+              ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
               : "bg-warn-tint text-warn"
           }`}
         >
@@ -120,6 +123,8 @@ export function ActiveSessionHeader({
             ? "Atendido"
             : isCancelled
             ? "Cancelado"
+            : isMissed
+            ? "Ausente"
             : "Programado"}
         </span>
       </div>

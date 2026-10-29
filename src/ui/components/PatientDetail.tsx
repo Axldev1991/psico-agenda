@@ -141,14 +141,18 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
   const selectedSessionNumber = selectedSession ? sortedSessions.length - selectedSessionIndex : null;
 
   const selectedSessionDateFormatted = selectedSession
-    ? new Date(selectedSession.dateTime).toLocaleDateString("es-AR", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? (() => {
+        const d = new Date(selectedSession.dateTime);
+        const day = d.toLocaleDateString("es-AR", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const hours = String(d.getHours()).padStart(2, "0");
+        const minutes = String(d.getMinutes()).padStart(2, "0");
+        return `${day}, ${hours}:${minutes} hs`;
+      })()
     : "";
 
   const handleClearFilters = () => {
@@ -228,18 +232,13 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                     ref={editorContainerRef}
                     className="bg-surface border border-line rounded-b-3xl p-6 md:p-8 shadow-xs max-h-[75vh] overflow-y-auto space-y-4"
                   >
-                    <div className="border-b border-line pb-4 flex items-center justify-between">
-                      <div>
-                        <h3 className="font-serif font-bold text-base text-ink">
-                          Expediente Clínico Unificado
-                        </h3>
-                        <p className="text-sm text-ink-sub mt-0.5">
-                          Formato compatible nativo con Microsoft Word
-                        </p>
-                      </div>
-                      <span className="text-sm text-ink-sub/80 font-mono font-medium">
-                        Guardado automático en IndexedDB
-                      </span>
+                    <div className="border-b border-line pb-4">
+                      <h3 className="font-serif font-bold text-base text-ink">
+                        Expediente Clínico Unificado
+                      </h3>
+                      <p className="text-sm text-ink-sub mt-0.5">
+                        Formato compatible nativo con Microsoft Word
+                      </p>
                     </div>
 
                     {selectedSession && selectedSessionNumber ? (
