@@ -13,6 +13,7 @@ import { useSettings } from "../hooks/useSettings";
 import { PatientDetailHeader } from "./patient-detail/PatientDetailHeader";
 import { PatientArchivedNotice } from "./patient-detail/PatientArchivedNotice";
 import { PatientSearchFilters } from "./patient-detail/PatientSearchFilters";
+import { PatientExtraNotes } from "./patient-detail/PatientExtraNotes";
 import { SyncStatusBadge } from "./patient-detail/SyncStatusBadge";
 import { Icon } from "./common/Icon";
 
@@ -71,7 +72,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     }
   }, [targetSessionUuidForDetail, setTargetSessionUuidForDetail]);
 
-  const [activeTab, setActiveTab] = useState<"timeline" | "ceci">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "ceci" | "notes">("timeline");
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtros de búsqueda facetada
@@ -208,6 +209,17 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                   <Icon name="folder" size={13} />
                   <span>Ficha CECI</span>
                 </button>
+                <button
+                  onClick={() => setActiveTab("notes")}
+                  className={`pb-2.5 text-base font-semibold transition-all border-b-2 cursor-pointer inline-flex items-center gap-1.5 ${
+                    activeTab === "notes"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-ink-muted hover:text-ink"
+                  }`}
+                >
+                  <Icon name="pin" size={13} />
+                  <span>Anotaciones Extras</span>
+                </button>
               </div>
 
               {activeTab === "timeline" ? (
@@ -268,8 +280,10 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === "ceci" ? (
                 <CeciForm patient={patient} handleCeciChange={handleCeciChange} />
+              ) : (
+                <PatientExtraNotes patientUuid={patient.uuid} />
               )}
             </div>
           </div>
