@@ -12,6 +12,7 @@ export interface Patient {
   updatedAt: string;
   type?: 'adult' | 'underage';
   birthDate?: string; // YYYY-MM-DD
+  age?: number;
   status?: 'active' | 'inactive';
   isHistoryLoaded?: boolean;
   ceciConviveCon?: string;
