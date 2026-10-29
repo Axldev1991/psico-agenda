@@ -121,3 +121,61 @@ div[id^="session-anchor-"][contenteditable="false"] p {
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
 }
+
+/* Transiciones visuales fluidas aceleradas por hardware */
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes simpleFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.view-transition {
+  animation: viewFadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Clases utilitarias de animación para compatibilidad con animate-in */
+.animate-in {
+  animation-duration: 220ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.animate-in.fade-in {
+  animation-name: viewFadeIn;
+}
+
+.animate-in.fade-in-simple {
+  animation-name: simpleFadeIn;
+}
+
+.animate-in.zoom-in-95 {
+  animation-name: modalZoomIn;
+}
+

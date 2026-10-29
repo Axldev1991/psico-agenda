@@ -17,7 +17,7 @@ export function PatientsView() {
 
   if (selectedPatientForDetail) {
     return (
-      <div key={selectedPatientForDetail.uuid} className="animate-in fade-in duration-200">
+      <div key={selectedPatientForDetail.uuid} className="view-transition">
         <PatientDetail
           patient={selectedPatientForDetail}
           onBack={() => setSelectedPatientForDetail(null)}
@@ -28,7 +28,7 @@ export function PatientsView() {
   }
 
   return (
-    <div key="patient-list" className="animate-in fade-in duration-200">
+    <div key="patient-list" className="view-transition">
       <PatientManager
         patients={patients}
         loading={loading}

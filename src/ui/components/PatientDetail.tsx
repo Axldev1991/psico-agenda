@@ -163,7 +163,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
 
   return (
     <>
-      <section className="space-y-6 animate-in fade-in duration-300">
+      <section className="space-y-6 view-transition">
         {/* Cabecera del Paciente */}
         <PatientDetailHeader patient={patient} sessions={sortedSessions} onBack={onBack} onEdit={onEdit} />
 
@@ -213,7 +213,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                 </button>
               </div>
 
-              <div key={activeTab} className="animate-in fade-in duration-150">
+              <div key={activeTab} className="view-transition">
                 {activeTab === "timeline" ? (
                   <div className="space-y-4">
                     {/* Barra de Filtros Facetados */}
@@ -243,7 +243,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                       </div>
 
                       {selectedSession && selectedSessionNumber ? (
-                        <div key={selectedSession.uuid} className="space-y-4 animate-in fade-in duration-150">
+                        <div key={selectedSession.uuid} className="space-y-4 view-transition">
                           <ActiveSessionHeader
                             selectedSession={selectedSession}
                             selectedSessionNumber={selectedSessionNumber}
