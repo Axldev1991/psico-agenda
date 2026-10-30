@@ -236,44 +236,33 @@ export function PatientModal({
 
               {/* Edad / Fecha de nacimiento switchable */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-1.5 gap-2">
                   <label
                     htmlFor={ageInputMode === "age" ? "p-age" : "p-birth"}
-                    className="text-sm font-semibold text-ink flex items-center gap-1.5"
+                    className="text-sm font-semibold text-ink"
                   >
-                    <span>{ageInputMode === "age" ? "Edad (años)" : "Fecha de nacimiento"}</span>
-                    {calculatedAge !== null && !isNaN(calculatedAge) && calculatedAge >= 0 && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-tint text-primary font-mono">
-                        {calculatedAge} {calculatedAge === 1 ? "año" : "años"}
-                      </span>
-                    )}
+                    {ageInputMode === "age" ? "Edad" : "Fecha de nac."}
                   </label>
                   <button
                     type="button"
                     onClick={() => setAgeInputMode((prev) => (prev === "age" ? "birthDate" : "age"))}
-                    className="text-xs text-primary hover:underline font-medium cursor-pointer transition-colors"
+                    className="text-xs text-primary hover:underline font-medium cursor-pointer transition-colors shrink-0"
                   >
-                    {ageInputMode === "age" ? "Cambiar a fecha" : "Cambiar a edad"}
+                    {ageInputMode === "age" ? "Usar fecha exacta" : "Ingresar edad"}
                   </button>
                 </div>
+
                 {ageInputMode === "age" ? (
-                  <div className="relative">
-                    <input
-                      id="p-age"
-                      type="number"
-                      min="0"
-                      max="125"
-                      placeholder="Ej: 32"
-                      value={enteredAge}
-                      onChange={(e) => handleAgeInputChange(e.target.value)}
-                      className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base transition-colors"
-                    />
-                    {birthDate && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-ink-sub bg-bg-base px-2 py-0.5 rounded border border-line pointer-events-none">
-                        Aprox. {birthDate.slice(0, 4)}
-                      </span>
-                    )}
-                  </div>
+                  <input
+                    id="p-age"
+                    type="number"
+                    min="0"
+                    max="125"
+                    placeholder="Ej: 32"
+                    value={enteredAge}
+                    onChange={(e) => handleAgeInputChange(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base transition-colors"
+                  />
                 ) : (
                   <input
                     id="p-birth"
@@ -282,6 +271,18 @@ export function PatientModal({
                     onChange={(e) => handleBirthDateChange(e.target.value)}
                     className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
                   />
+                )}
+
+                {/* Subtexto auxiliar discreto */}
+                {ageInputMode === "age" && birthDate && (
+                  <p className="text-xs text-ink-sub mt-1">
+                    Año estimado: <span className="font-mono text-ink">{birthDate.slice(0, 4)}</span>
+                  </p>
+                )}
+                {ageInputMode === "birthDate" && calculatedAge !== null && !isNaN(calculatedAge) && calculatedAge >= 0 && (
+                  <p className="text-xs text-ink-sub mt-1">
+                    {calculatedAge} {calculatedAge === 1 ? "año" : "años"}
+                  </p>
                 )}
               </div>
 
