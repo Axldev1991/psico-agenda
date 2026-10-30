@@ -6,6 +6,7 @@ import { CalendarSlot } from "../../../domain/agenda.types";
 import { Session, PaymentStatus, PaymentMethod, SessionModality } from "../../../domain/session.types";
 import { Icon } from "../common/Icon";
 import { AppointmentPaymentBadge } from "./AppointmentPaymentBadge";
+import { AppointmentStatusBadge } from "./AppointmentStatusBadge";
 
 interface AppointmentCardProps {
   slot: CalendarSlot;
@@ -34,31 +35,14 @@ export function AppointmentCard({
   const isMissed = slot.status === "missed";
   const isSuspended = !!slot.isSuspended;
 
-  // Status badge config
-  let badgeClass = "bg-primary-tint text-primary border-primary/30";
-  let badgeIcon: "check" | "alert" | "x" = "check";
-  let badgeLabel = "Agendado";
   let barColor = "bg-primary";
-
   if (isSuspended) {
-    badgeClass = "bg-amber-500/15 text-amber-800 border-amber-300/60";
-    badgeIcon = "alert";
-    badgeLabel = "Suspendido por receso";
     barColor = "bg-amber-400";
   } else if (isCompleted) {
-    badgeClass = "bg-ok-tint text-ok border-ok/30";
-    badgeIcon = "check";
-    badgeLabel = "Atendido";
     barColor = "bg-ok";
   } else if (isCancelled) {
-    badgeClass = "bg-line/60 text-ink-sub border-line line-through";
-    badgeIcon = "x";
-    badgeLabel = "Cancelado";
     barColor = "bg-line-control";
   } else if (isMissed) {
-    badgeClass = "bg-warn-tint text-warn border-warn/30";
-    badgeIcon = "alert";
-    badgeLabel = "Ausente";
     barColor = "bg-warn";
   }
 
@@ -99,7 +83,7 @@ export function AppointmentCard({
             </h4>
             {slot.isRecurrent && (
               <span
-                title="Se repite periódicamente"
+                title="Se repite semanalmente"
                 className="text-primary inline-flex items-center shrink-0"
               >
                 <Icon name="repeat" size={13} />
@@ -132,36 +116,11 @@ export function AppointmentCard({
             )}
 
             {/* Status Dropdown Badge */}
-            {isSuspended ? (
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${badgeClass}`}
-              >
-                <Icon name={badgeIcon} size={12} />
-                <span>{badgeLabel}</span>
-              </span>
-            ) : (
-              <div className="relative inline-flex items-center">
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs transition-all pointer-events-none select-none ${badgeClass}`}
-                >
-                  <Icon name={badgeIcon} size={12} />
-                  <span>{badgeLabel}</span>
-                  <Icon name="chev-d" size={10} className="opacity-60 ml-0.5" />
-                </span>
-                <select
-                  value={slot.status}
-                  onChange={(e) => onUpdateStatus(slot, e.target.value as any)}
-                  aria-label="Cambiar estado del turno"
-                  title={`Estado: ${badgeLabel}. Hacé clic para cambiar.`}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
-                >
-                  <option value="scheduled">Agendado</option>
-                  <option value="completed">Atendido</option>
-                  <option value="cancelled">Cancelado</option>
-                  <option value="missed">Ausente</option>
-                </select>
-              </div>
-            )}
+            <AppointmentStatusBadge
+              status={slot.status}
+              isSuspended={isSuspended}
+              onUpdateStatus={(newStatus) => onUpdateStatus(slot, newStatus)}
+            />
 
             {/* Payment Badge */}
             {!isCancelled && !isSuspended && onUpdatePaymentStatus && (
