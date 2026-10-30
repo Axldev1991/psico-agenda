@@ -48,7 +48,7 @@ export function SessionSidebar({
         {onCreateSession && (
           <button
             type="button"
-            onClick={onCreateSession}
+            onClick={() => onCreateSession()}
             title="Iniciar nueva sesión clínica"
             className="p-1.5 rounded-lg border border-line hover:border-primary/40 hover:bg-primary-tint text-ink-sub hover:text-primary transition-colors cursor-pointer"
           >
@@ -65,7 +65,7 @@ export function SessionSidebar({
           {onCreateSession && (
             <button
               type="button"
-              onClick={onCreateSession}
+              onClick={() => onCreateSession()}
               className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary-tint text-primary text-sm font-semibold hover:bg-primary/20 transition-colors cursor-pointer"
             >
               <Icon name="plus" size={14} />

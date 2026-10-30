@@ -483,7 +483,10 @@ export function usePatientDetail(
     try {
       const newUuid = crypto.randomUUID();
       const nowIso = new Date().toISOString();
-      const sessionDateTime = customDateTime || nowIso;
+      const sessionDateTime =
+        typeof customDateTime === "string" && customDateTime.trim()
+          ? customDateTime
+          : nowIso;
 
       const sortedExisting = [...sessions].sort(
         (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
