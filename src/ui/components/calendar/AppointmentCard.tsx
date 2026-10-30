@@ -106,12 +106,12 @@ export function AppointmentCard({
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 text-sm text-ink-sub mt-0.5">
+          <div className="flex items-center gap-2 text-sm text-ink-sub mt-0.5">
             {onUpdateModality && !isCancelled && !isSuspended ? (
               <button
                 type="button"
                 onClick={() => onUpdateModality(slot, slot.modality === "online" ? "in_person" : "online")}
-                className="inline-flex items-center gap-1 hover:text-primary transition-colors cursor-pointer group/modality"
+                className="inline-flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/modality whitespace-nowrap"
                 title={`Modalidad: ${slot.modality === "online" ? "Virtual" : "Presencial"}. Hacé clic para cambiar a ${slot.modality === "online" ? "Presencial" : "Virtual"}`}
               >
                 <Icon
@@ -120,25 +120,22 @@ export function AppointmentCard({
                   className={slot.modality === "online" ? "text-indigo-600" : "text-ink-sub"}
                 />
                 <span className="group-hover/modality:underline font-medium">
-                  Sesión individual · {slot.modality === "online" ? "Virtual" : "Presencial"}
-                </span>
-                <span className="text-[11px] px-1.5 py-0.2 rounded bg-bg-base border border-line text-ink-sub opacity-0 group-hover/modality:opacity-100 transition-opacity">
-                  Cambiar
+                  {slot.modality === "online" ? "Virtual" : "Presencial"}
                 </span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
                 <Icon name={slot.modality === "online" ? "video" : "pin"} size={13} />
-                <span>Sesión individual · {slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+                <span className="font-medium">{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
               </div>
             )}
             {slot.absence && (
-              <span className="text-amber-800 text-sm font-medium ml-1">
+              <span className="text-amber-800 text-sm font-medium whitespace-nowrap">
                 (🏖️ {slot.absence.reason})
               </span>
             )}
             {slot.holiday && !slot.absence && (
-              <span className="text-warn text-sm font-medium ml-1">
+              <span className="text-warn text-sm font-medium whitespace-nowrap">
                 (Feriado: {slot.holiday.name})
               </span>
             )}
