@@ -35,28 +35,28 @@ export function AppointmentCard({
   const isSuspended = !!slot.isSuspended;
 
   // Status badge config
-  let badgeClass = "bg-primary-tint text-primary";
+  let badgeClass = "bg-primary-tint text-primary border-primary/30";
   let badgeIcon: "check" | "alert" | "x" = "check";
   let badgeLabel = "Agendado";
   let barColor = "bg-primary";
 
   if (isSuspended) {
-    badgeClass = "bg-amber-500/15 text-amber-800 border border-amber-300/60";
+    badgeClass = "bg-amber-500/15 text-amber-800 border-amber-300/60";
     badgeIcon = "alert";
     badgeLabel = "Suspendido por receso";
     barColor = "bg-amber-400";
   } else if (isCompleted) {
-    badgeClass = "bg-ok-tint text-ok";
+    badgeClass = "bg-ok-tint text-ok border-ok/30";
     badgeIcon = "check";
     badgeLabel = "Atendido";
     barColor = "bg-ok";
   } else if (isCancelled) {
-    badgeClass = "bg-line/60 text-ink-sub line-through";
+    badgeClass = "bg-line/60 text-ink-sub border-line line-through";
     badgeIcon = "x";
     badgeLabel = "Cancelado";
     barColor = "bg-line-control";
   } else if (isMissed) {
-    badgeClass = "bg-warn-tint text-warn";
+    badgeClass = "bg-warn-tint text-warn border-warn/30";
     badgeIcon = "alert";
     badgeLabel = "Ausente";
     barColor = "bg-warn";
@@ -72,9 +72,9 @@ export function AppointmentCard({
           : "bg-surface border-line"
       }`}
     >
-      <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+      <div className="flex items-start gap-3.5 min-w-0 flex-1">
         {/* Time display */}
-        <div className="shrink-0 flex flex-col items-center justify-center font-mono text-xs text-ink-sub">
+        <div className="shrink-0 flex flex-col items-center justify-center font-mono text-xs text-ink-sub pt-0.5">
           <span className="font-semibold text-ink text-base">{startTime}</span>
           <span className="text-sm text-ink-sub">{endTime}</span>
         </div>
@@ -86,7 +86,8 @@ export function AppointmentCard({
         />
 
         {/* Patient and modality info */}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
+          {/* Row 1: Patient Name */}
           <div className="flex items-center gap-2">
             <h4
               data-sensitive
@@ -98,122 +99,128 @@ export function AppointmentCard({
             </h4>
             {slot.isRecurrent && (
               <span
-                title="Se repite semanalmente"
-                className="text-primary inline-flex items-center"
+                title="Se repite periódicamente"
+                className="text-primary inline-flex items-center shrink-0"
               >
                 <Icon name="repeat" size={13} />
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-ink-sub mt-0.5">
+          {/* Row 2: Metadata tags: Modality + Status Dropdown Badge + Payment Badge */}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {/* Modalidad */}
             {onUpdateModality && !isCancelled && !isSuspended ? (
               <button
                 type="button"
                 onClick={() => onUpdateModality(slot, slot.modality === "online" ? "in_person" : "online")}
-                className="inline-flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/modality whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-line bg-surface hover:border-line-control text-ink-sub hover:text-ink transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
                 title={`Modalidad: ${slot.modality === "online" ? "Virtual" : "Presencial"}. Hacé clic para cambiar a ${slot.modality === "online" ? "Presencial" : "Virtual"}`}
               >
                 <Icon
                   name={slot.modality === "online" ? "video" : "pin"}
-                  size={13}
+                  size={12}
                   className={slot.modality === "online" ? "text-indigo-600" : "text-ink-sub"}
                 />
-                <span className="group-hover/modality:underline font-medium">
-                  {slot.modality === "online" ? "Virtual" : "Presencial"}
-                </span>
+                <span>{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                <Icon name={slot.modality === "online" ? "video" : "pin"} size={13} />
-                <span className="font-medium">{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-line bg-surface text-ink-sub whitespace-nowrap shadow-2xs">
+                <Icon name={slot.modality === "online" ? "video" : "pin"} size={12} />
+                <span>{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+              </span>
+            )}
+
+            {/* Status Dropdown Badge */}
+            {isSuspended ? (
+              <span
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs ${badgeClass}`}
+              >
+                <Icon name={badgeIcon} size={12} />
+                <span>{badgeLabel}</span>
+              </span>
+            ) : (
+              <div className="relative inline-flex items-center">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs transition-all pointer-events-none select-none ${badgeClass}`}
+                >
+                  <Icon name={badgeIcon} size={12} />
+                  <span>{badgeLabel}</span>
+                  <Icon name="chev-d" size={10} className="opacity-60 ml-0.5" />
+                </span>
+                <select
+                  value={slot.status}
+                  onChange={(e) => onUpdateStatus(slot, e.target.value as any)}
+                  aria-label="Cambiar estado del turno"
+                  title={`Estado: ${badgeLabel}. Hacé clic para cambiar.`}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+                >
+                  <option value="scheduled">Agendado</option>
+                  <option value="completed">Atendido</option>
+                  <option value="cancelled">Cancelado</option>
+                  <option value="missed">Ausente</option>
+                </select>
               </div>
             )}
+
+            {/* Payment Badge */}
+            {!isCancelled && !isSuspended && onUpdatePaymentStatus && (
+              <AppointmentPaymentBadge
+                paymentStatus={slot.paymentStatus || "pending"}
+                paymentMethod={slot.paymentMethod}
+                onUpdatePayment={(status, method) => onUpdatePaymentStatus(slot, status, method)}
+              />
+            )}
+
+            {/* Recesos / Feriados */}
             {slot.absence && (
-              <span className="text-amber-800 text-sm font-medium whitespace-nowrap">
-                (🏖️ {slot.absence.reason})
+              <span className="text-amber-800 text-xs font-medium whitespace-nowrap bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300/40">
+                🏖️ {slot.absence.reason}
               </span>
             )}
             {slot.holiday && !slot.absence && (
-              <span className="text-warn text-sm font-medium whitespace-nowrap">
-                (Feriado: {slot.holiday.name})
+              <span className="text-warn text-xs font-medium whitespace-nowrap bg-warn-tint px-2 py-0.5 rounded border border-warn/30">
+                Feriado: {slot.holiday.name}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Badges and action buttons */}
-      <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-between sm:justify-end">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Status Badge */}
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}
-          >
-            <Icon name={badgeIcon} size={13} />
-            <span>{badgeLabel}</span>
-          </span>
+      {/* Right side: Action buttons */}
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end">
+        <button
+          type="button"
+          onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid)}
+          className="px-2.5 py-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint border border-line hover:border-primary/40 rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
+          title="Ver ficha clínica del paciente"
+        >
+          <Icon name="file" size={14} />
+          <span>Ficha</span>
+        </button>
 
-          {/* Payment Badge */}
-          {!isCancelled && !isSuspended && onUpdatePaymentStatus && (
-            <AppointmentPaymentBadge
-              paymentStatus={slot.paymentStatus || "pending"}
-              paymentMethod={slot.paymentMethod}
-              onUpdatePayment={(status, method) => onUpdatePaymentStatus(slot, status, method)}
-            />
-          )}
-        </div>
-
-        {/* Interactive Controls */}
-        <div className="flex items-center gap-1.5">
+        {!isCancelled && onOpenRescheduleModal && (
           <button
             type="button"
-            onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid)}
-            className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-sm flex items-center gap-1"
-            title="Ver ficha del paciente"
+            onClick={() => onOpenRescheduleModal(slot)}
+            className="px-2.5 py-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint border border-line hover:border-primary/40 rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
+            title="Reagendar o cambiar turno"
           >
-            <Icon name="file" size={15} />
-            <span className="hidden md:inline font-medium">Ficha</span>
+            <Icon name="calendar" size={14} />
+            <span>Reagendar</span>
           </button>
+        )}
 
-          {/* Reagendar button */}
-          {!isCancelled && onOpenRescheduleModal && (
-            <button
-              type="button"
-              onClick={() => onOpenRescheduleModal(slot)}
-              className="p-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint rounded-lg transition-colors cursor-pointer text-sm flex items-center gap-1"
-              title="Reagendar o cambiar turno"
-            >
-              <Icon name="calendar" size={15} />
-              <span className="hidden md:inline font-medium">Reagendar</span>
-            </button>
-          )}
-
-          {/* Status changer dropdown */}
-          <select
-            value={slot.status}
-            onChange={(e) => onUpdateStatus(slot, e.target.value as any)}
-            aria-label="Cambiar estado del turno"
-            className="text-sm bg-bg-base border border-line rounded-lg px-2.5 py-1.5 text-ink focus:outline-none focus:border-primary cursor-pointer transition-colors"
+        {slot.isRecurrent && onRemoveRecurrenceRule && (
+          <button
+            type="button"
+            onClick={() => onRemoveRecurrenceRule(slot.patientUuid)}
+            title="Quitar turno recurrente"
+            className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
           >
-            <option value="scheduled">Agendado</option>
-            <option value="completed">Atendido</option>
-            <option value="cancelled">Cancelado</option>
-            <option value="missed">Ausente</option>
-          </select>
-
-          {/* Delete recurrent rule if recurrent */}
-          {slot.isRecurrent && onRemoveRecurrenceRule && (
-            <button
-              type="button"
-              onClick={() => onRemoveRecurrenceRule(slot.patientUuid)}
-              title="Quitar turno recurrente"
-              className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint rounded-lg transition-colors cursor-pointer"
-            >
-              <Icon name="x" size={14} />
-            </button>
-          )}
-        </div>
+            <Icon name="x" size={14} />
+          </button>
+        )}
       </div>
     </article>
   );
