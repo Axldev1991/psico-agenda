@@ -592,3 +592,48 @@ export async function seedDemoData() {
   await db.patients.bulkPut(demoPatients);
   await db.sessions.bulkPut(demoSessions);
 }
+
+export async function seedNewPatientWithoutSessions(): Promise<{ patient: Patient; session: Session }> {
+  const patientUuid = 'patient-test-nuevo-' + Date.now();
+  const sessionUuid = 'session-test-futura-' + Date.now();
+
+  // Fecha para dentro de 5 días a las 15:00 hs (semana entrante)
+  const nextWeekDate = new Date();
+  nextWeekDate.setDate(nextWeekDate.getDate() + 5);
+  nextWeekDate.setHours(15, 0, 0, 0);
+
+  const newPatient: Patient = {
+    uuid: patientUuid,
+    fullName: 'Camila Beltrán (Nueva Paciente)',
+    email: 'camila.beltran@ejemplo.com',
+    phone: '+54 11 5544-3322',
+    address: 'Av. Corrientes 2450, CABA',
+    healthInsurance: 'OSDE',
+    affiliateNumber: '2-9876543-01',
+    sessionPrice: 15000,
+    clinicalHistory: '', // Sin notas ni historia clínica previa
+    isHistoryLoaded: true,
+    type: 'adult',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const scheduledSession: Session = {
+    uuid: sessionUuid,
+    patientUuid: patientUuid,
+    dateTime: nextWeekDate.toISOString(),
+    status: 'scheduled',
+    modality: 'online',
+    priceAtSession: 15000,
+    paymentStatus: 'pending',
+    description: 'Primera consulta / Entrevista inicial',
+    colorTag: 'indigo',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.patients.put(newPatient);
+  await db.sessions.put(scheduledSession);
+
+  return { patient: newPatient, session: scheduledSession };
+}

@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { driveLogger, LogEntry } from "../../infrastructure/drive/drive-logger";
-import { seedDemoData } from "../../infrastructure/db/seed";
+import { seedDemoData, seedNewPatientWithoutSessions } from "../../infrastructure/db/seed";
 import { Icon } from "./common/Icon";
 
 export function DevLogsConsole() {
   const [logs, setLogs] = useState<LogEntry[]>(() => driveLogger.getLogs());
-  const [isDevVisible, setIsDevVisible] = useState(false);
+  const [isDevVisible, setIsDevVisible] = useState(process.env.NODE_ENV === "development");
   const [isExpanded, setIsExpanded] = useState(false);
   const [seedState, setSeedState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newPatientState, setNewPatientState] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   useEffect(() => {
     // 1. Check if ?dev=1 or ?dev=true is in URL
@@ -79,6 +80,26 @@ export function DevLogsConsole() {
     }
   };
 
+  const handleSeedNewPatient = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setNewPatientState("loading");
+    try {
+      await seedNewPatientWithoutSessions();
+      setNewPatientState("success");
+      setTimeout(() => setNewPatientState("idle"), 2500);
+    } catch (err) {
+      console.error(err);
+      setNewPatientState("error");
+      setTimeout(() => setNewPatientState("idle"), 2500);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).cargarPacienteNuevo = handleSeedNewPatient;
+    }
+  }, []);
+
   return (
     <aside
       aria-label="Consola de desarrollo"
@@ -142,7 +163,7 @@ export function DevLogsConsole() {
               type="button"
               onClick={handleSeed}
               disabled={seedState === "loading"}
-              className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-surface rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Icon name="plus" size={12} />
               <span>
@@ -153,6 +174,26 @@ export function DevLogsConsole() {
                   : seedState === "error"
                   ? "Error"
                   : "Cargar Demo"}
+              </span>
+            </button>
+
+            {/* Seed New Patient With Future Appointment Button */}
+            <button
+              type="button"
+              onClick={handleSeedNewPatient}
+              disabled={newPatientState === "loading"}
+              className="px-3 py-1.5 bg-ok hover:bg-ok-hover text-surface rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Crea una paciente nueva (Camila Beltrán) con turno para la próxima semana y sin notas previas"
+            >
+              <Icon name="plus" size={12} />
+              <span>
+                {newPatientState === "loading"
+                  ? "Creando..."
+                  : newPatientState === "success"
+                  ? "¡Creada Camila Beltrán!"
+                  : newPatientState === "error"
+                  ? "Error"
+                  : "+ Paciente Nueva (turno próx. semana)"}
               </span>
             </button>
           </div>
