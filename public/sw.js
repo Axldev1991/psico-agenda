@@ -1,4 +1,4 @@
-const CACHE_NAME = "psico-agenda-v1";
+const CACHE_NAME = "psico-agenda-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/manifest.json",
