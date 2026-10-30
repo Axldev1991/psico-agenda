@@ -7,7 +7,7 @@ import { Icon } from "./common/Icon";
 
 export function DevLogsConsole() {
   const [logs, setLogs] = useState<LogEntry[]>(() => driveLogger.getLogs());
-  const [isDevVisible, setIsDevVisible] = useState(process.env.NODE_ENV === "development");
+  const [isDevVisible, setIsDevVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [seedState, setSeedState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [newPatientState, setNewPatientState] = useState<"idle" | "loading" | "success" | "error">("idle");
