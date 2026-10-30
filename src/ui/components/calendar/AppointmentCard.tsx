@@ -13,7 +13,7 @@ interface AppointmentCardProps {
   onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
   onUpdateModality?: (slot: CalendarSlot, modality: SessionModality) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
-  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
+  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string, slot?: CalendarSlot) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
 
@@ -191,7 +191,7 @@ export function AppointmentCard({
       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end">
         <button
           type="button"
-          onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid)}
+          onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid, slot)}
           className="px-2.5 py-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint border border-line hover:border-primary/40 rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
           title="Ver ficha clínica del paciente"
         >

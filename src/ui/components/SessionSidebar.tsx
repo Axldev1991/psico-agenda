@@ -4,6 +4,7 @@ import React from "react";
 import { Session } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
 import { resolveClinicalTag } from "../utils/clinical-tags";
+import { Icon } from "./common/Icon";
 
 interface SessionSidebarProps {
   sortedSessions: Session[];
@@ -11,6 +12,7 @@ interface SessionSidebarProps {
   selectedSessionUuid: string | null;
   setSelectedSessionUuid: (uuid: string | null) => void;
   setActiveTab: (tab: "timeline" | "notes") => void;
+  onCreateSession?: () => void;
 }
 
 export function SessionSidebar({
@@ -19,6 +21,7 @@ export function SessionSidebar({
   selectedSessionUuid,
   setSelectedSessionUuid,
   setActiveTab,
+  onCreateSession,
 }: SessionSidebarProps) {
   const { movementConfigs } = useSettings();
   const defaultConfigs = [
@@ -35,17 +38,41 @@ export function SessionSidebar({
       aria-label="Índice de sesiones"
       className="lg:col-span-3 bg-surface border border-line rounded-2xl p-4 shadow-xs space-y-3 max-h-[75vh] overflow-y-auto"
     >
-      <div>
-        <h3 className="font-semibold text-base text-ink">Índice de sesiones</h3>
-        <p className="text-sm text-ink-sub mt-0.5">
-          Elegí una sesión para desplazarte a sus notas
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-base text-ink">Índice de sesiones</h3>
+          <p className="text-sm text-ink-sub mt-0.5">
+            Elegí una sesión para desplazarte a sus notas
+          </p>
+        </div>
+        {onCreateSession && (
+          <button
+            type="button"
+            onClick={onCreateSession}
+            title="Iniciar nueva sesión clínica"
+            className="p-1.5 rounded-lg border border-line hover:border-primary/40 hover:bg-primary-tint text-ink-sub hover:text-primary transition-colors cursor-pointer"
+          >
+            <Icon name="plus" size={16} />
+          </button>
+        )}
       </div>
 
       {sortedSessions.length === 0 ? (
-        <p className="text-sm text-ink-sub/70 italic py-4">
-          No hay sesiones registradas.
-        </p>
+        <div className="py-4 space-y-2">
+          <p className="text-sm text-ink-sub/70 italic">
+            No hay sesiones registradas.
+          </p>
+          {onCreateSession && (
+            <button
+              type="button"
+              onClick={onCreateSession}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary-tint text-primary text-sm font-semibold hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Icon name="plus" size={14} />
+              <span>Nueva sesión</span>
+            </button>
+          )}
+        </div>
       ) : (
         <div className="space-y-1.5">
           {sortedSessions.map((session, index) => {

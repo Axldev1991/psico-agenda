@@ -23,6 +23,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     updateSessionStatus,
     updateSessionPaymentStatus,
     updateSessionModality,
+    materializeSlot,
     removeRecurrenceRule,
     holidays,
     dbSessions,
@@ -49,6 +50,18 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     setIsRescheduleOpen(false);
   };
 
+  const handleOpenPatientDetail = async (
+    patientUuid: string,
+    sessionUuid?: string,
+    slot?: CalendarSlot
+  ) => {
+    let finalSessionUuid = sessionUuid;
+    if (!finalSessionUuid && slot) {
+      finalSessionUuid = await materializeSlot(slot);
+    }
+    onNavigateToPatientDetail(patientUuid, finalSessionUuid);
+  };
+
   return (
     <>
       <CalendarGrid
@@ -68,7 +81,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         dbSessions={dbSessions}
         recurrenceRules={recurrenceRules}
         patients={patients}
-        onNavigateToPatientDetail={onNavigateToPatientDetail}
+        onNavigateToPatientDetail={handleOpenPatientDetail}
         onOpenRescheduleModal={handleOpenReschedule}
         absencePeriods={absencePeriods}
       />

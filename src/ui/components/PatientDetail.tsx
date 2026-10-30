@@ -58,6 +58,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     isDownloading,
     downloadError,
     googleToken,
+    createNewSession,
     handleHistoryChange,
     handleRetryDownload,
     changeSessionColor,
@@ -184,6 +185,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
               selectedSessionUuid={selectedSessionUuid}
               setSelectedSessionUuid={setSelectedSessionUuid}
               setActiveTab={setActiveTab}
+              onCreateSession={createNewSession}
             />
 
             {/* Panel Derecho: Gran Editor Clínico Word-Like con Pestañas */}
@@ -261,6 +263,28 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                             onBlur={triggerAutoSyncIfPending}
                             placeholder="Comenzá a redactar la evolución clínica de esta sesión..."
                           />
+                        </div>
+                      ) : sortedSessions.length === 0 ? (
+                        <div className="text-center py-14 px-6 bg-surface border border-dashed border-line rounded-2xl shadow-xs space-y-4">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-primary-tint text-primary flex items-center justify-center">
+                            <Icon name="file" size={24} />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-base text-ink">
+                              Aún no hay evoluciones registradas para este paciente
+                            </h4>
+                            <p className="text-sm text-ink-sub max-w-md mx-auto">
+                              Podés iniciar una nueva evolución clínica ahora para comenzar a redactar las notas de la sesión.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => createNewSession()}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-base font-semibold hover:bg-primary-hover active:scale-95 transition-all shadow-sm cursor-pointer"
+                          >
+                            <Icon name="plus" size={16} />
+                            <span>Iniciar nueva evolución clínica</span>
+                          </button>
                         </div>
                       ) : (
                         <div className="text-center py-16 text-base text-ink-sub font-medium bg-bg-base/50 rounded-2xl border border-dashed border-line">

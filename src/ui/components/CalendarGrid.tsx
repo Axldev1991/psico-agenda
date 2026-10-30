@@ -32,7 +32,7 @@ interface CalendarGridProps {
   dbSessions: any[];
   recurrenceRules: any[];
   patients?: Patient[];
-  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
+  onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string, slot?: CalendarSlot) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
   absencePeriods?: AbsencePeriod[];
 }

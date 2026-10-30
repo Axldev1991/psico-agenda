@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Patient } from "../../domain/patient.types";
-import { PaymentStatus, PaymentMethod } from "../../domain/session.types";
+import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { container } from "../../infrastructure/container";
 import { useGoogleDrive } from "./useGoogleDrive";
 import { parseClinicalHistory, rebuildClinicalHistory, findInitialSession } from "../../domain/patient.utils";
@@ -35,16 +35,18 @@ export function usePatientDetail(
     999
   ).getTime();
 
-  // En la ficha clínica solo deben figurar las sesiones que ya ocurrieron (pasadas o de hoy),
-  // o que ya fueron atendidas/canceladas, o que tengan notas redactadas.
+  // En la ficha clínica figuran las sesiones que ya ocurrieron (pasadas o de hoy),
+  // o que ya fueron atendidas/canceladas, o que tengan notas redactadas,
+  // o que hayan sido solicitadas explícitamente como objetivo (targetSessionUuid).
   const clinicalSessions = useMemo(() => {
     return sessions.filter((s) => {
+      const isTarget = !!targetSessionUuid && s.uuid === targetSessionUuid;
       const isPastOrToday = new Date(s.dateTime).getTime() <= endOfToday;
       const isNotScheduled = s.status !== "scheduled";
       const hasRealNotes = !!(s.notes && s.notes.replace(/<[^>]*>/g, "").trim());
-      return isPastOrToday || isNotScheduled || hasRealNotes;
+      return isTarget || isPastOrToday || isNotScheduled || hasRealNotes;
     });
-  }, [sessions, endOfToday]);
+  }, [sessions, endOfToday, targetSessionUuid]);
 
   const sortedSessions = useMemo(() => {
     return [...clinicalSessions].sort(
@@ -476,6 +478,40 @@ export function usePatientDetail(
     }
   };
 
+  // Crear una nueva sesión clínica manualmente desde el expediente
+  const createNewSession = async (customDateTime?: string) => {
+    try {
+      const newUuid = crypto.randomUUID();
+      const nowIso = new Date().toISOString();
+      const sessionDateTime = customDateTime || nowIso;
+
+      const sortedExisting = [...sessions].sort(
+        (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+      );
+      const lastSession = sortedExisting[0];
+
+      const newSession: Session = {
+        uuid: newUuid,
+        patientUuid: patient.uuid,
+        dateTime: sessionDateTime,
+        status: "completed",
+        modality: "in_person",
+        priceAtSession: patient.sessionPrice || 0,
+        description: lastSession?.description || "Sesión clínica",
+        colorTag: lastSession?.colorTag || "indigo",
+        notes: "",
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+
+      await sessionRepo.save(newSession);
+      setSelectedSessionUuid(newUuid);
+      return newSession;
+    } catch (err) {
+      console.error("Error al crear nueva sesión clínica:", err);
+    }
+  };
+
   return {
     patient,
     sortedSessions,
@@ -490,6 +526,7 @@ export function usePatientDetail(
     isDownloading,
     downloadError,
     googleToken,
+    createNewSession,
     handleHistoryChange,
     handleRetryDownload,
     handleScrollToSession,

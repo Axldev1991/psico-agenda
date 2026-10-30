@@ -410,6 +410,36 @@ export function useCalendar() {
     }
   };
 
+  const materializeSlot = async (slot: CalendarSlot): Promise<string> => {
+    if (slot.uuid) {
+      return slot.uuid;
+    }
+    const patientSessions = await sessionRepo.getByPatient(slot.patientUuid);
+    const lastSession = patientSessions.sort(
+      (a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime()
+    )[0];
+    const inheritedDescription = lastSession ? lastSession.description : "";
+    const inheritedColorTag = lastSession ? lastSession.colorTag : "indigo";
+
+    const newUuid = crypto.randomUUID();
+    const newSession: Session = {
+      uuid: newUuid,
+      patientUuid: slot.patientUuid,
+      dateTime: slot.dateTime.toISOString(),
+      status: slot.status || "scheduled",
+      paymentStatus: slot.paymentStatus || "pending",
+      paymentMethod: slot.paymentMethod,
+      modality: slot.modality || "in_person",
+      priceAtSession: slot.price,
+      description: inheritedDescription,
+      colorTag: inheritedColorTag,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await sessionRepo.save(newSession);
+    return newUuid;
+  };
+
   const removeRecurrenceRule = async (patientUuid: string) => {
     await sessionRepo.deleteRecurrenceRule(patientUuid);
   };
@@ -431,6 +461,7 @@ export function useCalendar() {
     updateSessionStatus,
     updateSessionPaymentStatus,
     updateSessionModality,
+    materializeSlot,
     removeRecurrenceRule,
     patients,
     holidays,
