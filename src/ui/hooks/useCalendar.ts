@@ -11,7 +11,7 @@ import {
   format,
 } from 'date-fns';
 import { container } from '../../infrastructure/container';
-import { Session, RecurrenceRule, PaymentStatus, PaymentMethod } from '../../domain/session.types';
+import { Session, RecurrenceRule, PaymentStatus, PaymentMethod, SessionModality } from '../../domain/session.types';
 import { Holiday, fetchArgentinaHolidays } from '../../domain/holidays';
 import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence } from '../../domain/agenda.types';
 import { AbsencePeriod } from '../../domain/availability.types';
@@ -128,6 +128,7 @@ export function useCalendar() {
     patientUuid: string;
     dateTime: string;
     status: Session['status'];
+    modality?: SessionModality;
     notes?: string;
   }) => {
     const patient = patientMap.get(sessionData.patientUuid);
@@ -143,6 +144,7 @@ export function useCalendar() {
       patientUuid: sessionData.patientUuid,
       dateTime: sessionData.dateTime,
       status: sessionData.status,
+      modality: sessionData.modality || 'in_person',
       priceAtSession: patient ? patient.sessionPrice : 0,
       description: inheritedDescription,
       colorTag: inheritedColorTag,
@@ -161,6 +163,7 @@ export function useCalendar() {
     daysOfWeek?: number[];
     dayOfWeek?: number;
     cadence?: RecurrenceCadence;
+    modality?: SessionModality;
   }) => {
     // Soporte retrocompatible para dayOfWeek único o arreglo daysOfWeek
     const days = ruleData.daysOfWeek && ruleData.daysOfWeek.length > 0
@@ -180,7 +183,8 @@ export function useCalendar() {
       rruleString,
       startDate: ruleData.startDate,
       startTime: ruleData.startTime,
-      durationMinutes: ruleData.durationMinutes
+      durationMinutes: ruleData.durationMinutes,
+      modality: ruleData.modality || 'in_person',
     };
     await sessionRepo.saveRecurrenceRule(newRule);
   };
@@ -371,6 +375,41 @@ export function useCalendar() {
     }
   };
 
+  const updateSessionModality = async (
+    slot: CalendarSlot,
+    newModality: SessionModality
+  ) => {
+    if (slot.uuid) {
+      const existing = await sessionRepo.getByUuid(slot.uuid);
+      if (existing) {
+        existing.modality = newModality;
+        existing.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existing);
+      }
+    } else {
+      const patientSessions = await sessionRepo.getByPatient(slot.patientUuid);
+      const lastSession = patientSessions.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0];
+      const inheritedDescription = lastSession ? lastSession.description : "";
+      const inheritedColorTag = lastSession ? lastSession.colorTag : "indigo";
+
+      const newSession: Session = {
+        uuid: crypto.randomUUID(),
+        patientUuid: slot.patientUuid,
+        dateTime: slot.dateTime.toISOString(),
+        status: slot.status,
+        paymentStatus: slot.paymentStatus,
+        paymentMethod: slot.paymentMethod,
+        modality: newModality,
+        priceAtSession: slot.price,
+        description: inheritedDescription,
+        colorTag: inheritedColorTag,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await sessionRepo.save(newSession);
+    }
+  };
+
   const removeRecurrenceRule = async (patientUuid: string) => {
     await sessionRepo.deleteRecurrenceRule(patientUuid);
   };
@@ -391,6 +430,7 @@ export function useCalendar() {
     swapSlots,
     updateSessionStatus,
     updateSessionPaymentStatus,
+    updateSessionModality,
     removeRecurrenceRule,
     patients,
     holidays,

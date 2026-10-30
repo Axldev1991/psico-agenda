@@ -1,5 +1,6 @@
 export type PaymentStatus = 'pending' | 'paid';
 export type PaymentMethod = 'cash' | 'transfer' | 'mercadopago';
+export type SessionModality = 'in_person' | 'online';
 
 export interface Session {
   uuid: string;
@@ -8,6 +9,7 @@ export interface Session {
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
+  modality?: SessionModality;
   priceAtSession: number;   // Precio histórico cobrado (para no romper la contabilidad retroactiva si suben las tarifas)
   notes?: string;           // Notas breves clínicas
   description?: string;     // Descripción rápida para el índice
@@ -22,6 +24,7 @@ export interface RecurrenceRule {
   startDate: string;        // Fecha de inicio (ej: "2026-05-28")
   startTime: string;        // Hora de inicio (ej: "16:00")
   durationMinutes: number;  // Duración de la sesión (ej: 50)
+  modality?: SessionModality;
 }
 
 export interface MovementConfig {

@@ -5,7 +5,7 @@ import { format, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 import { RRule } from "rrule";
 import { Patient } from "../../domain/patient.types";
-import { Session, RecurrenceRule } from "../../domain/session.types";
+import { Session, RecurrenceRule, SessionModality } from "../../domain/session.types";
 import { Holiday } from "../../domain/holidays";
 import { RecurrenceCadence, CalendarSlot } from "../../domain/agenda.types";
 import { buildRRuleString, findAvailableSlots, findConflictingSlot, computeAgendaSlots } from "../../domain/agenda.service";
@@ -27,6 +27,7 @@ interface SessionModalProps {
     patientUuid: string;
     dateTime: string;
     status: Session["status"];
+    modality?: SessionModality;
     notes?: string;
   }) => Promise<void>;
   onCreateRecurrence: (data: {
@@ -36,6 +37,7 @@ interface SessionModalProps {
     durationMinutes: number;
     daysOfWeek?: number[];
     cadence?: RecurrenceCadence;
+    modality?: SessionModality;
   }) => Promise<void>;
 }
 
@@ -63,6 +65,7 @@ export function SessionModal({
   const { settings, reload } = useAvailabilitySettings();
   const [selectedPatientUuid, setSelectedPatientUuid] = useState("");
   const [isRecurrent, setIsRecurrent] = useState(false);
+  const [modality, setModality] = useState<SessionModality>("in_person");
   const [sessionDate, setSessionDate] = useState("");
   const [sessionTime, setSessionTime] = useState("16:00");
   const [isException, setIsException] = useState(false);
@@ -114,6 +117,7 @@ export function SessionModal({
         durationMinutes: settings.defaultSessionDurationMinutes,
         daysOfWeek: selectedDays,
         cadence,
+        modality,
       });
     } else {
       const isoDateTime = `${sessionDate}T${sessionTime}:00`;
@@ -121,6 +125,7 @@ export function SessionModal({
         patientUuid: selectedPatientUuid,
         dateTime: isoDateTime,
         status: "scheduled",
+        modality,
       });
     }
 
@@ -129,6 +134,7 @@ export function SessionModal({
     // Reset form
     setSelectedPatientUuid("");
     setIsRecurrent(false);
+    setModality("in_person");
     setSessionDate("");
     setSessionTime("16:00");
     setIsException(false);
@@ -330,6 +336,39 @@ export function SessionModal({
                   <span className="text-[11px] text-ink-sub block">Periódico fijo</span>
                 </div>
               </label>
+            </div>
+          </div>
+
+          {/* Modalidad de atención */}
+          <div>
+            <label className="text-sm font-semibold text-ink block mb-1.5">
+              Modalidad de atención
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setModality("in_person")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-base font-medium transition-all cursor-pointer ${
+                  modality === "in_person"
+                    ? "bg-primary text-surface border-primary shadow-xs"
+                    : "bg-surface border-line text-ink hover:bg-bg-base"
+                }`}
+              >
+                <Icon name="pin" size={15} />
+                <span>Presencial</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModality("online")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-base font-medium transition-all cursor-pointer ${
+                  modality === "online"
+                    ? "bg-primary text-surface border-primary shadow-xs"
+                    : "bg-surface border-line text-ink hover:bg-bg-base"
+                }`}
+              >
+                <Icon name="video" size={15} />
+                <span>Virtual</span>
+              </button>
             </div>
           </div>
 

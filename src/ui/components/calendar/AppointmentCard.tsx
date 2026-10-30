@@ -3,7 +3,7 @@
 import React from "react";
 import { format, addMinutes } from "date-fns";
 import { CalendarSlot } from "../../../domain/agenda.types";
-import { Session, PaymentStatus, PaymentMethod } from "../../../domain/session.types";
+import { Session, PaymentStatus, PaymentMethod, SessionModality } from "../../../domain/session.types";
 import { Icon } from "../common/Icon";
 import { AppointmentPaymentBadge } from "./AppointmentPaymentBadge";
 
@@ -11,6 +11,7 @@ interface AppointmentCardProps {
   slot: CalendarSlot;
   onUpdateStatus: (slot: CalendarSlot, status: Session["status"]) => Promise<void>;
   onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
+  onUpdateModality?: (slot: CalendarSlot, modality: SessionModality) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
   onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
@@ -20,6 +21,7 @@ export function AppointmentCard({
   slot,
   onUpdateStatus,
   onUpdatePaymentStatus,
+  onUpdateModality,
   onRemoveRecurrenceRule,
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
@@ -105,8 +107,31 @@ export function AppointmentCard({
           </div>
 
           <div className="flex items-center gap-1.5 text-sm text-ink-sub mt-0.5">
-            <Icon name="pin" size={13} />
-            <span>Sesión individual · Presencial</span>
+            {onUpdateModality && !isCancelled && !isSuspended ? (
+              <button
+                type="button"
+                onClick={() => onUpdateModality(slot, slot.modality === "online" ? "in_person" : "online")}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors cursor-pointer group/modality"
+                title={`Modalidad: ${slot.modality === "online" ? "Virtual" : "Presencial"}. Hacé clic para cambiar a ${slot.modality === "online" ? "Presencial" : "Virtual"}`}
+              >
+                <Icon
+                  name={slot.modality === "online" ? "video" : "pin"}
+                  size={13}
+                  className={slot.modality === "online" ? "text-indigo-600" : "text-ink-sub"}
+                />
+                <span className="group-hover/modality:underline font-medium">
+                  Sesión individual · {slot.modality === "online" ? "Virtual" : "Presencial"}
+                </span>
+                <span className="text-[11px] px-1.5 py-0.2 rounded bg-bg-base border border-line text-ink-sub opacity-0 group-hover/modality:opacity-100 transition-opacity">
+                  Cambiar
+                </span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Icon name={slot.modality === "online" ? "video" : "pin"} size={13} />
+                <span>Sesión individual · {slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+              </div>
+            )}
             {slot.absence && (
               <span className="text-amber-800 text-sm font-medium ml-1">
                 (🏖️ {slot.absence.reason})

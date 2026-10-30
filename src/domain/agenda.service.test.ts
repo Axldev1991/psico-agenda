@@ -724,4 +724,103 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(result.error).toBe("conflict");
     });
   });
+
+  describe("Session Modality (Presencial vs Virtual)", () => {
+    const patient: Patient = {
+      uuid: "p-online",
+      fullName: "Online Patient",
+      sessionPrice: 20000,
+      createdAt: "",
+      updatedAt: "",
+    };
+
+    it("assigns modality from recurrence rule and defaults to in_person when not specified", () => {
+      const onlineRule: RecurrenceRule = {
+        patientUuid: "p-online",
+        rruleString: "DTSTART:20261014T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE",
+        startDate: "2026-10-14",
+        startTime: "16:00",
+        durationMinutes: 50,
+        modality: "online",
+      };
+
+      const defaultRule: RecurrenceRule = {
+        patientUuid: "p-online",
+        rruleString: "DTSTART:20261016T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=FR",
+        startDate: "2026-10-16",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      const slots = computeAgendaSlots({
+        intervalStart: new Date(2026, 9, 12),
+        intervalEnd: new Date(2026, 9, 18),
+        recurrenceRules: [onlineRule, defaultRule],
+        dbSessions: [],
+        patients: [patient],
+      });
+
+      const wednesdaySlot = slots.find((s) => s.dateTime.getDay() === 3);
+      const fridaySlot = slots.find((s) => s.dateTime.getDay() === 5);
+
+      expect(wednesdaySlot?.modality).toBe("online");
+      expect(fridaySlot?.modality).toBe("in_person");
+    });
+
+    it("prioritizes dbSession override modality over recurrence rule modality", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-online",
+        rruleString: "DTSTART:20261014T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=WE",
+        startDate: "2026-10-14",
+        startTime: "16:00",
+        durationMinutes: 50,
+        modality: "in_person",
+      };
+
+      const sessionOverride: Session = {
+        uuid: "sess-override",
+        patientUuid: "p-online",
+        dateTime: "2026-10-14T16:00:00.000Z",
+        status: "scheduled",
+        priceAtSession: 20000,
+        modality: "online",
+        createdAt: "",
+        updatedAt: "",
+      };
+
+      const slots = computeAgendaSlots({
+        intervalStart: new Date(2026, 9, 12),
+        intervalEnd: new Date(2026, 9, 18),
+        recurrenceRules: [rule],
+        dbSessions: [sessionOverride],
+        patients: [patient],
+      });
+
+      expect(slots[0].modality).toBe("online");
+    });
+
+    it("preserves modality when rescheduling eventually", () => {
+      const slot: CalendarSlot = {
+        uuid: "slot-online",
+        patientUuid: "p-online",
+        patientName: "Online Patient",
+        dateTime: new Date(2026, 9, 14, 16, 0),
+        durationMinutes: 50,
+        status: "scheduled",
+        price: 20000,
+        modality: "online",
+        isRecurrent: true,
+      };
+
+      const res = rescheduleSlot({
+        slot,
+        newDateTime: new Date(2026, 9, 15, 10, 0),
+        scope: "eventual",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.cancelException?.modality).toBe("online");
+      expect(res.newSession?.modality).toBe("online");
+    });
+  });
 });

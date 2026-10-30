@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Patient } from "../../domain/patient.types";
-import { calculateAge } from "../../domain/patient.utils";
+import { calculateAge, birthDateFromAge } from "../../domain/patient.utils";
 import { Icon } from "./common/Icon";
 
 interface PatientModalProps {
@@ -23,6 +23,8 @@ export function PatientModal({
   // 1. Identificación y Contacto
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [ageInputMode, setAgeInputMode] = useState<"age" | "birthDate">("age");
+  const [enteredAge, setEnteredAge] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -55,7 +57,14 @@ export function PatientModal({
       setAffiliateNumber(patientToEdit.affiliateNumber || "");
       setSessionPrice(String(patientToEdit.sessionPrice || "20000"));
       setType(patientToEdit.type || "adult");
-      setBirthDate(patientToEdit.birthDate || "");
+      if (patientToEdit.birthDate) {
+        setBirthDate(patientToEdit.birthDate);
+        const age = calculateAge(patientToEdit.birthDate);
+        setEnteredAge(!isNaN(age) && age >= 0 ? String(age) : "");
+      } else {
+        setBirthDate("");
+        setEnteredAge("");
+      }
       setStatus(patientToEdit.status || "active");
       setCeciConviveCon(patientToEdit.ceciConviveCon || "");
       setCeciFamilia(patientToEdit.ceciFamilia || "");
@@ -76,6 +85,8 @@ export function PatientModal({
       setSessionPrice("20000");
       setType("adult");
       setBirthDate("");
+      setEnteredAge("");
+      setAgeInputMode("age");
       setStatus("active");
       setCeciConviveCon("");
       setCeciFamilia("");
@@ -108,8 +119,25 @@ export function PatientModal({
     if (val) {
       const calc = calculateAge(val);
       if (!isNaN(calc) && calc >= 0 && calc <= 125) {
+        setEnteredAge(String(calc));
         setType(calc < 18 ? "underage" : "adult");
+      } else {
+        setEnteredAge("");
       }
+    } else {
+      setEnteredAge("");
+    }
+  };
+
+  const handleAgeInputChange = (val: string) => {
+    setEnteredAge(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 125) {
+      const computedBirthDate = birthDateFromAge(parsed);
+      setBirthDate(computedBirthDate);
+      setType(parsed < 18 ? "underage" : "adult");
+    } else if (!val) {
+      setBirthDate("");
     }
   };
 
@@ -206,23 +234,55 @@ export function PatientModal({
                 />
               </div>
 
-              {/* Fecha de nacimiento + badge de edad dinámico */}
+              {/* Edad / Fecha de nacimiento switchable */}
               <div>
-                <label htmlFor="p-birth" className="text-sm font-semibold text-ink flex items-center justify-between mb-1.5">
-                  <span>Fecha de nacimiento</span>
-                  {calculatedAge !== null && !isNaN(calculatedAge) && calculatedAge >= 0 && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-tint text-primary font-mono">
-                      {calculatedAge} {calculatedAge === 1 ? "año" : "años"}
-                    </span>
-                  )}
-                </label>
-                <input
-                  id="p-birth"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => handleBirthDateChange(e.target.value)}
-                  className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label
+                    htmlFor={ageInputMode === "age" ? "p-age" : "p-birth"}
+                    className="text-sm font-semibold text-ink flex items-center gap-1.5"
+                  >
+                    <span>{ageInputMode === "age" ? "Edad (años)" : "Fecha de nacimiento"}</span>
+                    {calculatedAge !== null && !isNaN(calculatedAge) && calculatedAge >= 0 && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-tint text-primary font-mono">
+                        {calculatedAge} {calculatedAge === 1 ? "año" : "años"}
+                      </span>
+                    )}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAgeInputMode((prev) => (prev === "age" ? "birthDate" : "age"))}
+                    className="text-xs text-primary hover:underline font-medium cursor-pointer transition-colors"
+                  >
+                    {ageInputMode === "age" ? "Cambiar a fecha" : "Cambiar a edad"}
+                  </button>
+                </div>
+                {ageInputMode === "age" ? (
+                  <div className="relative">
+                    <input
+                      id="p-age"
+                      type="number"
+                      min="0"
+                      max="125"
+                      placeholder="Ej: 32"
+                      value={enteredAge}
+                      onChange={(e) => handleAgeInputChange(e.target.value)}
+                      className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base transition-colors"
+                    />
+                    {birthDate && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-ink-sub bg-bg-base px-2 py-0.5 rounded border border-line pointer-events-none">
+                        Aprox. {birthDate.slice(0, 4)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    id="p-birth"
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => handleBirthDateChange(e.target.value)}
+                    className="w-full bg-surface border border-line rounded-lg px-3.5 py-2.5 text-ink focus:outline-none focus:border-primary text-base cursor-pointer transition-colors"
+                  />
+                )}
               </div>
 
               {/* Grupo de atención */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights, findInitialSession } from "./patient.utils";
+import { calculateAge, birthDateFromAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights, findInitialSession } from "./patient.utils";
 import { Patient } from "./patient.types";
 
 describe("Patient Utilities", () => {
@@ -26,6 +26,34 @@ describe("Patient Utilities", () => {
       const birthDate = "2000-02-29";
       const today = new Date("2026-02-28");
       expect(calculateAge(birthDate, today)).toBe(25);
+    });
+  });
+
+  describe("birthDateFromAge", () => {
+    it("should generate a birthdate that evaluates back to the exact requested age", () => {
+      const reference = new Date("2026-10-30");
+      const agesToTest = [0, 5, 17, 18, 32, 65, 80];
+
+      for (const age of agesToTest) {
+        const calculatedBirthDate = birthDateFromAge(age, reference);
+        expect(calculateAge(calculatedBirthDate, reference)).toBe(age);
+      }
+    });
+
+    it("should generate correct YYYY-MM-DD format for reference date", () => {
+      const reference = new Date(2026, 4, 15);
+      expect(birthDateFromAge(30, reference)).toBe("1996-05-15");
+    });
+
+    it("should handle non-leap target year when reference is Feb 29", () => {
+      const leapReference = new Date(2024, 1, 29);
+      // 2024 - 1 = 2023 (not leap)
+      expect(birthDateFromAge(1, leapReference)).toBe("2023-02-28");
+    });
+
+    it("should guard against negative values by clamping to 0", () => {
+      const reference = new Date(2026, 4, 15);
+      expect(birthDateFromAge(-5, reference)).toBe("2026-05-15");
     });
   });
 

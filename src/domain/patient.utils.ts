@@ -17,6 +17,28 @@ export function calculateAge(birthDateString: string, todayOverride?: Date): num
 }
 
 /**
+ * Calculates a valid YYYY-MM-DD birthdate string from an age in years.
+ * Guaranteed to evaluate back to `age` when passed to calculateAge.
+ */
+export function birthDateFromAge(age: number, referenceDate?: Date): string {
+  const ref = referenceDate || new Date();
+  const safeAge = Math.max(0, Math.floor(age));
+  const year = ref.getFullYear() - safeAge;
+  const month = String(ref.getMonth() + 1).padStart(2, "0");
+  let day = String(ref.getDate()).padStart(2, "0");
+
+  // Handle leap day if reference is Feb 29 and target year is not leap
+  if (ref.getMonth() === 1 && ref.getDate() === 29) {
+    const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+    if (!isLeap) {
+      day = "28";
+    }
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Sorts patients alphabetically by their full name (A-Z).
  */
 export function sortPatientsAlphabetically(patients: Patient[]): Patient[] {

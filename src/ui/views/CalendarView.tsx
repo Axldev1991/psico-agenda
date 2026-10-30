@@ -22,6 +22,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     selectDate,
     updateSessionStatus,
     updateSessionPaymentStatus,
+    updateSessionModality,
     removeRecurrenceRule,
     holidays,
     dbSessions,
@@ -60,6 +61,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         goToToday={goToToday}
         onUpdateStatus={updateSessionStatus}
         onUpdatePaymentStatus={updateSessionPaymentStatus}
+        onUpdateModality={updateSessionModality}
         onRemoveRecurrenceRule={removeRecurrenceRule}
         onOpenSessionModal={openSessionModal}
         selectDate={selectDate}

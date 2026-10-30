@@ -7,7 +7,7 @@ import { CalendarSlot } from "../../domain/agenda.types";
 import { Holiday, getHoliday } from "../../domain/holidays";
 import { AbsencePeriod } from "../../domain/availability.types";
 import { isDateInAbsence } from "../../domain/availability.service";
-import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
+import { Session, PaymentStatus, PaymentMethod, SessionModality } from "../../domain/session.types";
 import { Patient } from "../../domain/patient.types";
 import { CalendarHeader } from "./calendar/CalendarHeader";
 import { WeekStrip } from "./calendar/WeekStrip";
@@ -25,6 +25,7 @@ interface CalendarGridProps {
   goToToday: () => void;
   onUpdateStatus: (slot: CalendarSlot, status: Session["status"]) => Promise<void>;
   onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
+  onUpdateModality?: (slot: CalendarSlot, modality: SessionModality) => Promise<void>;
   onRemoveRecurrenceRule: (patientUuid: string) => Promise<void>;
   onOpenSessionModal: () => void;
   selectDate: (date: Date) => void;
@@ -46,6 +47,7 @@ export function CalendarGrid({
   goToToday,
   onUpdateStatus,
   onUpdatePaymentStatus,
+  onUpdateModality,
   onRemoveRecurrenceRule,
   onOpenSessionModal,
   selectDate,
@@ -135,6 +137,7 @@ export function CalendarGrid({
                   slot={slot}
                   onUpdateStatus={onUpdateStatus}
                   onUpdatePaymentStatus={onUpdatePaymentStatus}
+                  onUpdateModality={onUpdateModality}
                   onRemoveRecurrenceRule={onRemoveRecurrenceRule}
                   onNavigateToPatientDetail={onNavigateToPatientDetail}
                   onOpenRescheduleModal={onOpenRescheduleModal}
