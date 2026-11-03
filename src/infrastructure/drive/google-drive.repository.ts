@@ -45,8 +45,9 @@ export class GoogleDriveRepository implements IDriveRepository {
 
   /**
    * Inicializa el TokenClient de Google Identity Services y abre el pop-up oficial.
+   * Permite prompt configurable: "consent" (forzar pantalla de permisos) o "" (renovación silenciosa).
    */
-  async login(): Promise<string> {
+  async login(prompt: "consent" | "" = "consent"): Promise<string> {
     await this.loadGisScript();
 
     if (!window.google?.accounts?.oauth2) {
@@ -64,12 +65,17 @@ export class GoogleDriveRepository implements IDriveRepository {
               return;
             }
             this.accessToken = response.access_token;
+            const expiresInSeconds = Number(response.expires_in) || 3600;
+            const expiresAt = Date.now() + expiresInSeconds * 1000;
+            if (typeof window !== "undefined") {
+              localStorage.setItem("gd-token-expires-at", String(expiresAt));
+            }
             resolve(response.access_token);
           },
         });
 
-        // Solicitar token (abrir popup)
-        client.requestAccessToken({ prompt: "consent" });
+        // Solicitar token (abrir popup con prompt configurable)
+        client.requestAccessToken({ prompt });
       } catch (err) {
         reject(err);
       }
@@ -87,6 +93,20 @@ export class GoogleDriveRepository implements IDriveRepository {
       }
     }
     this.accessToken = null;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gd-token-expires-at");
+    }
+  }
+
+  isTokenExpired(): boolean {
+    if (!this.accessToken) return true;
+    if (typeof window === "undefined") return false;
+    const expiresAtStr = localStorage.getItem("gd-token-expires-at");
+    if (!expiresAtStr) return false;
+    const expiresAt = Number(expiresAtStr);
+    if (isNaN(expiresAt)) return false;
+    // Margen de seguridad de 2 minutos para evitar expiración a mitad de requests
+    return Date.now() >= expiresAt - 120000;
   }
 
   setAccessToken(token: string | null): void {

@@ -80,10 +80,35 @@ export function useGoogleDrive() {
     emitChange();
   };
 
+  const getValidToken = async (): Promise<string | null> => {
+    if (!globalGoogleToken) return null;
+
+    if (driveRepo.isTokenExpired()) {
+      try {
+        driveLogger.log("info", "Token de Google Drive próximo a vencer o expirado. Intentando renovación silenciosa...");
+        const refreshedToken = await driveRepo.login("");
+        localStorage.setItem("gd-access-token", refreshedToken);
+        setGlobalState({ googleToken: refreshedToken });
+        return refreshedToken;
+      } catch (e: any) {
+        driveLogger.log("info", "Renovación silenciosa no disponible: " + (e?.message || e));
+        return globalGoogleToken;
+      }
+    }
+
+    return globalGoogleToken;
+  };
+
   const connectGoogle = async () => {
     setGlobalState({ loading: true, errorMessage: null });
     try {
-      const token = await driveRepo.login();
+      const hasPriorSession = typeof window !== "undefined" && !!localStorage.getItem("gd-access-token");
+      let token: string;
+      try {
+        token = await driveRepo.login(hasPriorSession ? "" : "consent");
+      } catch (silentErr) {
+        token = await driveRepo.login("consent");
+      }
       localStorage.setItem("gd-access-token", token);
       setGlobalState({ googleToken: token, syncStatus: "idle", loading: false });
       // Sincronización automática inmediata al conectar
@@ -100,7 +125,10 @@ export function useGoogleDrive() {
 
   const disconnectGoogle = () => {
     driveRepo.logout();
-    localStorage.removeItem("gd-access-token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gd-access-token");
+      localStorage.removeItem("gd-token-expires-at");
+    }
     setGlobalState({ googleToken: null, syncStatus: "idle" });
   };
 
@@ -123,10 +151,11 @@ export function useGoogleDrive() {
   };
 
   const downloadPatientHistory = async (uuid: string): Promise<void> => {
-    if (!googleToken) throw new Error("No hay una sesión activa de Google.");
+    const activeToken = await getValidToken();
+    if (!activeToken) throw new Error("No hay una sesión activa de Google.");
     await checkSimulatedNetwork();
     try {
-      await syncService.downloadPatientHistory(uuid, googleToken);
+      await syncService.downloadPatientHistory(uuid, activeToken);
     } catch (err: any) {
       const errMessage = err?.message || "";
       if (
@@ -143,11 +172,12 @@ export function useGoogleDrive() {
   };
 
   const preloadAllForOffline = async () => {
-    if (!googleToken) throw new Error("No hay una sesión activa de Google.");
+    const activeToken = await getValidToken();
+    if (!activeToken) throw new Error("No hay una sesión activa de Google.");
     setGlobalState({ loading: true, syncStatus: "syncing", errorMessage: null });
     try {
       await checkSimulatedNetwork();
-      await syncService.preloadAllForOffline(googleToken);
+      await syncService.preloadAllForOffline(activeToken);
       setGlobalState({ syncStatus: "synced", loading: false });
     } catch (err: any) {
       console.error("Error en pre-carga completa offline:", err);
@@ -210,8 +240,9 @@ export function useGoogleDrive() {
   };
 
   const performSync = async () => {
-    if (googleToken) {
-      await performSyncWithToken(googleToken);
+    const activeToken = await getValidToken();
+    if (activeToken) {
+      await performSyncWithToken(activeToken);
     }
   };
 
