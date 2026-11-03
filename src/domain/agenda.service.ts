@@ -397,7 +397,7 @@ export function rescheduleSlot(params: RescheduleSlotParams): RescheduleResult {
     patientUuid: slot.patientUuid,
     dateTime: newDateTime.toISOString(),
     status: 'scheduled' as const,
-    paymentStatus: slot.paymentStatus === 'paid' ? ('paid' as const) : ('pending' as const),
+    paymentStatus: slot.paymentStatus === 'paid' ? ('paid' as const) : slot.paymentStatus === 'waived' ? ('waived' as const) : ('pending' as const),
     paymentMethod: slot.paymentStatus === 'paid' ? slot.paymentMethod : undefined,
     modality: slot.modality || 'in_person',
     priceAtSession: slot.price,

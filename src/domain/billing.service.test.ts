@@ -65,6 +65,19 @@ describe("Billing Service", () => {
     expect(summary.byMethod?.cash).toBe(120);
   });
 
+  it("does not count waived (Sin cargo) sessions in collectedTotal nor pendingTotal", () => {
+    const slots = [
+      createSlot("completed", 120, "2023-10-01T10:00:00Z", "paid", "cash"),
+      createSlot("completed", 150, "2023-10-02T10:00:00Z", "waived"),
+    ];
+
+    const summary = computeMonthlyBilling(slots, targetMonth);
+
+    expect(summary.sessionCount).toBe(2);
+    expect(summary.collectedTotal).toBe(120);
+    expect(summary.pendingTotal).toBe(0);
+  });
+
   it("handles slots without a price gracefully", () => {
     const slots = [
       createSlot("completed", undefined as unknown as number, "2023-10-01T10:00:00Z"), // testing edge case when price might be falsy

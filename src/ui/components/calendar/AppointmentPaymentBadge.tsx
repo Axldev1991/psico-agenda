@@ -21,6 +21,8 @@ export function AppointmentPaymentBadge({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isPaid = paymentStatus === "paid";
+  const isWaived = paymentStatus === "waived";
+  const isPending = !isPaid && !isWaived;
 
   // Cerrar al hacer clic afuera
   useEffect(() => {
@@ -66,7 +68,23 @@ export function AppointmentPaymentBadge({
 
   const badgeLabel = isPaid
     ? `Cobrado${paymentMethod ? ` · ${getMethodLabel(paymentMethod)}` : ""}`
+    : isWaived
+    ? "Sin cargo"
     : "Sin cobrar";
+
+  const badgeStyle = isPaid
+    ? "bg-ok-tint text-ok border-ok/30 hover:bg-ok-tint/80"
+    : isWaived
+    ? "bg-line/40 text-ink-sub border-line/60 hover:bg-line/60"
+    : "bg-warn-tint text-warn border-warn/30 hover:bg-warn-tint/80";
+
+  const badgeTitle = isPaid
+    ? `Sesión cobrada (${getMethodLabel(paymentMethod)}). Hacé clic para cambiar.`
+    : isWaived
+    ? "Sesión sin cargo (bonificada / ausencia justificada). Hacé clic para cambiar."
+    : "Sesión pendiente de cobro. Hacé clic para marcar como cobrada.";
+
+  const badgeIcon = isPaid ? "✓" : isWaived ? "⊘" : "$";
 
   return (
     <div ref={containerRef} className="relative inline-block text-left">
@@ -76,18 +94,12 @@ export function AppointmentPaymentBadge({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        title={
-          isPaid
-            ? `Sesión cobrada (${getMethodLabel(paymentMethod)}). Hacé clic para cambiar.`
-            : "Sesión pendiente de cobro. Hacé clic para marcar como cobrada."
-        }
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs select-none ${
-          isPaid
-            ? "bg-ok-tint text-ok border-ok/30 hover:bg-ok-tint/80"
-            : "bg-warn-tint text-warn border-warn/30 hover:bg-warn-tint/80"
-        } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+        title={badgeTitle}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs select-none ${badgeStyle} ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
       >
-        <span className="font-bold text-[11px]">{isPaid ? "✓" : "$"}</span>
+        <span className="font-bold text-[11px]">{badgeIcon}</span>
         <span>{badgeLabel}</span>
         <Icon
           name={isOpen ? "chev-u" : "chev-d"}
@@ -112,14 +124,30 @@ export function AppointmentPaymentBadge({
             role="menuitem"
             onClick={() => handleSelect("pending")}
             className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-bg-base transition-colors cursor-pointer ${
-              !isPaid ? "text-warn font-semibold bg-warn-tint/30" : "text-ink"
+              isPending ? "text-warn font-semibold bg-warn-tint/30" : "text-ink"
             }`}
           >
             <div className="flex items-center gap-2">
               <span className="text-warn font-bold">$</span>
               <span>Pendiente de cobro</span>
             </div>
-            {!isPaid && <span className="text-warn text-xs">✓</span>}
+            {isPending && <span className="text-warn text-xs">✓</span>}
+          </button>
+
+          {/* Opción Sin Cargo */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => handleSelect("waived")}
+            className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-bg-base transition-colors cursor-pointer ${
+              isWaived ? "text-ink font-semibold bg-line/40" : "text-ink"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-ink-sub font-bold text-xs">⊘</span>
+              <span>Sin cargo (no cobrar)</span>
+            </div>
+            {isWaived && <span className="text-ink-sub text-xs">✓</span>}
           </button>
 
           <div className="border-t border-line/60 my-1" />

@@ -45,6 +45,8 @@ export function computeMonthlyBilling(slots: CalendarSlot[], targetMonth: Date):
           if (slot.paymentMethod && summary.byMethod) {
             summary.byMethod[slot.paymentMethod] = (summary.byMethod[slot.paymentMethod] || 0) + price;
           }
+        } else if (slot.paymentStatus === 'waived') {
+          // Sin cargo: no computa como cobrado ni genera deuda pendiente
         } else {
           summary.pendingTotal += price;
         }

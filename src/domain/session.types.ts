@@ -1,4 +1,4 @@
-export type PaymentStatus = 'pending' | 'paid';
+export type PaymentStatus = 'pending' | 'paid' | 'waived';
 export type PaymentMethod = 'cash' | 'transfer' | 'mercadopago';
 export type SessionModality = 'in_person' | 'online';
 
