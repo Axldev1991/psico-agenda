@@ -23,4 +23,5 @@ export interface AvailabilitySettings {
   defaultSessionDurationMinutes: number; // e.g. 50
   intervalStepMinutes: number;           // e.g. 60
   absencePeriods?: AbsencePeriod[];
+  updatedAt?: string;                    // ISO timestamp for LWW sync resolution
 }

@@ -287,6 +287,56 @@ describe('availability.service (TDD)', () => {
       expect(merged.absencePeriods).toHaveLength(2);
       expect((merged.absencePeriods || []).map((a: AbsencePeriod) => a.id)).toEqual(['1', '2']);
     });
+
+    it('prioritizes local weekly schedule and duration when local.updatedAt is newer than remote.updatedAt', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.defaultSessionDurationMinutes = 30;
+      local.updatedAt = '2026-11-03T18:00:00.000Z';
+      local.weekly[1] = { enabled: false, ranges: [] }; // Monday disabled locally
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.defaultSessionDurationMinutes = 60;
+      remote.updatedAt = '2026-11-02T10:00:00.000Z';
+      remote.weekly[1] = { enabled: true, ranges: [{ start: '08:00', end: '12:00' }] };
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.defaultSessionDurationMinutes).toBe(30);
+      expect(merged.weekly[1].enabled).toBe(false);
+      expect(merged.updatedAt).toBe('2026-11-03T18:00:00.000Z');
+    });
+
+    it('prioritizes remote weekly schedule and duration when remote.updatedAt is newer than local.updatedAt', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.defaultSessionDurationMinutes = 50;
+      local.updatedAt = '2026-11-01T10:00:00.000Z';
+      local.weekly[2] = { enabled: false, ranges: [] };
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.defaultSessionDurationMinutes = 45;
+      remote.updatedAt = '2026-11-03T12:00:00.000Z';
+      remote.weekly[2] = { enabled: true, ranges: [{ start: '14:00', end: '18:00' }] };
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.defaultSessionDurationMinutes).toBe(45);
+      expect(merged.weekly[2].enabled).toBe(true);
+      expect(merged.weekly[2].ranges).toEqual([{ start: '14:00', end: '18:00' }]);
+      expect(merged.updatedAt).toBe('2026-11-03T12:00:00.000Z');
+    });
+
+    it('prioritizes local settings when local has updatedAt but remote does not', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.defaultSessionDurationMinutes = 60;
+      local.updatedAt = '2026-11-03T15:00:00.000Z';
+      local.weekly[3] = { enabled: true, ranges: [{ start: '10:00', end: '16:00' }] };
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.defaultSessionDurationMinutes = 45;
+      delete remote.updatedAt;
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.defaultSessionDurationMinutes).toBe(60);
+      expect(merged.weekly[3].ranges).toEqual([{ start: '10:00', end: '16:00' }]);
+    });
   });
 });
 

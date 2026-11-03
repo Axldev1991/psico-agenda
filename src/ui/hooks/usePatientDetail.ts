@@ -493,12 +493,15 @@ export function usePatientDetail(
       );
       const lastSession = sortedExisting[0];
 
+      const patientRule = await sessionRepo.getRecurrenceRuleByPatient(patient.uuid);
+      const defaultModality = patientRule?.modality || "in_person";
+
       const newSession: Session = {
         uuid: newUuid,
         patientUuid: patient.uuid,
         dateTime: sessionDateTime,
         status: "completed",
-        modality: "in_person",
+        modality: defaultModality,
         priceAtSession: patient.sessionPrice || 0,
         description: lastSession?.description || "Sesión clínica",
         colorTag: lastSession?.colorTag || "indigo",
@@ -508,6 +511,11 @@ export function usePatientDetail(
       };
 
       await sessionRepo.save(newSession);
+      const updatedPatient: Patient = {
+        ...patient,
+        updatedAt: nowIso,
+      };
+      await patientRepo.save(updatedPatient);
       setSelectedSessionUuid(newUuid);
       return newSession;
     } catch (err) {

@@ -124,6 +124,18 @@ export function useCalendar() {
   const prevWeek = () => setCurrentDate(prev => subWeeks(prev, 1));
   const goToToday = () => setCurrentDate(getBuenosAiresDate());
 
+  const touchPatient = async (patientUuid: string) => {
+    try {
+      const patient = await patientRepo.getByUuid(patientUuid);
+      if (patient) {
+        patient.updatedAt = new Date().toISOString();
+        await patientRepo.save(patient);
+      }
+    } catch (e) {
+      console.error('Error touching patient updatedAt:', e);
+    }
+  };
+
   const addManualSession = async (sessionData: {
     patientUuid: string;
     dateTime: string;
@@ -153,6 +165,7 @@ export function useCalendar() {
       updatedAt: new Date().toISOString()
     };
     await sessionRepo.save(newSession);
+    await touchPatient(sessionData.patientUuid);
   };
 
   const addRecurrence = async (ruleData: {
@@ -185,8 +198,10 @@ export function useCalendar() {
       startTime: ruleData.startTime,
       durationMinutes: ruleData.durationMinutes,
       modality: ruleData.modality || 'in_person',
+      updatedAt: new Date().toISOString(),
     };
     await sessionRepo.saveRecurrenceRule(newRule);
+    await touchPatient(ruleData.patientUuid);
   };
 
   const rescheduleSlot = async (params: RescheduleSlotParams) => {
@@ -337,6 +352,7 @@ export function useCalendar() {
       };
       await sessionRepo.save(newSession);
     }
+    await touchPatient(slot.patientUuid);
   };
 
   const updateSessionPaymentStatus = async (
@@ -373,6 +389,7 @@ export function useCalendar() {
       };
       await sessionRepo.save(newSession);
     }
+    await touchPatient(slot.patientUuid);
   };
 
   const updateSessionModality = async (
@@ -408,6 +425,18 @@ export function useCalendar() {
       };
       await sessionRepo.save(newSession);
     }
+
+    // Si es turno recurrente fijo de la paciente, actualizar la regla persistente
+    if (slot.isRecurrent && slot.patientUuid) {
+      const existingRule = await sessionRepo.getRecurrenceRuleByPatient(slot.patientUuid);
+      if (existingRule) {
+        existingRule.modality = newModality;
+        existingRule.updatedAt = new Date().toISOString();
+        await sessionRepo.saveRecurrenceRule(existingRule);
+      }
+    }
+
+    await touchPatient(slot.patientUuid);
   };
 
   const materializeSlot = async (slot: CalendarSlot): Promise<string> => {
@@ -437,6 +466,7 @@ export function useCalendar() {
       updatedAt: new Date().toISOString(),
     };
     await sessionRepo.save(newSession);
+    await touchPatient(slot.patientUuid);
     return newUuid;
   };
 

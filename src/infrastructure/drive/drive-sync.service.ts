@@ -7,7 +7,7 @@ import { AvailabilitySettings } from "../../domain/availability.types";
 import { mergeAvailabilitySettings } from "../../domain/availability.service";
 import { ExtraNote } from "../../domain/extra-note.types";
 import { driveLogger } from "./drive-logger";
-import { mergeSessionsByLWW, mergeExtraNotesByLWW } from "./drive-sync-merger";
+import { mergeSessionsByLWW, mergeExtraNotesByLWW, mergeRecurrenceRulesByLWW } from "./drive-sync-merger";
 import { container } from "../container";
 
 const driveRepo = container.getDriveRepository();
@@ -329,15 +329,8 @@ export class DriveSyncService {
       }
     }
 
-    // Fusión de Reglas de Recurrencia
-    const recurrenceMap = new Map<string, RecurrenceRule>();
-    remoteRecurrence.forEach(r => recurrenceMap.set(r.patientUuid, r));
-    localRecurrence.forEach(localR => {
-      if (!recurrenceMap.has(localR.patientUuid)) {
-        recurrenceMap.set(localR.patientUuid, localR);
-      }
-    });
-    const mergedRecurrence = Array.from(recurrenceMap.values());
+    // Fusión de Reglas de Recurrencia con Last-Write-Wins (LWW)
+    const mergedRecurrence = mergeRecurrenceRulesByLWW(localRecurrence, remoteRecurrence);
 
     // Fusión de Configuración de Movimientos
     const settingsMap = new Map<string, MovementConfig>();

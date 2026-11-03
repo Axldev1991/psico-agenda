@@ -25,6 +25,7 @@ export interface RecurrenceRule {
   startTime: string;        // Hora de inicio (ej: "16:00")
   durationMinutes: number;  // Duración de la sesión (ej: 50)
   modality?: SessionModality;
+  updatedAt?: string;       // ISO timestamp for LWW sync resolution
 }
 
 export interface MovementConfig {

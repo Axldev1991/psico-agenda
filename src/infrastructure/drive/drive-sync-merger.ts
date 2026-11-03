@@ -1,5 +1,5 @@
 import { ExtraNote } from "../../domain/extra-note.types";
-import { Session } from "../../domain/session.types";
+import { Session, RecurrenceRule } from "../../domain/session.types";
 
 /**
  * Parses a timestamp string into milliseconds, falling back to 0 if invalid or absent.
@@ -101,4 +101,44 @@ export function mergeExtraNotesByLWW(
   return Array.from(noteMap.values()).sort(
     (a, b) => parseTimestamp(b.createdAt) - parseTimestamp(a.createdAt)
   );
+}
+
+/**
+ * Merges local and remote recurrence rules using Last-Write-Wins (LWW) keyed by patientUuid.
+ * - If a rule exists only locally: retained.
+ * - If a rule exists only remotely: added.
+ * - If a rule exists on both sides: compares updatedAt timestamp.
+ *   Remote wins only if remote.updatedAt is strictly newer than local.updatedAt.
+ *   Ties or missing remote timestamps deterministically retain the local version.
+ */
+export function mergeRecurrenceRulesByLWW(
+  localRules: RecurrenceRule[] = [],
+  remoteRules: RecurrenceRule[] = []
+): RecurrenceRule[] {
+  const ruleMap = new Map<string, RecurrenceRule>();
+
+  for (const local of localRules) {
+    if (local.patientUuid) {
+      ruleMap.set(local.patientUuid, local);
+    }
+  }
+
+  for (const remote of remoteRules) {
+    if (!remote.patientUuid) continue;
+
+    const local = ruleMap.get(remote.patientUuid);
+    if (!local) {
+      ruleMap.set(remote.patientUuid, remote);
+      continue;
+    }
+
+    const localTime = parseTimestamp(local.updatedAt);
+    const remoteTime = parseTimestamp(remote.updatedAt);
+
+    if (remoteTime > localTime) {
+      ruleMap.set(remote.patientUuid, remote);
+    }
+  }
+
+  return Array.from(ruleMap.values());
 }

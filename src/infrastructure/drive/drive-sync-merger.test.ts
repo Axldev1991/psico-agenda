@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mergeSessionsByLWW, mergeExtraNotesByLWW } from "./drive-sync-merger";
-import { Session } from "../../domain/session.types";
+import { mergeSessionsByLWW, mergeExtraNotesByLWW, mergeRecurrenceRulesByLWW } from "./drive-sync-merger";
+import { Session, RecurrenceRule } from "../../domain/session.types";
 import { ExtraNote } from "../../domain/extra-note.types";
 
 describe("mergeSessionsByLWW", () => {
@@ -242,6 +242,113 @@ describe("mergeExtraNotesByLWW", () => {
     const merged = mergeExtraNotesByLWW([localNote], [remoteNote]);
     expect(merged).toHaveLength(1);
     expect(merged[0].content).toBe("Local tie content");
+  });
+});
+
+describe("mergeRecurrenceRulesByLWW", () => {
+  it("retains newer local recurrence rule (e.g. modality changed to online) when local.updatedAt > remote.updatedAt", () => {
+    const localRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "online",
+      updatedAt: "2026-11-03T18:00:00Z",
+    };
+
+    const remoteRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "in_person",
+      updatedAt: "2026-10-20T10:00:00Z",
+    };
+
+    const merged = mergeRecurrenceRulesByLWW([localRule], [remoteRule]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].modality).toBe("online");
+    expect(merged[0].updatedAt).toBe("2026-11-03T18:00:00Z");
+  });
+
+  it("updates with newer remote recurrence rule when remote.updatedAt > local.updatedAt", () => {
+    const localRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "in_person",
+      updatedAt: "2026-10-20T10:00:00Z",
+    };
+
+    const remoteRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TH",
+      startDate: "2026-10-01",
+      startTime: "17:00",
+      durationMinutes: 50,
+      modality: "online",
+      updatedAt: "2026-11-03T18:00:00Z",
+    };
+
+    const merged = mergeRecurrenceRulesByLWW([localRule], [remoteRule]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].startTime).toBe("17:00");
+    expect(merged[0].modality).toBe("online");
+  });
+
+  it("unions disjoint recurrence rules from both sides", () => {
+    const localRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "in_person",
+      updatedAt: "2026-11-01T10:00:00Z",
+    };
+
+    const remoteRule: RecurrenceRule = {
+      patientUuid: "p-2",
+      rruleString: "FREQ=WEEKLY;BYDAY=WE",
+      startDate: "2026-10-01",
+      startTime: "10:00",
+      durationMinutes: 50,
+      modality: "online",
+      updatedAt: "2026-11-02T10:00:00Z",
+    };
+
+    const merged = mergeRecurrenceRulesByLWW([localRule], [remoteRule]);
+    expect(merged).toHaveLength(2);
+    expect(merged.map((r) => r.patientUuid)).toEqual(["p-1", "p-2"]);
+  });
+
+  it("retains local version when timestamps tie or when remote lacks updatedAt", () => {
+    const localRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "online",
+      updatedAt: "2026-11-03T10:00:00Z",
+    };
+
+    const remoteRule: RecurrenceRule = {
+      patientUuid: "p-1",
+      rruleString: "FREQ=WEEKLY;BYDAY=TU",
+      startDate: "2026-10-01",
+      startTime: "16:00",
+      durationMinutes: 50,
+      modality: "in_person",
+    };
+
+    const merged = mergeRecurrenceRulesByLWW([localRule], [remoteRule]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].modality).toBe("online");
   });
 });
 

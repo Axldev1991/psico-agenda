@@ -214,12 +214,17 @@ export function useAvailabilitySettings() {
 
     setSaveStatus('saving');
     try {
-      await settingsRepo.saveAvailabilitySettings(settings);
+      const settingsToSave: AvailabilitySettings = {
+        ...settings,
+        updatedAt: new Date().toISOString(),
+      };
+      await settingsRepo.saveAvailabilitySettings(settingsToSave);
+      setSettings(settingsToSave);
       setSaveStatus('saved');
       setErrorMessage(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('availability-settings-updated', { detail: settings })
+          new CustomEvent('availability-settings-updated', { detail: settingsToSave })
         );
       }
       setTimeout(() => setSaveStatus('idle'), 3000);

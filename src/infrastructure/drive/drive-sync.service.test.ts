@@ -580,6 +580,99 @@ describe('DriveSyncService', () => {
       };
       expect(localAvailability).toEqual(originalLocalAvailability);
     });
+
+    it('should prioritize local availabilitySettings when updated locally with newer timestamp (LWW)', async () => {
+      mockGetAll.mockResolvedValue([]);
+      mockGetAvailabilitySettings.mockResolvedValue({
+        weekly: { 1: { enabled: true, ranges: [{ start: '08:00', end: '12:00' }] } },
+        defaultSessionDurationMinutes: 50,
+        intervalStepMinutes: 60,
+        updatedAt: '2026-11-03T18:00:00.000Z',
+      });
+
+      mockDownloadFile.mockImplementation(async (_folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [],
+            recurrenceRules: [],
+            availabilitySettings: {
+              weekly: { 1: { enabled: true, ranges: [{ start: '14:00', end: '18:00' }] } },
+              defaultSessionDurationMinutes: 45,
+              intervalStepMinutes: 60,
+              updatedAt: '2026-10-30T10:00:00.000Z',
+            },
+            exportedAt: '2026-10-30T10:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Local availability must win and not be overwritten by older remote
+      expect(mockSaveAvailabilitySettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          defaultSessionDurationMinutes: 50,
+          weekly: expect.objectContaining({
+            1: { enabled: true, ranges: [{ start: '08:00', end: '12:00' }] },
+          }),
+        })
+      );
+    });
+
+    it('should preserve local recurrence rule modality when updated locally (LWW)', async () => {
+      mockGetAll.mockResolvedValue([]);
+      mockGetAvailabilitySettings.mockResolvedValue({
+        weekly: {},
+        defaultSessionDurationMinutes: 50,
+        intervalStepMinutes: 60,
+      });
+
+      mockGetRecurrenceRules.mockResolvedValue([
+        {
+          patientUuid: 'patient-test-1',
+          rruleString: 'FREQ=WEEKLY;BYDAY=TU',
+          startDate: '2026-10-01',
+          startTime: '16:00',
+          durationMinutes: 50,
+          modality: 'online',
+          updatedAt: '2026-11-03T19:00:00.000Z',
+        },
+      ]);
+
+      mockDownloadFile.mockImplementation(async (_folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [],
+            recurrenceRules: [
+              {
+                patientUuid: 'patient-test-1',
+                rruleString: 'FREQ=WEEKLY;BYDAY=TU',
+                startDate: '2026-10-01',
+                startTime: '16:00',
+                durationMinutes: 50,
+                modality: 'in_person',
+                updatedAt: '2026-10-25T12:00:00.000Z',
+              },
+            ],
+            exportedAt: '2026-10-25T12:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Local online modality must win and be saved
+      expect(mockSaveAllRecurrenceRules).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            patientUuid: 'patient-test-1',
+            modality: 'online',
+          }),
+        ])
+      );
+    });
   });
 });
 

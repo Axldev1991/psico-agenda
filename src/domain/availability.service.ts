@@ -205,12 +205,40 @@ export function mergeAvailabilitySettings(
     absenceMap.set(key, a);
   });
 
+  const localTime = local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+  const remoteTime = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+
+  let isRemoteNewer: boolean;
+  if (localTime > 0 && remoteTime > 0) {
+    isRemoteNewer = remoteTime > localTime;
+  } else if (localTime > 0) {
+    isRemoteNewer = false;
+  } else if (remoteTime > 0) {
+    isRemoteNewer = true;
+  } else {
+    isRemoteNewer = true;
+  }
+
+  const weekly = isRemoteNewer
+    ? (remote.weekly ? { ...local.weekly, ...remote.weekly } : local.weekly)
+    : (local.weekly ? { ...remote.weekly, ...local.weekly } : remote.weekly);
+
+  const defaultSessionDurationMinutes = isRemoteNewer
+    ? (remote.defaultSessionDurationMinutes || local.defaultSessionDurationMinutes)
+    : (local.defaultSessionDurationMinutes || remote.defaultSessionDurationMinutes);
+
+  const intervalStepMinutes = isRemoteNewer
+    ? (remote.intervalStepMinutes || local.intervalStepMinutes)
+    : (local.intervalStepMinutes || remote.intervalStepMinutes);
+
+  const updatedAt = isRemoteNewer ? remote.updatedAt : (local.updatedAt || remote.updatedAt);
+
   return {
-    weekly: remote.weekly ? { ...local.weekly, ...remote.weekly } : local.weekly,
-    defaultSessionDurationMinutes:
-      remote.defaultSessionDurationMinutes || local.defaultSessionDurationMinutes,
-    intervalStepMinutes: remote.intervalStepMinutes || local.intervalStepMinutes,
+    weekly,
+    defaultSessionDurationMinutes,
+    intervalStepMinutes,
     absencePeriods: Array.from(absenceMap.values()),
+    updatedAt,
   };
 }
 
