@@ -207,15 +207,15 @@ export class DriveSyncService {
         const localTime = new Date(localP.updatedAt).getTime();
         const remoteTime = new Date(remoteP.updatedAt).getTime();
 
-        driveLogger.log("info", `Analizando paciente: ${localP.fullName} (Local: ${localP.updatedAt}, Remoto: ${remoteP.updatedAt})`);
+        driveLogger.log("info", `Analizando paciente [${localP.uuid.substring(0, 8)}] (Local: ${localP.updatedAt}, Remoto: ${remoteP.updatedAt})`);
 
         if (localTime > remoteTime) {
-          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Los cambios locales son más recientes. Subiendo...`);
+          driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Los cambios locales son más recientes. Subiendo...`);
           if (localP.isHistoryLoaded !== false) {
             patientsToUpload.push(localP.uuid);
           }
         } else if (remoteTime > localTime) {
-          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Los datos remotos son más recientes. Descargando...`);
+          driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Los datos remotos son más recientes. Descargando...`);
           if (localP.isHistoryLoaded === true || remoteP.status === 'active') {
             patientsToDownload.push(localP.uuid);
           }
@@ -226,7 +226,7 @@ export class DriveSyncService {
             isHistoryLoaded: localP.isHistoryLoaded
           });
         } else {
-          driveLogger.log("info", `  -> Paciente ${localP.fullName}: Tiempos iguales. Sin acción.`);
+          driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Tiempos iguales. Sin acción.`);
         }
       } else {
         // Solo existe remotamente -> descargar

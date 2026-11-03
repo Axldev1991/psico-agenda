@@ -16,18 +16,18 @@ export class DriveFolderSyncService {
       const pacientesFolderId = await driveRepo.getOrCreateFolder("pacientes", rootFolderId);
 
       for (const patient of patients) {
-        // DLP Guard: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto
-        if (patient.isHistoryLoaded === false) {
-          driveLogger.log("info", `[DLP Guard] Saltando sync visible para paciente inactivo: ${patient.fullName}`);
-          continue;
-        }
-
         const partialUuid = patient.uuid.includes("-demo-") 
           ? patient.uuid 
           : patient.uuid.substring(0, 8);
         const patientFolderName = `${patient.fullName}_${partialUuid}`;
+
+        // DLP Guard: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto
+        if (patient.isHistoryLoaded === false) {
+          driveLogger.log("info", `[DLP Guard] Saltando sync visible para paciente inactivo [${partialUuid}]`);
+          continue;
+        }
         
-        driveLogger.log("info", `Procesando volcado visible para: ${patient.fullName} (Carpeta: ${patientFolderName})...`);
+        driveLogger.log("info", `Procesando volcado visible para paciente [${partialUuid}]...`);
         // Buscar si ya existe una carpeta para este paciente usando su UUID único como sufijo
         let patientFolderId: string;
         const existingFolder = await driveRepo.findFolderBySuffix(partialUuid, pacientesFolderId);
@@ -36,7 +36,7 @@ export class DriveFolderSyncService {
           patientFolderId = existingFolder.id;
           // Si el nombre del paciente cambió, renombramos la carpeta
           if (existingFolder.name !== patientFolderName) {
-            driveLogger.log("info", `[Rename] Renombrando carpeta en Drive: de "${existingFolder.name}" a "${patientFolderName}"`);
+            driveLogger.log("info", `[Rename] Renombrando carpeta en Drive para paciente [${partialUuid}]`);
             try {
               await driveRepo.renameFileOrFolder(existingFolder.id, patientFolderName);
             } catch (renameErr) {

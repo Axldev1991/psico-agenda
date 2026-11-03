@@ -1,3 +1,5 @@
+import { sanitizeLogEntry } from "../../domain/dlp/dlp-sanitizer";
+
 export interface LogEntry {
   timestamp: string;
   type: 'info' | 'request' | 'response' | 'error';
@@ -21,15 +23,24 @@ export const driveLogger = {
     if (logs.length > 100) logs.shift(); // keep last 100 logs
     listeners.forEach(l => l(entry));
 
-    // Enviar telemetría al servidor Next.js en desarrollo de forma no bloqueante
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
-      }).catch(err => {
-        // Ignorar fallas silenciosas de red local para no ensuciar la consola
-      });
+    // Telemetría remota protegida con DLP:
+    // En producción solo enviamos eventos de tipo 'error'.
+    // En desarrollo local (localhost) enviamos todos los tipos para inspección en terminal.
+    if (typeof window !== 'undefined') {
+      const isLocalhost =
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1';
+
+      if (isLocalhost || type === 'error') {
+        const sanitized = sanitizeLogEntry(entry);
+        fetch('/api/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sanitized),
+        }).catch(() => {
+          // Ignorar fallas silenciosas de red para no interrumpir al usuario
+        });
+      }
     }
   },
   
@@ -70,3 +81,29 @@ export const driveLogger = {
     listeners.forEach(l => l(entry));
   }
 };
+
+/**
+ * Inicializa la captura automática de errores no controlados a nivel de ventana
+ */
+export function initGlobalErrorTelemetry() {
+  if (typeof window === 'undefined') return;
+  if ((window as any).__telemetry_initialized) return;
+  (window as any).__telemetry_initialized = true;
+
+  window.addEventListener('error', (event) => {
+    driveLogger.log('error', `Excepción no controlada: ${event.message || 'Error desconocido'}`, {
+      file: event.filename,
+      line: event.lineno,
+      column: event.colno,
+      stack: event.error?.stack,
+    });
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const msg = reason instanceof Error ? reason.message : String(reason);
+    driveLogger.log('error', `Promesa rechazada no controlada: ${msg}`, {
+      stack: reason instanceof Error ? reason.stack : undefined,
+    });
+  });
+}
