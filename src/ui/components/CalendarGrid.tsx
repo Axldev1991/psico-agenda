@@ -27,6 +27,7 @@ interface CalendarGridProps {
   onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
   onUpdateModality?: (slot: CalendarSlot, modality: SessionModality) => Promise<void>;
   onRemoveRecurrenceRule: (patientUuid: string) => Promise<void>;
+  onDeleteAppointment?: (slot: CalendarSlot) => Promise<void>;
   onOpenSessionModal: () => void;
   selectDate: (date: Date) => void;
   dbSessions: any[];
@@ -49,6 +50,7 @@ export function CalendarGrid({
   onUpdatePaymentStatus,
   onUpdateModality,
   onRemoveRecurrenceRule,
+  onDeleteAppointment,
   onOpenSessionModal,
   selectDate,
   dbSessions,
@@ -139,6 +141,7 @@ export function CalendarGrid({
                   onUpdatePaymentStatus={onUpdatePaymentStatus}
                   onUpdateModality={onUpdateModality}
                   onRemoveRecurrenceRule={onRemoveRecurrenceRule}
+                  onDeleteAppointment={onDeleteAppointment}
                   onNavigateToPatientDetail={onNavigateToPatientDetail}
                   onOpenRescheduleModal={onOpenRescheduleModal}
                 />

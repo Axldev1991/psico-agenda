@@ -41,7 +41,8 @@ export function usePatientDetail(
   // Si el paciente no tiene sesiones registradas pero tiene un turno recurrente programado,
   // materializar de inmediato la primera sesión con su fecha programada.
   useEffect(() => {
-    if (!patient || sessions.length > 0) return;
+    const activeSessions = sessions.filter((s) => !s.deletedAt);
+    if (!patient || activeSessions.length > 0) return;
 
     const autoInstantiateFirstRecurrentSession = async () => {
       const rule = await sessionRepo.getRecurrenceRuleByPatient(patient.uuid);

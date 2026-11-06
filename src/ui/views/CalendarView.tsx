@@ -25,6 +25,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     updateSessionModality,
     materializeSlot,
     removeRecurrenceRule,
+    deleteAppointment,
     holidays,
     dbSessions,
     recurrenceRules,
@@ -76,6 +77,7 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         onUpdatePaymentStatus={updateSessionPaymentStatus}
         onUpdateModality={updateSessionModality}
         onRemoveRecurrenceRule={removeRecurrenceRule}
+        onDeleteAppointment={deleteAppointment}
         onOpenSessionModal={openSessionModal}
         selectDate={selectDate}
         dbSessions={dbSessions}

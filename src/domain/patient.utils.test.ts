@@ -313,5 +313,20 @@ describe("Patient Utilities", () => {
       expect(result).toHaveLength(2);
       expect(result.map((s) => s.uuid)).toContain("s-distant-target");
     });
+
+    it("excludes sessions marked with deletedAt even if they are past or target sessions", () => {
+      const sessions = [
+        { uuid: "s-1", dateTime: "2026-11-01T16:00:00.000Z", status: "completed", notes: "Nota", deletedAt: "2026-11-06T12:00:00.000Z" },
+        { uuid: "s-2", dateTime: "2026-11-10T16:00:00.000Z", status: "scheduled", notes: "", deletedAt: "2026-11-06T12:00:00.000Z" },
+        { uuid: "s-active", dateTime: "2026-11-10T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions as any, {
+        referenceDate,
+        targetSessionUuid: "s-1",
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0].uuid).toBe("s-active");
+    });
   });
 });

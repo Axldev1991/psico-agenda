@@ -91,6 +91,62 @@ describe("mergeSessionsByLWW", () => {
     expect(merged.map((s) => s.uuid)).toEqual(["s-offline", "s-remote-device"]);
   });
 
+  it("preserves soft-deleted session tombstone when local deletion is newer than remote active session", () => {
+    const remoteSession: Session = {
+      uuid: "s-1",
+      patientUuid: "p-1",
+      dateTime: "2026-10-15T15:00:00Z",
+      status: "scheduled",
+      priceAtSession: 20000,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-01T00:00:00Z",
+    };
+
+    const localDeletedSession: Session = {
+      uuid: "s-1",
+      patientUuid: "p-1",
+      dateTime: "2026-10-15T15:00:00Z",
+      status: "scheduled",
+      priceAtSession: 20000,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-06T12:00:00Z",
+      deletedAt: "2026-10-06T12:00:00Z",
+    };
+
+    const merged = mergeSessionsByLWW([localDeletedSession], [remoteSession]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].deletedAt).toBe("2026-10-06T12:00:00Z");
+  });
+
+  it("accepts remote soft-deleted session tombstone when remote deletion is newer than local active session", () => {
+    const localSession: Session = {
+      uuid: "s-1",
+      patientUuid: "p-1",
+      dateTime: "2026-10-15T15:00:00Z",
+      status: "scheduled",
+      priceAtSession: 20000,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-01T00:00:00Z",
+    };
+
+    const remoteDeletedSession: Session = {
+      uuid: "s-1",
+      patientUuid: "p-1",
+      dateTime: "2026-10-15T15:00:00Z",
+      status: "scheduled",
+      priceAtSession: 20000,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-06T12:00:00Z",
+      deletedAt: "2026-10-06T12:00:00Z",
+    };
+
+    const merged = mergeSessionsByLWW([localSession], [remoteDeletedSession]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].deletedAt).toBe("2026-10-06T12:00:00Z");
+  });
+
   it("falls back to createdAt when updatedAt is missing", () => {
     const localSession = {
       uuid: "s-legacy",

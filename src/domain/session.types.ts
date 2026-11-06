@@ -16,6 +16,7 @@ export interface Session {
   colorTag?: string;        // Marca de color visual (ej: "indigo", "rose", "emerald")
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;       // ISO timestamp for soft deletion (tombstone for LWW sync)
 }
 
 export interface RecurrenceRule {

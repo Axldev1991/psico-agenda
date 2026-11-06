@@ -501,6 +501,18 @@ export function useCalendar() {
     await sessionRepo.deleteRecurrenceRule(patientUuid);
   };
 
+  const deleteAppointment = async (slot: CalendarSlot) => {
+    if (slot.uuid) {
+      const existing = await sessionRepo.getByUuid(slot.uuid);
+      if (existing) {
+        existing.deletedAt = new Date().toISOString();
+        existing.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existing);
+      }
+    }
+    await touchPatient(slot.patientUuid);
+  };
+
   return {
     currentDate,
     weekStart,
@@ -520,6 +532,7 @@ export function useCalendar() {
     updateSessionModality,
     materializeSlot,
     removeRecurrenceRule,
+    deleteAppointment,
     patients,
     holidays,
     dbSessions,

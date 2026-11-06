@@ -14,6 +14,7 @@ interface AppointmentCardProps {
   onUpdatePaymentStatus?: (slot: CalendarSlot, status: PaymentStatus, method?: PaymentMethod) => Promise<void>;
   onUpdateModality?: (slot: CalendarSlot, modality: SessionModality) => Promise<void>;
   onRemoveRecurrenceRule?: (patientUuid: string) => Promise<void>;
+  onDeleteAppointment?: (slot: CalendarSlot) => Promise<void>;
   onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string, slot?: CalendarSlot) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
 }
@@ -24,6 +25,7 @@ export function AppointmentCard({
   onUpdatePaymentStatus,
   onUpdateModality,
   onRemoveRecurrenceRule,
+  onDeleteAppointment,
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
 }: AppointmentCardProps) {
@@ -175,9 +177,26 @@ export function AppointmentCard({
             type="button"
             onClick={() => onRemoveRecurrenceRule(slot.patientUuid)}
             title="Quitar turno recurrente"
+            aria-label="Quitar turno recurrente"
             className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
           >
             <Icon name="x" size={14} />
+          </button>
+        )}
+
+        {!slot.isRecurrent && onDeleteAppointment && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("¿Confirmás que querés eliminar este turno? Esta acción no se puede deshacer.")) {
+                onDeleteAppointment(slot);
+              }
+            }}
+            title="Eliminar turno"
+            aria-label="Eliminar turno"
+            className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
+          >
+            <Icon name="trash" size={14} />
           </button>
         )}
       </div>

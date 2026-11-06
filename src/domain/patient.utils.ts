@@ -365,12 +365,13 @@ export function filterClinicalSessions<T extends { uuid: string; dateTime: strin
 
   // Encontrar la próxima sesión futura programada (la más cercana en el tiempo que aún no ocurrió)
   const futureScheduled = sessions
-    .filter((s) => new Date(s.dateTime).getTime() > endOfRefDay && s.status === "scheduled")
+    .filter((s) => !(s as any).deletedAt && new Date(s.dateTime).getTime() > endOfRefDay && s.status === "scheduled")
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const nextUpcomingUuid = futureScheduled.length > 0 ? futureScheduled[0].uuid : null;
 
   return sessions.filter((s) => {
+    if ((s as any).deletedAt) return false;
     const isTarget = !!targetSessionUuid && s.uuid === targetSessionUuid;
     const isPastOrToday = new Date(s.dateTime).getTime() <= endOfRefDay;
     const isNotScheduled = s.status !== "scheduled";

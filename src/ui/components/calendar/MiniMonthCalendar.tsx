@@ -82,7 +82,7 @@ export function MiniMonthCalendar({
     // 1. Physical sessions
     const hasPhysical = dbSessions.some((s) => {
       const sDate = typeof s.dateTime === "string" ? new Date(s.dateTime) : s.dateTime;
-      return isSameDay(sDate, day) && s.status !== "cancelled";
+      return isSameDay(sDate, day) && s.status !== "cancelled" && !s.deletedAt;
     });
     if (hasPhysical) return true;
 

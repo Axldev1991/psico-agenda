@@ -122,6 +122,29 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
     expect(slots[0].notes).toBe("Sesión extraordinaria de interconsulta");
   });
 
+  it("ignores sessions with deletedAt (soft deleted) both in recurrence overrides and standalone sessions", () => {
+    const deletedManualSession: Session = {
+      uuid: "sess-manual-deleted",
+      patientUuid: "p-1",
+      dateTime: "2026-10-15T18:00:00",
+      status: "scheduled",
+      priceAtSession: 30000,
+      createdAt: "2026-10-10T00:00:00.000Z",
+      updatedAt: "2026-10-11T00:00:00.000Z",
+      deletedAt: "2026-10-11T00:00:00.000Z",
+    };
+
+    const slots = computeAgendaSlots({
+      intervalStart,
+      intervalEnd,
+      recurrenceRules: [],
+      dbSessions: [deletedManualSession],
+      patients: [mockPatient],
+    });
+
+    expect(slots).toHaveLength(0);
+  });
+
   it("tags slots falling on official holidays", () => {
     const recurrenceRule: RecurrenceRule = {
       patientUuid: "p-1",

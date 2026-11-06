@@ -34,6 +34,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
 
   const agenda: CalendarSlot[] = [];
   const patientMap = new Map(patients.map((p) => [p.uuid, p]));
+  const activeDbSessions = dbSessions.filter((s) => !s.deletedAt);
 
   // 1. Process Recurrent Rules
   recurrenceRules.forEach((rule) => {
@@ -67,7 +68,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
         const slotDateTime = new Date(year, month, day, hours, minutes, 0, 0);
 
         // Check if there is a recorded session override in the database for the same patient & day
-        const dbOverride = dbSessions.find(
+        const dbOverride = activeDbSessions.find(
           (s) =>
             s.patientUuid === rule.patientUuid &&
             isSameDay(parseISO(s.dateTime), slotDateTime)
@@ -116,7 +117,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
   });
 
   // 2. Process Standalone Manual Sessions
-  dbSessions.forEach((session) => {
+  activeDbSessions.forEach((session) => {
     const sessionDate = parseISO(session.dateTime);
     if (sessionDate >= intervalStart && sessionDate <= intervalEnd) {
       // Check if this session was already processed in recurrence overrides
