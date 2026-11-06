@@ -80,6 +80,7 @@ export function formatExportDate(d: Date): string {
 const SESSION_STATUS: Record<string, string> = {
   completed: 'Atendido / Realizado',
   cancelled: 'Cancelado',
+  rescheduled: 'Reagendado',
   missed: 'Ausente / No asistió',
   scheduled: 'Programado'
 };

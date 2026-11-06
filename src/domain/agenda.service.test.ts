@@ -543,12 +543,15 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
 
       expect(result.success).toBe(true);
       expect(result.cancelException).toBeDefined();
-      expect(result.cancelException?.status).toBe("cancelled");
+      expect(result.cancelException?.status).toBe("rescheduled");
       expect(result.cancelException?.uuid).toBe("session-1"); // keep same uuid if provided
+      expect(result.cancelException?.rescheduledTo).toBe(newDateTime.toISOString());
+      expect(result.cancelException?.notes).toContain("[REAGENDADO] Turno reprogramado para el 15/10/2026 a las 10:00 hs.");
 
       expect(result.newSession).toBeDefined();
       expect(result.newSession?.status).toBe("scheduled");
       expect(result.newSession?.dateTime).toBe(newDateTime.toISOString());
+      expect(result.newSession?.rescheduledFrom).toBe(baseSlot.dateTime.toISOString());
       expect(result.newSession?.uuid).toBeDefined();
       expect(result.newSession?.uuid).not.toBe("session-1");
     });
@@ -677,7 +680,7 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       durationMinutes: 50,
     };
 
-    it("swaps eventually, creating 4 sessions (2 cancellations, 2 new)", () => {
+    it("swaps eventually, creating 4 sessions (2 rescheduled exceptions, 2 new)", () => {
       const result = swapSlots({
         slotA,
         slotB,
@@ -687,18 +690,30 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(result.success).toBe(true);
       expect(result.sessionsToSave).toHaveLength(4);
 
-      const cancellations = result.sessionsToSave.filter((s) => s.status === "cancelled");
+      const reschedules = result.sessionsToSave.filter((s) => s.status === "rescheduled");
       const scheduled = result.sessionsToSave.filter((s) => s.status === "scheduled");
 
-      expect(cancellations).toHaveLength(2);
+      expect(reschedules).toHaveLength(2);
       expect(scheduled).toHaveLength(2);
 
-      // Check dates are swapped
+      // Check dates are swapped and trace details applied
+      const exceptionA = reschedules.find((s) => s.patientUuid === "p-1");
+      const exceptionB = reschedules.find((s) => s.patientUuid === "p-2");
+
+      expect(exceptionA?.rescheduledTo).toBe(slotB.dateTime.toISOString());
+      expect(exceptionA?.notes).toContain("[REAGENDADO] Turno intercambiado para el 15/10/2026 a las 10:00 hs.");
+
+      expect(exceptionB?.rescheduledTo).toBe(slotA.dateTime.toISOString());
+      expect(exceptionB?.notes).toContain("[REAGENDADO] Turno intercambiado para el 14/10/2026 a las 16:00 hs.");
+
       const newA = scheduled.find((s) => s.patientUuid === "p-1");
       const newB = scheduled.find((s) => s.patientUuid === "p-2");
 
       expect(newA?.dateTime).toBe(slotB.dateTime.toISOString());
+      expect(newA?.rescheduledFrom).toBe(slotA.dateTime.toISOString());
+      
       expect(newB?.dateTime).toBe(slotA.dateTime.toISOString());
+      expect(newB?.rescheduledFrom).toBe(slotB.dateTime.toISOString());
     });
 
     it("swaps permanently, updating 2 RecurrenceRules", () => {

@@ -46,6 +46,13 @@ const STATUS_OPTIONS: {
     colorClass: "text-ink-sub",
     bgClass: "bg-line/40",
   },
+  {
+    status: "rescheduled",
+    label: "Reagendado",
+    icon: "alert",
+    colorClass: "text-indigo-700",
+    bgClass: "bg-indigo-50",
+  },
 ];
 
 export function AppointmentStatusBadge({
@@ -109,6 +116,10 @@ export function AppointmentStatusBadge({
     badgeClass = "bg-warn-tint text-warn border-warn/30 hover:bg-warn-tint/80";
     badgeIcon = "alert";
     badgeLabel = "Ausente";
+  } else if (status === "rescheduled") {
+    badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 line-through";
+    badgeIcon = "alert";
+    badgeLabel = "Reagendado";
   }
 
   return (
@@ -151,6 +162,7 @@ export function AppointmentStatusBadge({
         <option value="completed">Atendido</option>
         <option value="cancelled">Cancelado</option>
         <option value="missed">Ausente</option>
+        <option value="rescheduled">Reagendado</option>
       </select>
 
       {isOpen && (

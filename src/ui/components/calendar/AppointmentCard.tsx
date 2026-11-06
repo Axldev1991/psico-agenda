@@ -35,6 +35,7 @@ export function AppointmentCard({
   const isCancelled = slot.status === "cancelled";
   const isCompleted = slot.status === "completed";
   const isMissed = slot.status === "missed";
+  const isRescheduled = slot.status === "rescheduled";
   const isSuspended = !!slot.isSuspended;
 
   let barColor = "bg-primary";
@@ -46,12 +47,14 @@ export function AppointmentCard({
     barColor = "bg-line-control";
   } else if (isMissed) {
     barColor = "bg-warn";
+  } else if (isRescheduled) {
+    barColor = "bg-indigo-300";
   }
 
   return (
     <article
       className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border shadow-xs transition-colors hover:border-line-control/60 ${
-        isCancelled
+        isCancelled || isRescheduled
           ? "opacity-75 bg-bg-base/40 border-line"
           : isSuspended
           ? "bg-amber-500/5 border-amber-200/80"
@@ -78,7 +81,7 @@ export function AppointmentCard({
             <h4
               data-sensitive
               className={`font-semibold text-base text-ink truncate ${
-                isCancelled || isSuspended ? "line-through text-ink-sub" : ""
+                isCancelled || isRescheduled || isSuspended ? "line-through text-ink-sub" : ""
               }`}
             >
               {slot.patientName}
@@ -91,12 +94,27 @@ export function AppointmentCard({
                 <Icon name="repeat" size={13} />
               </span>
             )}
+            {isRescheduled && slot.rescheduledTo && (
+              <span
+                title={`Reagendado para el ${format(new Date(slot.rescheduledTo), 'dd/MM/yyyy')} a las ${format(new Date(slot.rescheduledTo), 'HH:mm')} hs.`}
+                className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
+              >
+                <span>↻ Reagendado</span>
+              </span>
+            )}
+            {isRescheduled && !slot.rescheduledTo && (
+              <span
+                className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
+              >
+                <span>↻ Reagendado</span>
+              </span>
+            )}
           </div>
 
           {/* Row 2: Metadata tags: Modality + Status Dropdown Badge + Payment Badge */}
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {/* Modalidad */}
-            {onUpdateModality && !isCancelled && !isSuspended ? (
+            {onUpdateModality && !isCancelled && !isRescheduled && !isSuspended ? (
               <button
                 type="button"
                 onClick={() => onUpdateModality(slot, slot.modality === "online" ? "in_person" : "online")}
@@ -125,7 +143,7 @@ export function AppointmentCard({
             />
 
             {/* Payment Badge */}
-            {!isCancelled && !isSuspended && onUpdatePaymentStatus && (
+            {!isCancelled && !isRescheduled && !isSuspended && onUpdatePaymentStatus && (
               <AppointmentPaymentBadge
                 paymentStatus={slot.paymentStatus || "pending"}
                 paymentMethod={slot.paymentMethod}
@@ -160,7 +178,7 @@ export function AppointmentCard({
           <span>Ficha</span>
         </button>
 
-        {!isCancelled && onOpenRescheduleModal && (
+        {!isCancelled && !isRescheduled && onOpenRescheduleModal && (
           <button
             type="button"
             onClick={() => onOpenRescheduleModal(slot)}

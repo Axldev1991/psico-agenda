@@ -82,7 +82,7 @@ export function MiniMonthCalendar({
     // 1. Physical sessions
     const hasPhysical = dbSessions.some((s) => {
       const sDate = typeof s.dateTime === "string" ? new Date(s.dateTime) : s.dateTime;
-      return isSameDay(sDate, day) && s.status !== "cancelled" && !s.deletedAt;
+      return isSameDay(sDate, day) && s.status !== "cancelled" && s.status !== "rescheduled" && !s.deletedAt;
     });
     if (hasPhysical) return true;
 
@@ -100,7 +100,7 @@ export function MiniMonthCalendar({
             return (
               s.patientUuid === rule.patientUuid &&
               isSameDay(sDate, day) &&
-              s.status === "cancelled"
+              (s.status === "cancelled" || s.status === "rescheduled")
             );
           });
           if (!hasCancellation) return true;

@@ -9,12 +9,14 @@ export interface CalendarSlot {
   patientName: string;
   dateTime: Date;
   durationMinutes: number;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'missed';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'missed' | 'rescheduled';
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
   modality?: SessionModality;
   price: number;
   notes?: string;
+  rescheduledTo?: string;
+  rescheduledFrom?: string;
   isRecurrent: boolean;
   holiday?: Holiday;
   isSuspended?: boolean;

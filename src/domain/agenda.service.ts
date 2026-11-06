@@ -256,9 +256,9 @@ export function findAvailableSlots(
   const startHour = customStartHour ?? 8;
   const endHour = customEndHour ?? 20;
 
-  // Find all active booked slots on this day (ignoring cancelled slots)
+  // Find all active booked slots on this day (ignoring cancelled and rescheduled slots)
   const activeDaySlots = bookedSlots.filter(
-    (s) => isSameDay(s.dateTime, targetDate) && s.status !== 'cancelled'
+    (s) => isSameDay(s.dateTime, targetDate) && s.status !== 'cancelled' && s.status !== 'rescheduled'
   );
 
   // Search range: if weeklyAvailability is provided, scan between 06:00 and 23:00 or custom bounds
@@ -314,7 +314,7 @@ export function findConflictingSlot(
   const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60 * 1000);
 
   return bookedSlots.find((booked) => {
-    if (booked.status === 'cancelled' || booked.isSuspended) return false;
+    if (booked.status === 'cancelled' || booked.status === 'rescheduled' || booked.isSuspended) return false;
     if (!isSameDay(booked.dateTime, slotStart)) return false;
 
     const bookedStart = new Date(booked.dateTime).getTime();
@@ -402,17 +402,23 @@ export function rescheduleSlot(params: RescheduleSlotParams): RescheduleResult {
 
   // Eventual
   const nowStr = new Date().toISOString();
+  
+  const formattedNewDate = format(newDateTime, 'dd/MM/yyyy');
+  const formattedNewTime = format(newDateTime, 'HH:mm');
+  const rescheduleNote = `[REAGENDADO] Turno reprogramado para el ${formattedNewDate} a las ${formattedNewTime} hs.`;
+  const existingNotes = slot.notes ? `${slot.notes}\n${rescheduleNote}` : rescheduleNote;
 
   const cancelException = {
     uuid: slot.uuid || crypto.randomUUID(),
     patientUuid: slot.patientUuid,
     dateTime: slot.dateTime.toISOString(),
-    status: 'cancelled' as const,
+    status: 'rescheduled' as const,
     paymentStatus: slot.paymentStatus || 'pending',
     paymentMethod: slot.paymentMethod,
     modality: slot.modality || 'in_person',
     priceAtSession: slot.price,
-    notes: slot.notes,
+    notes: existingNotes,
+    rescheduledTo: newDateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };
@@ -427,6 +433,7 @@ export function rescheduleSlot(params: RescheduleSlotParams): RescheduleResult {
     modality: slot.modality || 'in_person',
     priceAtSession: slot.price,
     notes: slot.notes,
+    rescheduledFrom: slot.dateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };
@@ -486,14 +493,26 @@ export function swapSlots(params: SwapSlotsParams): SwapResult {
   // Eventual
   const nowStr = new Date().toISOString();
 
+  const formattedDateA = format(slotA.dateTime, 'dd/MM/yyyy');
+  const formattedTimeA = format(slotA.dateTime, 'HH:mm');
+  const formattedDateB = format(slotB.dateTime, 'dd/MM/yyyy');
+  const formattedTimeB = format(slotB.dateTime, 'HH:mm');
+
+  const noteForA = `[REAGENDADO] Turno intercambiado para el ${formattedDateB} a las ${formattedTimeB} hs.`;
+  const existingNotesA = slotA.notes ? `${slotA.notes}\n${noteForA}` : noteForA;
+
+  const noteForB = `[REAGENDADO] Turno intercambiado para el ${formattedDateA} a las ${formattedTimeA} hs.`;
+  const existingNotesB = slotB.notes ? `${slotB.notes}\n${noteForB}` : noteForB;
+
   const cancelA = {
     uuid: slotA.uuid || crypto.randomUUID(),
     patientUuid: slotA.patientUuid,
     dateTime: slotA.dateTime.toISOString(),
-    status: 'cancelled' as const,
+    status: 'rescheduled' as const,
     modality: slotA.modality || 'in_person',
     priceAtSession: slotA.price,
-    notes: slotA.notes,
+    notes: existingNotesA,
+    rescheduledTo: slotB.dateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };
@@ -502,10 +521,11 @@ export function swapSlots(params: SwapSlotsParams): SwapResult {
     uuid: slotB.uuid || crypto.randomUUID(),
     patientUuid: slotB.patientUuid,
     dateTime: slotB.dateTime.toISOString(),
-    status: 'cancelled' as const,
+    status: 'rescheduled' as const,
     modality: slotB.modality || 'in_person',
     priceAtSession: slotB.price,
-    notes: slotB.notes,
+    notes: existingNotesB,
+    rescheduledTo: slotA.dateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };
@@ -518,6 +538,7 @@ export function swapSlots(params: SwapSlotsParams): SwapResult {
     modality: slotA.modality || 'in_person',
     priceAtSession: slotA.price,
     notes: slotA.notes,
+    rescheduledFrom: slotA.dateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };
@@ -530,6 +551,7 @@ export function swapSlots(params: SwapSlotsParams): SwapResult {
     modality: slotB.modality || 'in_person',
     priceAtSession: slotB.price,
     notes: slotB.notes,
+    rescheduledFrom: slotB.dateTime.toISOString(),
     createdAt: nowStr,
     updatedAt: nowStr,
   };

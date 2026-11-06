@@ -77,6 +77,7 @@ export function generateClinicalHistoryDocument(patient: Patient, sessions: Sess
     'scheduled': 'Programado',
     'completed': 'Atendido / Realizado',
     'cancelled': 'Cancelado',
+    'rescheduled': 'Reagendado',
     'missed': 'Ausente / No asistió'
   };
 
