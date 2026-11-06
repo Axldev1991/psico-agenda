@@ -63,4 +63,21 @@ describe('DexieSettingsRepository - AvailabilitySettings', () => {
     const settings = await repo.getAvailabilitySettings();
     expect(settings.defaultSessionDurationMinutes).toBe(50);
   });
+
+  it('preserves updatedAt when migrating existing settings from localStorage', async () => {
+    const timestamp = '2026-11-05T12:30:00.000Z';
+    mockStorage['psico_availability_settings'] = JSON.stringify({
+      weekly: {
+        1: { enabled: true, ranges: [{ start: '10:00', end: '16:00' }] },
+      },
+      defaultSessionDurationMinutes: 45,
+      intervalStepMinutes: 60,
+      updatedAt: timestamp,
+    });
+
+    const settings = await repo.getAvailabilitySettings();
+    expect(settings.defaultSessionDurationMinutes).toBe(45);
+    expect(settings.weekly[1].ranges).toEqual([{ start: '10:00', end: '16:00' }]);
+    expect(settings.updatedAt).toBe(timestamp);
+  });
 });
