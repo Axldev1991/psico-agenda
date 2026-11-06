@@ -5,10 +5,11 @@ import { useSettings } from "../hooks/useSettings";
 import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
 import { MovementRow } from "./settings/MovementRow";
 import { AvailabilitySettingsTab } from "./settings/AvailabilitySettingsTab";
+import { FactoryResetTab } from "./settings/FactoryResetTab";
 import { Icon } from "./common/Icon";
 
 export function SettingsPanel() {
-  const [settingsTab, setSettingsTab] = useState<"availability" | "categories">("availability");
+  const [settingsTab, setSettingsTab] = useState<"availability" | "categories" | "factory_reset">("availability");
   const {
     movementConfigs,
     punctuationConfigs,
@@ -160,11 +161,27 @@ export function SettingsPanel() {
             <Icon name="settings" size={16} />
             <span>Movimientos y Puntuaciones</span>
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={settingsTab === "factory_reset"}
+            onClick={() => setSettingsTab("factory_reset")}
+            className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              settingsTab === "factory_reset"
+                ? "border-err text-err font-bold"
+                : "border-transparent text-ink-sub hover:text-err"
+            }`}
+          >
+            <Icon name="alert" size={16} />
+            <span>Restablecimiento de fábrica</span>
+          </button>
         </div>
       </header>
 
       {settingsTab === "availability" ? (
         <AvailabilitySettingsTab />
+      ) : settingsTab === "factory_reset" ? (
+        <FactoryResetTab />
       ) : (
         <div className="space-y-6">
           {/* Section 1: Movimientos de consulta */}
