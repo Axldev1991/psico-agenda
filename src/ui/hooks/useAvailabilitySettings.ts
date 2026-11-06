@@ -95,12 +95,16 @@ export function useAvailabilitySettings() {
     }
 
     setSaveStatus('saving');
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 450));
     try {
       const settingsToSave: AvailabilitySettings = {
         ...current,
         updatedAt: new Date().toISOString(),
       };
-      await settingsRepo.saveAvailabilitySettings(settingsToSave);
+      await Promise.all([
+        settingsRepo.saveAvailabilitySettings(settingsToSave),
+        minDelay,
+      ]);
       setSettings(settingsToSave);
       settingsRef.current = settingsToSave;
       isDirtyRef.current = false;

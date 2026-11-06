@@ -19,7 +19,7 @@ export function SettingsPanel() {
     updateAllPunctuationConfigs,
     updateClinicalFeatures,
   } = useSettings();
-  const { confirm } = useUIState();
+  const { confirm, showToast } = useUIState();
 
   const [localConfigs, setLocalConfigs] = useState<MovementConfig[]>([]);
   const [localPunctuation, setLocalPunctuation] = useState<PunctuationConfig[]>([]);
@@ -165,15 +165,21 @@ export function SettingsPanel() {
 
   const handleSave = async () => {
     setSaveStatus("saving");
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 450));
     try {
-      await updateAllMovementConfigs(localConfigs);
-      await updateAllPunctuationConfigs(localPunctuation);
-      await updateClinicalFeatures(features);
+      await Promise.all([
+        updateAllMovementConfigs(localConfigs),
+        updateAllPunctuationConfigs(localPunctuation),
+        updateClinicalFeatures(features),
+        minDelay,
+      ]);
       setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      showToast("Configuración de movimientos y puntuaciones guardada con éxito", "success");
+      setTimeout(() => setSaveStatus("idle"), 2500);
     } catch (e) {
       console.error("Error guardando configuraciones de la clínica:", e);
       setSaveStatus("idle");
+      showToast("Error al guardar las configuraciones", "error");
     }
   };
 
@@ -405,7 +411,11 @@ export function SettingsPanel() {
               type="button"
               onClick={handleSave}
               disabled={saveStatus === "saving"}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 ${
+                saveStatus === "saved"
+                  ? "bg-ok hover:bg-ok text-white"
+                  : "bg-primary hover:bg-primary-hover text-surface"
+              }`}
             >
               {saveStatus === "saving" ? (
                 <>

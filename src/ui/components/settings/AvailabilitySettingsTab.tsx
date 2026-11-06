@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAvailabilitySettings } from "../../hooks/useAvailabilitySettings";
+import { useUIState } from "../../context/UIContext";
 import { DayScheduleRow } from "./DayScheduleRow";
 import { AbsencePeriodsManager } from "./AbsencePeriodsManager";
 import { Icon } from "../common/Icon";
@@ -24,6 +25,7 @@ const DURATION_OPTIONS = [
 ];
 
 export function AvailabilitySettingsTab() {
+  const { showToast } = useUIState();
   const {
     settings,
     loading,
@@ -40,6 +42,15 @@ export function AvailabilitySettingsTab() {
     removeAbsencePeriod,
     save,
   } = useAvailabilitySettings();
+
+  const handleManualSave = async () => {
+    const success = await save();
+    if (success) {
+      showToast("Disponibilidad y horarios guardados correctamente", "success");
+    } else {
+      showToast("Revisá los horarios antes de guardar", "error");
+    }
+  };
 
   if (loading) {
     return (
@@ -157,14 +168,23 @@ export function AvailabilitySettingsTab() {
 
         <button
           type="button"
-          onClick={save}
+          onClick={handleManualSave}
           disabled={saveStatus === "saving"}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-surface text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+          className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 ${
+            saveStatus === "saved"
+              ? "bg-ok hover:bg-ok text-white"
+              : "bg-primary hover:bg-primary-hover text-surface"
+          }`}
         >
           {saveStatus === "saving" ? (
             <>
               <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
               <span>Guardando...</span>
+            </>
+          ) : saveStatus === "saved" ? (
+            <>
+              <Icon name="check" size={15} />
+              <span>Guardado con éxito</span>
             </>
           ) : (
             <span>Guardar ahora</span>
