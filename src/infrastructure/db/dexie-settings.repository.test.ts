@@ -38,7 +38,8 @@ describe('DexieSettingsRepository - AvailabilitySettings', () => {
     expect(settings.weekly[0].enabled).toBe(false);
   });
 
-  it('saves and retrieves updated availability settings', async () => {
+  it('saves and retrieves updated availability settings with updatedAt preserved', async () => {
+    const timestamp = '2026-11-06T10:00:00.000Z';
     const custom: AvailabilitySettings = {
       weekly: {
         ...getDefaultAvailabilitySettings().weekly,
@@ -46,6 +47,7 @@ describe('DexieSettingsRepository - AvailabilitySettings', () => {
       },
       defaultSessionDurationMinutes: 45,
       intervalStepMinutes: 60,
+      updatedAt: timestamp,
     };
 
     await repo.saveAvailabilitySettings(custom);
@@ -53,6 +55,7 @@ describe('DexieSettingsRepository - AvailabilitySettings', () => {
 
     expect(retrieved.defaultSessionDurationMinutes).toBe(45);
     expect(retrieved.weekly[1].ranges).toEqual([{ start: '14:00', end: '20:00' }]);
+    expect(retrieved.updatedAt).toBe(timestamp);
   });
 
   it('gracefully falls back to defaults if corrupted JSON is in localStorage', async () => {

@@ -165,6 +165,7 @@ export class DexieSettingsRepository implements ISettingsRepository {
           defaultSessionDurationMinutes: val.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
           intervalStepMinutes: val.intervalStepMinutes || defaults.intervalStepMinutes,
           absencePeriods: Array.isArray(val.absencePeriods) ? val.absencePeriods : [],
+          updatedAt: val.updatedAt,
         };
         // Sincronizar en localStorage como caché
         if (typeof window !== "undefined" && window.localStorage) {
@@ -190,6 +191,7 @@ export class DexieSettingsRepository implements ISettingsRepository {
               defaultSessionDurationMinutes: parsed.defaultSessionDurationMinutes || defaults.defaultSessionDurationMinutes,
               intervalStepMinutes: parsed.intervalStepMinutes || defaults.intervalStepMinutes,
               absencePeriods: Array.isArray(parsed.absencePeriods) ? parsed.absencePeriods : [],
+              updatedAt: parsed.updatedAt,
             };
             // Migrar a Dexie en segundo plano
             db.appSettings.put({ key: "availability", value: migrated }).catch((err) => {

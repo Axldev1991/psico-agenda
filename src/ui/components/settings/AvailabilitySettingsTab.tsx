@@ -29,6 +29,7 @@ export function AvailabilitySettingsTab() {
     loading,
     saveStatus,
     errorMessage,
+    isDirty,
     updateDayEnabled,
     updateRange,
     addRange,
@@ -126,8 +127,34 @@ export function AvailabilitySettingsTab() {
         onRemovePeriod={removeAbsencePeriod}
       />
 
-      {/* Save button bar */}
-      <div className="flex items-center justify-end gap-3 pt-2">
+      {/* Save button bar (sticky for immediate feedback and easy access) */}
+      <div className="sticky bottom-4 z-20 bg-surface/95 backdrop-blur-md border border-line rounded-2xl p-4 shadow-md flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm">
+          {saveStatus === "saving" ? (
+            <>
+              <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-ink font-medium">Guardando cambios automáticamente...</span>
+            </>
+          ) : saveStatus === "saved" ? (
+            <>
+              <span className="text-ok">
+                <Icon name="check" size={16} />
+              </span>
+              <span className="text-ok font-medium">Cambios guardados y sincronizados</span>
+            </>
+          ) : isDirty ? (
+            <span className="text-warn font-medium flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-warn animate-pulse" />
+              <span>Guardando en un instante...</span>
+            </span>
+          ) : (
+            <span className="text-ink-sub flex items-center gap-1.5">
+              <Icon name="check" size={14} className="text-ink-muted" />
+              <span>Disponibilidad al día</span>
+            </span>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={save}
@@ -137,15 +164,10 @@ export function AvailabilitySettingsTab() {
           {saveStatus === "saving" ? (
             <>
               <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
-              <span>Guardando disponibilidad...</span>
-            </>
-          ) : saveStatus === "saved" ? (
-            <>
-              <Icon name="check" size={15} />
-              <span>Disponibilidad guardada</span>
+              <span>Guardando...</span>
             </>
           ) : (
-            <span>Guardar disponibilidad</span>
+            <span>Guardar ahora</span>
           )}
         </button>
       </div>
