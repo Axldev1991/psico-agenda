@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSettings } from "../hooks/useSettings";
+import { useUIState } from "../context/UIContext";
 import { MovementConfig, PunctuationConfig, ClinicalFeaturesSettings } from "../../domain/session.types";
 import { MovementRow } from "./settings/MovementRow";
 import { AvailabilitySettingsTab } from "./settings/AvailabilitySettingsTab";
@@ -18,6 +19,7 @@ export function SettingsPanel() {
     updateAllPunctuationConfigs,
     updateClinicalFeatures,
   } = useSettings();
+  const { confirm } = useUIState();
 
   const [localConfigs, setLocalConfigs] = useState<MovementConfig[]>([]);
   const [localPunctuation, setLocalPunctuation] = useState<PunctuationConfig[]>([]);
@@ -113,8 +115,17 @@ export function SettingsPanel() {
     setLocalConfigs((prev) => [...prev, newConfig]);
   };
 
-  const handleDeleteMovement = (key: string) => {
-    setLocalConfigs((prev) => prev.filter((c) => c.key !== key));
+  const handleDeleteMovement = async (key: string) => {
+    const config = localConfigs.find((c) => c.key === key);
+    const ok = await confirm({
+      title: `¿Eliminar movimiento "${config?.label || key}"?`,
+      description: "Ya no estará disponible para categorizar sesiones futuras.",
+      confirmText: "Eliminar",
+      variant: "warning",
+    });
+    if (ok) {
+      setLocalConfigs((prev) => prev.filter((c) => c.key !== key));
+    }
   };
 
   const handlePunctuationLabelChange = (key: string, newLabel: string) => {
@@ -139,8 +150,17 @@ export function SettingsPanel() {
     setLocalPunctuation((prev) => [...prev, newConfig]);
   };
 
-  const handleDeletePunctuation = (key: string) => {
-    setLocalPunctuation((prev) => prev.filter((p) => p.key !== key));
+  const handleDeletePunctuation = async (key: string) => {
+    const config = localPunctuation.find((p) => p.key === key);
+    const ok = await confirm({
+      title: `¿Eliminar puntuación "${config?.label || key}"?`,
+      description: "Ya no estará disponible como opción de resaltado en el editor.",
+      confirmText: "Eliminar",
+      variant: "warning",
+    });
+    if (ok) {
+      setLocalPunctuation((prev) => prev.filter((p) => p.key !== key));
+    }
   };
 
   const handleSave = async () => {

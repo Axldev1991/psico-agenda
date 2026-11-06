@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { AbsencePeriod } from "../../../domain/availability.types";
 import { validateAbsencePeriod } from "../../../domain/availability.service";
+import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
 import { DateInput } from "../common/DateInput";
 
@@ -19,10 +20,23 @@ export function AbsencePeriodsManager({
   onAddPeriod,
   onRemovePeriod,
 }: AbsencePeriodsManagerProps) {
+  const { confirm } = useUIState();
   const [isAdding, setIsAdding] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+
+  const handleRemovePeriod = async (period: AbsencePeriod) => {
+    const ok = await confirm({
+      title: `¿Eliminar receso "${period.reason}"?`,
+      description: "Los días comprendidos volverán a figurar habilitados en la agenda.",
+      confirmText: "Eliminar receso",
+      variant: "warning",
+    });
+    if (ok) {
+      onRemovePeriod(period.id);
+    }
+  };
   const [error, setError] = useState<string | null>(null);
 
   const handleAdd = (e: React.FormEvent) => {
@@ -213,7 +227,7 @@ export function AbsencePeriodsManager({
 
               <button
                 type="button"
-                onClick={() => onRemovePeriod(period.id)}
+                onClick={() => handleRemovePeriod(period)}
                 aria-label={`Eliminar período ${period.reason}`}
                 className="p-1.5 text-ink-sub hover:text-red-600 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer"
               >

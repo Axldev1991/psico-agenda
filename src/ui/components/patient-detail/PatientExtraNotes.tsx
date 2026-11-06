@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useExtraNotes } from "../../hooks/useExtraNotes";
+import { useUIState } from "../../context/UIContext";
 import { ExtraNoteTag, ExtraNote } from "../../../domain/extra-note.types";
 import { Icon } from "../common/Icon";
 
@@ -17,6 +18,7 @@ const PREDEFINED_TAGS: { tag: ExtraNoteTag; label: string; colorClass: string }[
 
 export function PatientExtraNotes({ patientUuid }: PatientExtraNotesProps) {
   const { notes, loading, addNote, editNote, togglePin, removeNote } = useExtraNotes({ patientUuid });
+  const { confirm } = useUIState();
 
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<ExtraNoteTag[]>([]);
@@ -97,7 +99,13 @@ export function PatientExtraNotes({ patientUuid }: PatientExtraNotesProps) {
   };
 
   const handleDelete = async (uuid: string) => {
-    if (window.confirm("¿Seguro que deseás eliminar esta anotación?")) {
+    const ok = await confirm({
+      title: "¿Eliminar anotación extra?",
+      description: "Se borrará esta nota clínica complementaria. Esta acción no se puede deshacer.",
+      confirmText: "Eliminar anotación",
+      variant: "danger",
+    });
+    if (ok) {
       await removeNote(uuid);
     }
   };

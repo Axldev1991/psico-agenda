@@ -4,6 +4,7 @@ import React from "react";
 import { format, addMinutes } from "date-fns";
 import { CalendarSlot } from "../../../domain/agenda.types";
 import { Session, PaymentStatus, PaymentMethod, SessionModality } from "../../../domain/session.types";
+import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
 import { AppointmentPaymentBadge } from "./AppointmentPaymentBadge";
 import { AppointmentStatusBadge } from "./AppointmentStatusBadge";
@@ -29,8 +30,35 @@ export function AppointmentCard({
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
 }: AppointmentCardProps) {
+  const { confirm } = useUIState();
   const startTime = format(slot.dateTime, "HH:mm");
   const endTime = format(addMinutes(slot.dateTime, 50), "HH:mm");
+
+  const handleRemoveRecurrence = async () => {
+    if (!onRemoveRecurrenceRule) return;
+    const ok = await confirm({
+      title: "¿Quitar turno recurrente?",
+      description: `Se eliminará el horario fijo semanal de ${slot.patientName}. Las sesiones ya registradas en su ficha clínica se conservarán.`,
+      confirmText: "Quitar turno fijo",
+      variant: "warning",
+    });
+    if (ok) {
+      await onRemoveRecurrenceRule(slot.patientUuid);
+    }
+  };
+
+  const handleDeleteAppointment = async () => {
+    if (!onDeleteAppointment) return;
+    const ok = await confirm({
+      title: "¿Eliminar este turno?",
+      description: "Esta acción liberará el horario en la agenda y quitará el turno por completo. No se puede deshacer.",
+      confirmText: "Eliminar turno",
+      variant: "danger",
+    });
+    if (ok) {
+      await onDeleteAppointment(slot);
+    }
+  };
 
   const isCancelled = slot.status === "cancelled";
   const isCompleted = slot.status === "completed";
@@ -193,7 +221,7 @@ export function AppointmentCard({
         {slot.isRecurrent && onRemoveRecurrenceRule && (
           <button
             type="button"
-            onClick={() => onRemoveRecurrenceRule(slot.patientUuid)}
+            onClick={handleRemoveRecurrence}
             title="Quitar turno recurrente"
             aria-label="Quitar turno recurrente"
             className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
@@ -205,11 +233,7 @@ export function AppointmentCard({
         {!slot.isRecurrent && onDeleteAppointment && (
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm("¿Confirmás que querés eliminar este turno? Esta acción no se puede deshacer.")) {
-                onDeleteAppointment(slot);
-              }
-            }}
+            onClick={handleDeleteAppointment}
             title="Eliminar turno"
             aria-label="Eliminar turno"
             className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"

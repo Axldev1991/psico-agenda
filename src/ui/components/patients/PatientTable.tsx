@@ -3,6 +3,7 @@
 import React from "react";
 import { Patient } from "../../../domain/patient.types";
 import { calculateAge } from "../../../domain/patient.utils";
+import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
 
 interface PatientTableProps {
@@ -22,6 +23,19 @@ export function PatientTable({
   onSelectPatient,
   onRemovePatient,
 }: PatientTableProps) {
+  const { confirm } = useUIState();
+
+  const handleRemovePatient = async (patient: Patient) => {
+    const ok = await confirm({
+      title: `¿Eliminar a ${patient.fullName}?`,
+      description: "Se borrará su expediente clínico, notas y registros de sesiones. Esta acción no se puede deshacer.",
+      confirmText: "Eliminar paciente",
+      variant: "danger",
+    });
+    if (ok) {
+      await onRemovePatient(patient.uuid);
+    }
+  };
   return (
     <>
       {/* Desktop Table (>= 768px) */}
@@ -153,15 +167,7 @@ export function PatientTable({
 
                       <button
                         type="button"
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `¿Estás seguro de que deseas eliminar a ${patient.fullName}? Esta acción borrará todas sus sesiones e historial clínico.`
-                            )
-                          ) {
-                            onRemovePatient(patient.uuid);
-                          }
-                        }}
+                        onClick={() => handleRemovePatient(patient)}
                         title="Eliminar paciente"
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-ink-sub hover:text-err hover:bg-err-tint rounded-md transition-all cursor-pointer"
                       >
@@ -251,15 +257,7 @@ export function PatientTable({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `¿Estás seguro de que deseas eliminar a ${patient.fullName}?`
-                      )
-                    ) {
-                      onRemovePatient(patient.uuid);
-                    }
-                  }}
+                  onClick={() => handleRemovePatient(patient)}
                   className="text-sm text-ink-sub hover:text-err transition-colors cursor-pointer p-1"
                 >
                   Eliminar

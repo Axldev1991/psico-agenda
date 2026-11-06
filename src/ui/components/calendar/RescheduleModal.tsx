@@ -42,7 +42,7 @@ export function RescheduleModal({
   const [selectedSwapSlotKey, setSelectedSwapSlotKey] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { showToast } = useUIState();
+  const { showToast, confirm } = useUIState();
   const { settings } = useAvailabilitySettings();
 
   useEffect(() => {
@@ -95,6 +95,30 @@ export function RescheduleModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (mode === "swap") {
+      const targetSlot = swapCandidates.find(
+        (c) => `${c.patientUuid}-${c.dateTime.getTime()}` === selectedSwapSlotKey
+      );
+      if (!targetSlot) return;
+
+      const ok = await confirm({
+        title: "¿Confirmar intercambio de turnos?",
+        description: `Se intercambiarán los turnos de ${slot.patientName} (${format(slot.dateTime, "dd/MM HH:mm 'hs'")}) y ${targetSlot.patientName} (${format(targetSlot.dateTime, "dd/MM HH:mm 'hs'")}).`,
+        confirmText: "Intercambiar turnos",
+        variant: "primary",
+      });
+      if (!ok) return;
+    } else if (scope === "permanent") {
+      if (!selectedAvailableSlot) return;
+      const ok = await confirm({
+        title: "¿Modificar turno fijo semanal?",
+        description: `Esta acción actualizará la regla de recurrencia fija de ${slot.patientName} de ahora en más.`,
+        confirmText: "Modificar turno fijo",
+        variant: "primary",
+      });
+      if (!ok) return;
+    }
 
     try {
       setIsSubmitting(true);

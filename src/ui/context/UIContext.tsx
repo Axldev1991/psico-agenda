@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Patient } from "../../domain/patient.types";
+import { ConfirmationModal, ConfirmVariant } from "../components/common/ConfirmationModal";
 
 export type ActiveTab = "calendar" | "patients" | "settings";
 
@@ -9,6 +10,20 @@ export interface Toast {
   id: string;
   message: string;
   type: "success" | "info" | "error";
+}
+
+export interface ConfirmDialogOptions {
+  title: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: ConfirmVariant;
+}
+
+interface ConfirmState {
+  isOpen: boolean;
+  options: ConfirmDialogOptions;
+  resolve: (value: boolean) => void;
 }
 
 export interface UIContextType {
@@ -31,6 +46,7 @@ export interface UIContextType {
   navigateToPatientDetail: (patient: Patient, sessionUuid?: string) => void;
   toast: Toast | null;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
+  confirm: (options: ConfirmDialogOptions) => Promise<boolean>;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -44,6 +60,31 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+
+  const confirm = (options: ConfirmDialogOptions): Promise<boolean> => {
+    return new Promise<boolean>((resolve) => {
+      setConfirmState({
+        isOpen: true,
+        options,
+        resolve,
+      });
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmState) {
+      confirmState.resolve(true);
+      setConfirmState(null);
+    }
+  };
+
+  const handleCancelAction = () => {
+    if (confirmState) {
+      confirmState.resolve(false);
+      setConfirmState(null);
+    }
+  };
 
   const openNewPatientModal = () => {
     setPatientToEdit(null);
@@ -104,9 +145,22 @@ export function UIProvider({ children }: { children: ReactNode }) {
         navigateToPatientDetail,
         toast,
         showToast,
+        confirm,
       }}
     >
       {children}
+      {confirmState && (
+        <ConfirmationModal
+          isOpen={confirmState.isOpen}
+          title={confirmState.options.title}
+          description={confirmState.options.description}
+          confirmText={confirmState.options.confirmText}
+          cancelText={confirmState.options.cancelText}
+          variant={confirmState.options.variant}
+          onConfirm={handleConfirmAction}
+          onCancel={handleCancelAction}
+        />
+      )}
     </UIContext.Provider>
   );
 }
