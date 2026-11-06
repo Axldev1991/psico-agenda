@@ -80,4 +80,39 @@ describe('DexieSettingsRepository - AvailabilitySettings', () => {
     expect(settings.weekly[1].ranges).toEqual([{ start: '10:00', end: '16:00' }]);
     expect(settings.updatedAt).toBe(timestamp);
   });
+
+  describe('ClinicalFeaturesSettings (Movements & Punctuations Toggles)', () => {
+    it('returns defaults with movements and punctuations enabled when empty', async () => {
+      const features = await repo.getClinicalFeatures();
+      expect(features.enableMovements).toBe(true);
+      expect(features.enablePunctuations).toBe(true);
+    });
+
+    it('saves and retrieves disabled flags with updatedAt', async () => {
+      const timestamp = '2026-11-06T15:00:00.000Z';
+      await repo.saveClinicalFeatures({
+        enableMovements: false,
+        enablePunctuations: false,
+        updatedAt: timestamp,
+      });
+
+      const retrieved = await repo.getClinicalFeatures();
+      expect(retrieved.enableMovements).toBe(false);
+      expect(retrieved.enablePunctuations).toBe(false);
+      expect(retrieved.updatedAt).toBe(timestamp);
+    });
+
+    it('falls back to localStorage when Dexie is not ready', async () => {
+      mockStorage['psico_clinical_features'] = JSON.stringify({
+        enableMovements: true,
+        enablePunctuations: false,
+        updatedAt: '2026-11-06T16:00:00.000Z',
+      });
+
+      const retrieved = await repo.getClinicalFeatures();
+      expect(retrieved.enableMovements).toBe(true);
+      expect(retrieved.enablePunctuations).toBe(false);
+      expect(retrieved.updatedAt).toBe('2026-11-06T16:00:00.000Z');
+    });
+  });
 });

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSettings } from "../hooks/useSettings";
-import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
+import { MovementConfig, PunctuationConfig, ClinicalFeaturesSettings } from "../../domain/session.types";
 import { MovementRow } from "./settings/MovementRow";
 import { AvailabilitySettingsTab } from "./settings/AvailabilitySettingsTab";
 import { FactoryResetTab } from "./settings/FactoryResetTab";
@@ -13,12 +13,18 @@ export function SettingsPanel() {
   const {
     movementConfigs,
     punctuationConfigs,
+    clinicalFeatures,
     updateAllMovementConfigs,
     updateAllPunctuationConfigs,
+    updateClinicalFeatures,
   } = useSettings();
 
   const [localConfigs, setLocalConfigs] = useState<MovementConfig[]>([]);
   const [localPunctuation, setLocalPunctuation] = useState<PunctuationConfig[]>([]);
+  const [features, setFeatures] = useState<ClinicalFeaturesSettings>({
+    enableMovements: true,
+    enablePunctuations: true,
+  });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   const defaultConfigs: MovementConfig[] = [
@@ -50,6 +56,40 @@ export function SettingsPanel() {
       setLocalPunctuation(JSON.parse(JSON.stringify(defaultPunctuation)));
     }
   }, [punctuationConfigs]);
+
+  useEffect(() => {
+    if (clinicalFeatures) {
+      setFeatures({
+        enableMovements: clinicalFeatures.enableMovements !== false,
+        enablePunctuations: clinicalFeatures.enablePunctuations !== false,
+        updatedAt: clinicalFeatures.updatedAt,
+      });
+    }
+  }, [clinicalFeatures]);
+
+  const handleToggleMovements = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !features.enableMovements;
+    const updated: ClinicalFeaturesSettings = {
+      ...features,
+      enableMovements: next,
+      updatedAt: new Date().toISOString(),
+    };
+    setFeatures(updated);
+    await updateClinicalFeatures(updated);
+  };
+
+  const handleTogglePunctuations = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !features.enablePunctuations;
+    const updated: ClinicalFeaturesSettings = {
+      ...features,
+      enablePunctuations: next,
+      updatedAt: new Date().toISOString(),
+    };
+    setFeatures(updated);
+    await updateClinicalFeatures(updated);
+  };
 
   const handleLabelChange = (key: string, newLabel: string) => {
     setLocalConfigs((prev) =>
@@ -108,6 +148,7 @@ export function SettingsPanel() {
     try {
       await updateAllMovementConfigs(localConfigs);
       await updateAllPunctuationConfigs(localPunctuation);
+      await updateClinicalFeatures(features);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (e) {
@@ -187,16 +228,46 @@ export function SettingsPanel() {
           {/* Section 1: Movimientos de consulta */}
           <details
             className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs"
-            open
+            open={features.enableMovements}
           >
             <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
-              <span>Movimientos de consulta</span>
-              <span className="text-ink-sub transition-transform group-open:rotate-180">
-                <Icon name="chev-d" size={16} />
-              </span>
+              <div className="flex items-center gap-3">
+                <span>Movimientos de consulta</span>
+                <span
+                  className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                    features.enableMovements
+                      ? "bg-ok-tint text-ok border-ok/30"
+                      : "bg-bg-base text-ink-sub border-line"
+                  }`}
+                >
+                  {features.enableMovements ? "Activo" : "Deshabilitado"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleToggleMovements}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                    features.enableMovements
+                      ? "border-err/40 text-err hover:bg-err-tint"
+                      : "border-primary text-primary hover:bg-primary-tint"
+                  }`}
+                >
+                  {features.enableMovements ? "Desactivar" : "Activar"}
+                </button>
+                <span className="text-ink-sub transition-transform group-open:rotate-180">
+                  <Icon name="chev-d" size={16} />
+                </span>
+              </div>
             </summary>
 
             <div className="p-5 space-y-4">
+              {!features.enableMovements && (
+                <div className="p-3 bg-amber-500/10 border border-amber-300/40 rounded-xl text-xs text-amber-900 font-medium">
+                  Los movimientos están deshabilitados. No se mostrarán en la ficha clínica ni al redactar notas de sesión.
+                </div>
+              )}
+
               <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
                 <div className="col-span-5">Nombre del movimiento</div>
                 <div className="col-span-2 text-center">Color</div>
@@ -232,15 +303,48 @@ export function SettingsPanel() {
           </details>
 
           {/* Section 2: Puntuaciones (Editor) */}
-          <details className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs">
+          <details
+            className="group bg-surface border border-line rounded-2xl overflow-hidden shadow-xs"
+            open={features.enablePunctuations}
+          >
             <summary className="flex items-center justify-between p-4 cursor-pointer select-none text-sm font-semibold text-ink bg-bg-base/40 hover:bg-bg-base/70 transition-colors">
-              <span>Puntuaciones (resaltados del editor)</span>
-              <span className="text-ink-sub transition-transform group-open:rotate-180">
-                <Icon name="chev-d" size={16} />
-              </span>
+              <div className="flex items-center gap-3">
+                <span>Puntuaciones (resaltados del editor)</span>
+                <span
+                  className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                    features.enablePunctuations
+                      ? "bg-ok-tint text-ok border-ok/30"
+                      : "bg-bg-base text-ink-sub border-line"
+                  }`}
+                >
+                  {features.enablePunctuations ? "Activo" : "Deshabilitado"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleTogglePunctuations}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                    features.enablePunctuations
+                      ? "border-err/40 text-err hover:bg-err-tint"
+                      : "border-primary text-primary hover:bg-primary-tint"
+                  }`}
+                >
+                  {features.enablePunctuations ? "Desactivar" : "Activar"}
+                </button>
+                <span className="text-ink-sub transition-transform group-open:rotate-180">
+                  <Icon name="chev-d" size={16} />
+                </span>
+              </div>
             </summary>
 
             <div className="p-5 space-y-4">
+              {!features.enablePunctuations && (
+                <div className="p-3 bg-amber-500/10 border border-amber-300/40 rounded-xl text-xs text-amber-900 font-medium">
+                  Las puntuaciones están deshabilitadas. No se mostrará la paleta de resaltado en el editor de notas ni la trazabilidad de puntuaciones en la ficha clínica.
+                </div>
+              )}
+
               <div className="hidden sm:grid grid-cols-12 gap-4 pb-2 border-b border-line text-sm text-ink-sub font-semibold">
                 <div className="col-span-5">Nombre de la puntuación</div>
                 <div className="col-span-2 text-center">Color</div>

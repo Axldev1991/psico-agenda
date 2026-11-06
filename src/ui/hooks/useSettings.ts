@@ -1,6 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { container } from "../../infrastructure/container";
-import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
+import { MovementConfig, PunctuationConfig, ClinicalFeaturesSettings } from "../../domain/session.types";
 
 const settingsRepo = container.getSettingsRepository();
 
@@ -19,6 +19,13 @@ export function useSettings() {
     []
   ) || [];
 
+  const clinicalFeatures = useLiveQuery(
+    async () => {
+      return await settingsRepo.getClinicalFeatures();
+    },
+    []
+  ) || { enableMovements: true, enablePunctuations: true };
+
   const updateMovementConfig = async (config: MovementConfig) => {
     await settingsRepo.saveMovementConfig(config);
   };
@@ -35,12 +42,18 @@ export function useSettings() {
     await settingsRepo.saveAllPunctuationConfigs(configs);
   };
 
+  const updateClinicalFeatures = async (features: ClinicalFeaturesSettings) => {
+    await settingsRepo.saveClinicalFeatures(features);
+  };
+
   return {
     movementConfigs,
     punctuationConfigs,
+    clinicalFeatures,
     updateMovementConfig,
     updateAllMovementConfigs,
     updatePunctuationConfig,
     updateAllPunctuationConfigs,
+    updateClinicalFeatures,
   };
 }

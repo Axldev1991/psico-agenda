@@ -22,7 +22,7 @@ export function RichTextEditor({
   minHeight = "380px",
   onBlur,
 }: RichTextEditorProps) {
-  const { punctuationConfigs } = useSettings();
+  const { punctuationConfigs, clinicalFeatures } = useSettings();
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!initialValue);
@@ -197,54 +197,58 @@ export function RichTextEditor({
               )}
             </div>
 
-            <div className="h-4 w-px bg-line mx-1" />
+            {clinicalFeatures.enablePunctuations && (
+              <>
+                <div className="h-4 w-px bg-line mx-1" />
 
-            {/* Resaltadores de colores */}
-            <div className="flex items-center gap-1.5">
-              {configsToUse.map((color) => (
-                <button
-                  key={color.key}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => executeHighlight(color.color)}
-                  style={{ backgroundColor: color.color }}
-                  className="h-5 w-5 rounded-full border border-line cursor-pointer hover:scale-110 transition-transform shadow-xs"
-                  title={`Resaltar como: ${color.label}`}
-                />
-              ))}
+                {/* Resaltadores de colores */}
+                <div className="flex items-center gap-1.5">
+                  {configsToUse.map((color) => (
+                    <button
+                      key={color.key}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => executeHighlight(color.color)}
+                      style={{ backgroundColor: color.color }}
+                      className="h-5 w-5 rounded-full border border-line cursor-pointer hover:scale-110 transition-transform shadow-xs"
+                      title={`Resaltar como: ${color.label}`}
+                    />
+                  ))}
 
-              {/* Selector de color personalizado */}
-              <div 
-                className="relative h-6 w-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform group cursor-pointer" 
-                title="Color de resaltado a elección"
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                <input
-                  type="color"
-                  value={customColor}
-                  onChange={(e) => {
-                    setCustomColor(e.target.value);
-                    executeHighlight(e.target.value);
-                  }}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                />
-                <div 
-                  className="h-5 w-5 rounded-full border border-line flex items-center justify-center shadow-inner"
-                  style={{ backgroundColor: customColor }}
-                />
-              </div>
+                  {/* Selector de color personalizado */}
+                  <div 
+                    className="relative h-6 w-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform group cursor-pointer" 
+                    title="Color de resaltado a elección"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    <input
+                      type="color"
+                      value={customColor}
+                      onChange={(e) => {
+                        setCustomColor(e.target.value);
+                        executeHighlight(e.target.value);
+                      }}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                    />
+                    <div 
+                      className="h-5 w-5 rounded-full border border-line flex items-center justify-center shadow-inner"
+                      style={{ backgroundColor: customColor }}
+                    />
+                  </div>
 
-              {/* Botón Limpiar Resaltador */}
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => executeHighlight("transparent")}
-                className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted hover:text-danger flex items-center justify-center cursor-pointer transition-colors text-xs ml-1"
-                title="Quitar Resaltador"
-              >
-                <Icon name="x" size={12} />
-              </button>
-            </div>
+                  {/* Botón Limpiar Resaltador */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => executeHighlight("transparent")}
+                    className="h-6 w-6 rounded-lg hover:bg-sand-light text-ink-muted hover:text-danger flex items-center justify-center cursor-pointer transition-colors text-xs ml-1"
+                    title="Quitar Resaltador"
+                  >
+                    <Icon name="x" size={12} />
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

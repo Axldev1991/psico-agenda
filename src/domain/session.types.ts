@@ -40,3 +40,9 @@ export interface PunctuationConfig {
   color: string;            // hex color code
   label: string;            // Amarillo, Verde, Lavanda, Arena, etc.
 }
+
+export interface ClinicalFeaturesSettings {
+  enableMovements: boolean;
+  enablePunctuations: boolean;
+  updatedAt?: string;
+}

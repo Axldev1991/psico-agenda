@@ -1,5 +1,5 @@
 import { ISettingsRepository } from "../../repositories/settings.repository";
-import { MovementConfig, PunctuationConfig } from "../../domain/session.types";
+import { MovementConfig, PunctuationConfig, ClinicalFeaturesSettings } from "../../domain/session.types";
 import { AvailabilitySettings } from "../../domain/availability.types";
 import { getDefaultAvailabilitySettings } from "../../domain/availability.service";
 import { db } from "./dexie.db";
@@ -222,6 +222,79 @@ export class DexieSettingsRepository implements ISettingsRepository {
         window.localStorage.setItem("psico_availability_settings", JSON.stringify(settings));
       } catch (e) {
         console.error("Error al persistir disponibilidad en localStorage:", e);
+      }
+    }
+  }
+
+  // Métodos para ClinicalFeaturesSettings (Movimientos y Puntuaciones toggles)
+  async getClinicalFeatures(): Promise<ClinicalFeaturesSettings> {
+    const defaults: ClinicalFeaturesSettings = {
+      enableMovements: true,
+      enablePunctuations: true,
+    };
+
+    // 1. Intentar leer desde Dexie (IndexedDB)
+    try {
+      const record = await db.appSettings.get("clinical_features");
+      if (record && record.value && typeof record.value === "object") {
+        const val = record.value;
+        const res: ClinicalFeaturesSettings = {
+          enableMovements: val.enableMovements !== false,
+          enablePunctuations: val.enablePunctuations !== false,
+          updatedAt: val.updatedAt,
+        };
+        if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            window.localStorage.setItem("psico_clinical_features", JSON.stringify(res));
+          } catch {}
+        }
+        return res;
+      }
+    } catch (e) {
+      console.warn("Falla al recuperar características clínicas desde Dexie:", e);
+    }
+
+    // 2. Fallback desde localStorage
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem("psico_clinical_features");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object") {
+            const res: ClinicalFeaturesSettings = {
+              enableMovements: parsed.enableMovements !== false,
+              enablePunctuations: parsed.enablePunctuations !== false,
+              updatedAt: parsed.updatedAt,
+            };
+            db.appSettings.put({ key: "clinical_features", value: res }).catch(() => {});
+            return res;
+          }
+        }
+      } catch (e) {
+        console.warn("Falla al recuperar características clínicas desde localStorage:", e);
+      }
+    }
+
+    return defaults;
+  }
+
+  async saveClinicalFeatures(features: ClinicalFeaturesSettings): Promise<void> {
+    const toSave: ClinicalFeaturesSettings = {
+      ...features,
+      updatedAt: features.updatedAt || new Date().toISOString(),
+    };
+
+    try {
+      await db.appSettings.put({ key: "clinical_features", value: toSave });
+    } catch (e) {
+      console.error("Error al persistir características clínicas en Dexie:", e);
+    }
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem("psico_clinical_features", JSON.stringify(toSave));
+      } catch (e) {
+        console.error("Error al persistir características clínicas en localStorage:", e);
       }
     }
   }

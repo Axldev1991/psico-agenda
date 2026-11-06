@@ -23,7 +23,7 @@ export function ActiveSessionHeader({
   changeSessionColor,
   changeSessionPayment,
 }: ActiveSessionHeaderProps) {
-  const { movementConfigs } = useSettings();
+  const { movementConfigs, clinicalFeatures } = useSettings();
   const [localDescription, setLocalDescription] = useState(
     selectedSession.description || ""
   );
@@ -169,82 +169,86 @@ export function ActiveSessionHeader({
         />
       </div>
 
-      <div className="border-t border-line/60" />
+      {clinicalFeatures.enableMovements && (
+        <>
+          <div className="border-t border-line/60" />
 
-      {/* Row 3: Movement pills with sliding horizontal scroll */}
-      <div className="flex items-center gap-2.5 w-full min-w-0">
-        <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-22 shrink-0">
-          Movimiento:
-        </span>
+          {/* Row 3: Movement pills with sliding horizontal scroll */}
+          <div className="flex items-center gap-2.5 w-full min-w-0">
+            <span className="text-sm text-ink-sub font-semibold uppercase tracking-wider whitespace-nowrap min-w-22 shrink-0">
+              Movimiento:
+            </span>
 
-        <div className="relative flex-1 min-w-0 flex items-center gap-1">
-          {canScrollLeft && (
-            <button
-              type="button"
-              onClick={() => handleScroll("left")}
-              className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
-              title="Ver movimientos anteriores"
-              aria-label="Ver movimientos anteriores"
-            >
-              <Icon name="chev-l" size={14} />
-            </button>
-          )}
-
-          <div
-            ref={scrollContainerRef}
-            className="flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 scroll-smooth w-full"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {configsToUse.map((config) => {
-              const isSelected =
-                (selectedSession.colorTag || "indigo") === config.key;
-              const tag = resolveClinicalTag(config.color);
-              const dotColor = config.color?.startsWith("#")
-                ? config.color
-                : tag.text;
-
-              return (
+            <div className="relative flex-1 min-w-0 flex items-center gap-1">
+              {canScrollLeft && (
                 <button
-                  key={config.key}
                   type="button"
-                  onClick={() =>
-                    changeSessionColor(selectedSession.uuid, config.key)
-                  }
-                  style={{
-                    backgroundColor: isSelected ? tag.bg : "transparent",
-                    color: tag.text,
-                    borderColor: isSelected ? tag.text : "var(--color-line)",
-                  }}
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all cursor-pointer border select-none whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 ${
-                    isSelected
-                      ? "font-semibold shadow-2xs ring-2 ring-primary/25"
-                      : "hover:bg-bg-base text-ink-sub hover:text-ink"
-                  }`}
+                  onClick={() => handleScroll("left")}
+                  className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
+                  title="Ver movimientos anteriores"
+                  aria-label="Ver movimientos anteriores"
                 >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs transition-transform"
-                    style={{ backgroundColor: dotColor }}
-                    aria-hidden="true"
-                  />
-                  <span>{config.label}</span>
+                  <Icon name="chev-l" size={14} />
                 </button>
-              );
-            })}
-          </div>
+              )}
 
-          {canScrollRight && (
-            <button
-              type="button"
-              onClick={() => handleScroll("right")}
-              className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
-              title="Ver más movimientos"
-              aria-label="Ver más movimientos"
-            >
-              <Icon name="chev-r" size={14} />
-            </button>
-          )}
-        </div>
-      </div>
+              <div
+                ref={scrollContainerRef}
+                className="flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 scroll-smooth w-full"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {configsToUse.map((config) => {
+                  const isSelected =
+                    (selectedSession.colorTag || "indigo") === config.key;
+                  const tag = resolveClinicalTag(config.color);
+                  const dotColor = config.color?.startsWith("#")
+                    ? config.color
+                    : tag.text;
+
+                  return (
+                    <button
+                      key={config.key}
+                      type="button"
+                      onClick={() =>
+                        changeSessionColor(selectedSession.uuid, config.key)
+                      }
+                      style={{
+                        backgroundColor: isSelected ? tag.bg : "transparent",
+                        color: tag.text,
+                        borderColor: isSelected ? tag.text : "var(--color-line)",
+                      }}
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full transition-all cursor-pointer border select-none whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 ${
+                        isSelected
+                          ? "font-semibold shadow-2xs ring-2 ring-primary/25"
+                          : "hover:bg-bg-base text-ink-sub hover:text-ink"
+                      }`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs transition-transform"
+                        style={{ backgroundColor: dotColor }}
+                        aria-hidden="true"
+                      />
+                      <span>{config.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {canScrollRight && (
+                <button
+                  type="button"
+                  onClick={() => handleScroll("right")}
+                  className="p-1 rounded-lg bg-surface border border-line hover:bg-bg-base text-ink-sub hover:text-ink shadow-xs shrink-0 cursor-pointer transition-colors"
+                  title="Ver más movimientos"
+                  aria-label="Ver más movimientos"
+                >
+                  <Icon name="chev-r" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

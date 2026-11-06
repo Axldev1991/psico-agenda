@@ -14,8 +14,10 @@ interface PatientHighlightsProps {
 }
 
 export function PatientHighlights({ patient, sortedSessions, onJumpToSession }: PatientHighlightsProps) {
-  const { punctuationConfigs } = useSettings();
+  const { punctuationConfigs, clinicalFeatures } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
+
+  if (!clinicalFeatures.enablePunctuations) return null;
 
   const defaultPunctuation = [
     { key: "yellow", color: "#FEF08A", label: "Amarillo" },

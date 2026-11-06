@@ -1,4 +1,4 @@
-import { MovementConfig, PunctuationConfig } from '../domain/session.types';
+import { MovementConfig, PunctuationConfig, ClinicalFeaturesSettings } from '../domain/session.types';
 import { AvailabilitySettings } from '../domain/availability.types';
 
 export interface ISettingsRepository {
@@ -12,4 +12,7 @@ export interface ISettingsRepository {
 
   getAvailabilitySettings(): Promise<AvailabilitySettings>;
   saveAvailabilitySettings(settings: AvailabilitySettings): Promise<void>;
+
+  getClinicalFeatures(): Promise<ClinicalFeaturesSettings>;
+  saveClinicalFeatures(features: ClinicalFeaturesSettings): Promise<void>;
 }

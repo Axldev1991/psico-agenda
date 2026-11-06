@@ -13,6 +13,8 @@ interface PatientSearchFiltersProps {
   selectedPunctuationFilter: string;
   onPunctuationFilterChange: (punctuation: string) => void;
   punctuationConfigs: PunctuationConfig[];
+  enableMovements?: boolean;
+  enablePunctuations?: boolean;
   onClearFilters: () => void;
 }
 
@@ -25,6 +27,8 @@ export function PatientSearchFilters({
   selectedPunctuationFilter,
   onPunctuationFilterChange,
   punctuationConfigs,
+  enableMovements = true,
+  enablePunctuations = true,
   onClearFilters,
 }: PatientSearchFiltersProps) {
   const hasActiveFilters = Boolean(
@@ -48,31 +52,35 @@ export function PatientSearchFilters({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <select
-            value={selectedMovementFilter}
-            onChange={(e) => onMovementFilterChange(e.target.value)}
-            className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
-          >
-            <option value="">Todos los movimientos</option>
-            {movementConfigs.map((m) => (
-              <option key={m.key} value={m.key}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+          {enableMovements && (
+            <select
+              value={selectedMovementFilter}
+              onChange={(e) => onMovementFilterChange(e.target.value)}
+              className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
+            >
+              <option value="">Todos los movimientos</option>
+              {movementConfigs.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          )}
 
-          <select
-            value={selectedPunctuationFilter}
-            onChange={(e) => onPunctuationFilterChange(e.target.value)}
-            className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
-          >
-            <option value="">Todas las puntuaciones</option>
-            {punctuationConfigs.map((p) => (
-              <option key={p.key} value={p.key}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+          {enablePunctuations && (
+            <select
+              value={selectedPunctuationFilter}
+              onChange={(e) => onPunctuationFilterChange(e.target.value)}
+              className="bg-surface border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary transition-colors cursor-pointer min-w-44"
+            >
+              <option value="">Todas las puntuaciones</option>
+              {punctuationConfigs.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          )}
 
           {hasActiveFilters && (
             <button

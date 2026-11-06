@@ -76,7 +76,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Filtros de búsqueda facetada
-  const { movementConfigs, punctuationConfigs } = useSettings();
+  const { movementConfigs, punctuationConfigs, clinicalFeatures } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMovementFilter, setSelectedMovementFilter] = useState("");
   const [selectedPunctuationFilter, setSelectedPunctuationFilter] = useState("");
@@ -229,6 +229,8 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                       selectedPunctuationFilter={selectedPunctuationFilter}
                       onPunctuationFilterChange={setSelectedPunctuationFilter}
                       punctuationConfigs={configsToUse}
+                      enableMovements={clinicalFeatures.enableMovements}
+                      enablePunctuations={clinicalFeatures.enablePunctuations}
                       onClearFilters={handleClearFilters}
                     />
 
