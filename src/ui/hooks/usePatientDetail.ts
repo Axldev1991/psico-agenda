@@ -4,7 +4,8 @@ import { Patient } from "../../domain/patient.types";
 import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { container } from "../../infrastructure/container";
 import { useGoogleDrive } from "./useGoogleDrive";
-import { parseClinicalHistory, rebuildClinicalHistory, findInitialSession } from "../../domain/patient.utils";
+import { parseClinicalHistory, rebuildClinicalHistory, findInitialSession, filterClinicalSessions } from "../../domain/patient.utils";
+import { getFirstOccurrenceOfRule } from "../../domain/agenda.service";
 
 const patientRepo = container.getPatientRepository();
 const sessionRepo = container.getSessionRepository();
@@ -24,29 +25,48 @@ export function usePatientDetail(
     [patient.uuid]
   ) || [];
 
-  const now = new Date();
-  const endOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    59,
-    59,
-    999
-  ).getTime();
-
-  // En la ficha clínica figuran las sesiones que ya ocurrieron (pasadas o de hoy),
-  // o que ya fueron atendidas/canceladas, o que tengan notas redactadas,
-  // o que hayan sido solicitadas explícitamente como objetivo (targetSessionUuid).
+  // En la ficha clínica figuran:
+  // 1. Sesiones pasadas o de hoy.
+  // 2. Sesiones ya atendidas/canceladas.
+  // 3. Sesiones con notas clínicas redactadas.
+  // 4. Sesión objetivo solicitada explícitamente (targetSessionUuid).
+  // 5. La próxima sesión futura programada (para que la terapeuta pueda empezar a redactar antes de que ocurra).
   const clinicalSessions = useMemo(() => {
-    return sessions.filter((s) => {
-      const isTarget = !!targetSessionUuid && s.uuid === targetSessionUuid;
-      const isPastOrToday = new Date(s.dateTime).getTime() <= endOfToday;
-      const isNotScheduled = s.status !== "scheduled";
-      const hasRealNotes = !!(s.notes && s.notes.replace(/<[^>]*>/g, "").trim());
-      return isTarget || isPastOrToday || isNotScheduled || hasRealNotes;
+    return filterClinicalSessions(sessions, {
+      targetSessionUuid,
+      referenceDate: new Date(),
     });
-  }, [sessions, endOfToday, targetSessionUuid]);
+  }, [sessions, targetSessionUuid]);
+
+  // Si el paciente no tiene sesiones registradas pero tiene un turno recurrente programado,
+  // materializar de inmediato la primera sesión con su fecha programada.
+  useEffect(() => {
+    if (!patient || sessions.length > 0) return;
+
+    const autoInstantiateFirstRecurrentSession = async () => {
+      const rule = await sessionRepo.getRecurrenceRuleByPatient(patient.uuid);
+      if (rule) {
+        const firstOccurrence = getFirstOccurrenceOfRule(rule);
+        if (firstOccurrence) {
+          const firstSession: Session = {
+            uuid: crypto.randomUUID(),
+            patientUuid: patient.uuid,
+            dateTime: firstOccurrence.toISOString(),
+            status: "scheduled",
+            modality: rule.modality || "in_person",
+            priceAtSession: patient.sessionPrice || 0,
+            description: "",
+            colorTag: "indigo",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await sessionRepo.save(firstSession);
+        }
+      }
+    };
+
+    autoInstantiateFirstRecurrentSession();
+  }, [patient?.uuid, sessions.length]);
 
   const sortedSessions = useMemo(() => {
     return [...clinicalSessions].sort(

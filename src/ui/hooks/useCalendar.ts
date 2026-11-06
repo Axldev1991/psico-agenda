@@ -18,6 +18,7 @@ import { AbsencePeriod } from '../../domain/availability.types';
 import { 
   computeAgendaSlots, 
   buildRRuleString, 
+  getFirstOccurrenceOfRule,
   rescheduleSlot as domainRescheduleSlot, 
   swapSlots as domainSwapSlots 
 } from '../../domain/agenda.service';
@@ -201,6 +202,32 @@ export function useCalendar() {
       updatedAt: new Date().toISOString(),
     };
     await sessionRepo.saveRecurrenceRule(newRule);
+
+    // Al programar el turno recurrente, materializar de inmediato la primera sesión con su fecha
+    const firstOccurrence = getFirstOccurrenceOfRule(newRule);
+    if (firstOccurrence) {
+      const existingSessions = await sessionRepo.getByPatient(ruleData.patientUuid);
+      const alreadyExists = existingSessions.some((s) =>
+        isSameDay(parseISO(s.dateTime), firstOccurrence)
+      );
+      if (!alreadyExists) {
+        const patient = patientMap.get(ruleData.patientUuid);
+        const firstSession: Session = {
+          uuid: crypto.randomUUID(),
+          patientUuid: ruleData.patientUuid,
+          dateTime: firstOccurrence.toISOString(),
+          status: 'scheduled',
+          modality: ruleData.modality || 'in_person',
+          priceAtSession: patient ? patient.sessionPrice : 0,
+          description: '',
+          colorTag: 'indigo',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await sessionRepo.save(firstSession);
+      }
+    }
+
     await touchPatient(ruleData.patientUuid);
   };
 

@@ -5,7 +5,8 @@ import {
   findAvailableSlots, 
   findConflictingSlot,
   rescheduleSlot,
-  swapSlots
+  swapSlots,
+  getFirstOccurrenceOfRule
 } from "./agenda.service";
 import { RecurrenceRule, Session } from "./session.types";
 import { Patient } from "./patient.types";
@@ -821,6 +822,40 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
       expect(res.success).toBe(true);
       expect(res.cancelException?.modality).toBe("online");
       expect(res.newSession?.modality).toBe("online");
+    });
+  });
+
+  describe("getFirstOccurrenceOfRule", () => {
+    it("returns the first occurrence matching the rule on or after start date", () => {
+      // Rule starting on Tuesday Nov 10, 2026 at 16:00
+      const rule: RecurrenceRule = {
+        patientUuid: "p-test",
+        rruleString: "DTSTART:20261110T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU",
+        startDate: "2026-11-10",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      const first = getFirstOccurrenceOfRule(rule, new Date("2026-11-06T00:00:00"));
+      expect(first).not.toBeNull();
+      expect(first?.getFullYear()).toBe(2026);
+      expect(first?.getMonth()).toBe(10); // November (0-indexed)
+      expect(first?.getDate()).toBe(10);
+      expect(first?.getHours()).toBe(16);
+      expect(first?.getMinutes()).toBe(0);
+    });
+
+    it("returns null gracefully if rrule string is malformed", () => {
+      const invalidRule: RecurrenceRule = {
+        patientUuid: "p-invalid",
+        rruleString: "MALFORMED_RRULE",
+        startDate: "2026-11-10",
+        startTime: "16:00",
+        durationMinutes: 50,
+      };
+
+      const result = getFirstOccurrenceOfRule(invalidRule);
+      expect(result).toBeNull();
     });
   });
 });

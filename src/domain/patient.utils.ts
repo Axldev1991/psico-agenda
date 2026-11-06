@@ -332,3 +332,52 @@ export function extractHighlights(
 
   return highlights.reverse();
 }
+
+/**
+ * Filters sessions relevant for the clinical file timeline:
+ * 1. Past sessions or sessions scheduled for today.
+ * 2. Non-scheduled sessions (e.g. completed, cancelled with reason).
+ * 3. Sessions that have drafted clinical notes.
+ * 4. Explicit target session if provided.
+ * 5. The next immediate upcoming scheduled session (so the therapist can prepare/draft notes ahead of time).
+ */
+export function filterClinicalSessions<T extends { uuid: string; dateTime: string; status: string; notes?: string }>(
+  sessions: T[],
+  options?: {
+    targetSessionUuid?: string | null;
+    referenceDate?: Date;
+  }
+): T[] {
+  if (!sessions || sessions.length === 0) return [];
+
+  const ref = options?.referenceDate || new Date();
+  const endOfRefDay = new Date(
+    ref.getFullYear(),
+    ref.getMonth(),
+    ref.getDate(),
+    23,
+    59,
+    59,
+    999
+  ).getTime();
+
+  const targetSessionUuid = options?.targetSessionUuid;
+
+  // Encontrar la próxima sesión futura programada (la más cercana en el tiempo que aún no ocurrió)
+  const futureScheduled = sessions
+    .filter((s) => new Date(s.dateTime).getTime() > endOfRefDay && s.status === "scheduled")
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+  const nextUpcomingUuid = futureScheduled.length > 0 ? futureScheduled[0].uuid : null;
+
+  return sessions.filter((s) => {
+    const isTarget = !!targetSessionUuid && s.uuid === targetSessionUuid;
+    const isPastOrToday = new Date(s.dateTime).getTime() <= endOfRefDay;
+    const isNotScheduled = s.status !== "scheduled";
+    const hasRealNotes = !!(s.notes && s.notes.replace(/<[^>]*>/g, "").trim());
+    const isNextUpcoming = !!nextUpcomingUuid && s.uuid === nextUpcomingUuid;
+
+    return isTarget || isPastOrToday || isNotScheduled || hasRealNotes || isNextUpcoming;
+  });
+}
+

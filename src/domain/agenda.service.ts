@@ -12,6 +12,7 @@ import {
 } from "./agenda.types";
 import { getHoliday } from "./holidays";
 import { isSlotWithinAvailability, isDateInAbsence } from "./availability.service";
+import { RecurrenceRule } from "./session.types";
 
 /**
  * Computes calendar slots for a given time interval by combining:
@@ -190,6 +191,29 @@ export function buildRRuleString(options: {
     }
     default:
       return `${dtstart}FREQ=WEEKLY;BYDAY=${byDays}`;
+  }
+}
+
+/**
+ * Calculates the first concrete occurrence of a RecurrenceRule on or after a given reference date.
+ */
+export function getFirstOccurrenceOfRule(rule: RecurrenceRule, fromDate?: Date): Date | null {
+  try {
+    const rrule = RRule.fromString(rule.rruleString);
+    const start = fromDate || (rule.startDate ? new Date(`${rule.startDate}T00:00:00`) : new Date());
+    const queryStart = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0));
+    const queryEnd = new Date(Date.UTC(start.getFullYear() + 1, start.getMonth(), start.getDate(), 23, 59, 59));
+    const occurrences = rrule.between(queryStart, queryEnd, true);
+    if (!occurrences || occurrences.length === 0) return null;
+
+    const occurrence = occurrences[0];
+    const year = occurrence.getUTCFullYear();
+    const month = occurrence.getUTCMonth();
+    const day = occurrence.getUTCDate();
+    const [hours, minutes] = rule.startTime.split(":").map(Number);
+    return new Date(year, month, day, hours, minutes, 0, 0);
+  } catch {
+    return null;
   }
 }
 

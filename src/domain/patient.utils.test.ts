@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateAge, birthDateFromAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights, findInitialSession } from "./patient.utils";
+import { calculateAge, birthDateFromAge, sortPatientsAlphabetically, filterPatients, parseClinicalHistory, rebuildClinicalHistory, extractHighlights, findInitialSession, filterClinicalSessions } from "./patient.utils";
 import { Patient } from "./patient.types";
 
 describe("Patient Utilities", () => {
@@ -239,6 +239,79 @@ describe("Patient Utilities", () => {
       expect(highlights[1].text).toBe("Highlight Amarillo");
       expect(highlights[1].color).toBe("rgb(254, 240, 138)");
       expect(highlights[1].sessionNumber).toBe(1);
+    });
+  });
+
+  describe("filterClinicalSessions", () => {
+    const referenceDate = new Date("2026-11-06T10:00:00.000Z"); // Friday Nov 6, 2026
+
+    it("should return empty array when sessions array is empty or undefined", () => {
+      expect(filterClinicalSessions([])).toEqual([]);
+      expect(filterClinicalSessions(undefined as any)).toEqual([]);
+    });
+
+    it("includes past and today sessions", () => {
+      const sessions = [
+        { uuid: "s-past-1", dateTime: "2026-10-20T15:00:00.000Z", status: "completed" },
+        { uuid: "s-today", dateTime: "2026-11-06T14:00:00.000Z", status: "scheduled" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      expect(result).toHaveLength(2);
+      expect(result.map((s) => s.uuid)).toContain("s-past-1");
+      expect(result.map((s) => s.uuid)).toContain("s-today");
+    });
+
+    it("includes the next immediate upcoming scheduled session for a new patient with no past sessions", () => {
+      const sessions = [
+        { uuid: "s-future-1", dateTime: "2026-11-12T16:00:00.000Z", status: "scheduled", notes: "" },
+        { uuid: "s-future-2", dateTime: "2026-11-19T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      // Only the first/immediate upcoming session should be in the timeline
+      expect(result).toHaveLength(1);
+      expect(result[0].uuid).toBe("s-future-1");
+    });
+
+    it("includes the next upcoming scheduled session alongside past sessions", () => {
+      const sessions = [
+        { uuid: "s-past", dateTime: "2026-10-30T16:00:00.000Z", status: "completed", notes: "Notas previas" },
+        { uuid: "s-next", dateTime: "2026-11-10T16:00:00.000Z", status: "scheduled", notes: "" },
+        { uuid: "s-future-later", dateTime: "2026-11-17T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      expect(result).toHaveLength(2);
+      expect(result.map((s) => s.uuid)).toEqual(["s-past", "s-next"]);
+    });
+
+    it("includes future sessions if they already have clinical notes drafted", () => {
+      const sessions = [
+        { uuid: "s-next", dateTime: "2026-11-10T16:00:00.000Z", status: "scheduled", notes: "Planificada" },
+        { uuid: "s-later-with-notes", dateTime: "2026-11-17T16:00:00.000Z", status: "scheduled", notes: "Notas preparadas con antelación" },
+        { uuid: "s-later-empty", dateTime: "2026-11-24T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      expect(result).toHaveLength(2);
+      expect(result.map((s) => s.uuid)).toContain("s-next");
+      expect(result.map((s) => s.uuid)).toContain("s-later-with-notes");
+      expect(result.map((s) => s.uuid)).not.toContain("s-later-empty");
+    });
+
+    it("includes target session even if it is a distant future scheduled session", () => {
+      const sessions = [
+        { uuid: "s-next", dateTime: "2026-11-10T16:00:00.000Z", status: "scheduled", notes: "" },
+        { uuid: "s-distant-target", dateTime: "2026-12-01T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, {
+        referenceDate,
+        targetSessionUuid: "s-distant-target",
+      });
+      expect(result).toHaveLength(2);
+      expect(result.map((s) => s.uuid)).toContain("s-distant-target");
     });
   });
 });
