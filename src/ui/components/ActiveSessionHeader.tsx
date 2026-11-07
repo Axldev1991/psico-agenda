@@ -98,43 +98,69 @@ export function ActiveSessionHeader({
   return (
     <div className="bg-surface border border-line border-l-4 border-l-primary rounded-2xl p-4 shadow-xs space-y-3 select-none">
       {/* Row 1: Session number, Day, Time, Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink">
-          <span className="font-semibold text-primary">Sesión N°:</span>
-          <span className="font-mono font-medium">{selectedSessionNumber}</span>
-          <span className="text-line-control">|</span>
-          <span className="font-semibold text-ink">Día:</span>
-          <span className="text-ink-sub">
-            {dayCapitalized}, {dateFormatted}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-sm text-ink min-w-0">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="font-semibold text-primary">Sesión N°:</span>
+            <span className="font-mono font-medium">{selectedSessionNumber}</span>
           </span>
-          <span className="text-line-control">|</span>
-          <span className="font-semibold text-ink">Horario:</span>
-          <span className="font-mono font-medium text-ink-sub">{timeFormatted} hs</span>
+
+          <span className="text-line-control select-none hidden sm:inline" aria-hidden="true">|</span>
+
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="font-semibold text-ink">Día:</span>
+            <span className="text-ink-sub">
+              {dayCapitalized}, {dateFormatted}
+            </span>
+          </span>
+
+          <span className="text-line-control select-none hidden sm:inline" aria-hidden="true">|</span>
+
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="font-semibold text-ink">Horario:</span>
+            <span className="font-mono font-medium text-ink-sub">{timeFormatted} hs</span>
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap self-start md:self-auto">
           <span
-            className={`text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-2xs whitespace-nowrap transition-all select-none ${
               isCompleted
-                ? "bg-ok-tint text-ok"
+                ? "bg-ok-tint text-ok border-ok/30"
                 : isCancelled
-                ? "bg-line/60 text-ink-sub line-through"
+                ? "bg-line/60 text-ink-sub border-line line-through"
                 : isRescheduled
-                ? "bg-indigo-50 text-indigo-700 border border-indigo-200 line-through"
+                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                 : isMissed
-                ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                : "bg-warn-tint text-warn"
+                ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-300/40"
+                : "bg-warn-tint text-warn border-warn/30"
             }`}
           >
-            {isCompleted
-              ? "Atendido"
-              : isCancelled
-              ? "Cancelado"
-              : isRescheduled
-              ? "Reagendado"
-              : isMissed
-              ? "Ausente"
-              : "Programado"}
+            <Icon
+              name={
+                isCompleted
+                  ? "check"
+                  : isCancelled
+                  ? "x"
+                  : isRescheduled
+                  ? "repeat"
+                  : isMissed
+                  ? "alert"
+                  : "calendar"
+              }
+              size={12}
+            />
+            <span>
+              {isCompleted
+                ? "Atendido"
+                : isCancelled
+                ? "Cancelado"
+                : isRescheduled
+                ? "Reagendado"
+                : isMissed
+                ? "Ausente"
+                : "Programado"}
+            </span>
           </span>
 
           {changeSessionPayment && !isCancelled && !isRescheduled && (

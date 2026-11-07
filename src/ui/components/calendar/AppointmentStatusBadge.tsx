@@ -135,7 +135,7 @@ export function AppointmentStatusBadge({
             ? "Turno suspendido por receso/vacaciones"
             : `Estado: ${badgeLabel}. Hacé clic para cambiar.`
         }
-        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs transition-all select-none ${badgeClass} ${
+        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border shadow-2xs whitespace-nowrap transition-all select-none ${badgeClass} ${
           isSuspended || disabled ? "cursor-default" : "cursor-pointer"
         }`}
       >

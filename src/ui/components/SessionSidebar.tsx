@@ -101,6 +101,7 @@ export function SessionSidebar({
             const isCompleted = session.status === "completed";
             const isCancelled = session.status === "cancelled";
             const isMissed = session.status === "missed";
+            const isRescheduled = session.status === "rescheduled";
 
             return (
               <button
@@ -121,11 +122,13 @@ export function SessionSidebar({
                     Sesión N° {sessionNumber}
                   </span>
                   <span
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase ${
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase whitespace-nowrap ${
                       isCompleted
                         ? "bg-ok-tint text-ok"
                         : isCancelled
                         ? "bg-line/60 text-ink-sub line-through"
+                        : isRescheduled
+                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
                         : isMissed
                         ? "bg-rose-500/15 text-rose-600"
                         : "bg-warn-tint text-warn"
@@ -135,6 +138,8 @@ export function SessionSidebar({
                       ? "Atendido"
                       : isCancelled
                       ? "Cancelado"
+                      : isRescheduled
+                      ? "Reagendado"
                       : isMissed
                       ? "Ausente"
                       : "Programado"}

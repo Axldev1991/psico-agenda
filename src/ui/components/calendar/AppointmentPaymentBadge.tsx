@@ -95,7 +95,7 @@ export function AppointmentPaymentBadge({
         aria-haspopup="true"
         aria-expanded={isOpen}
         title={badgeTitle}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs select-none ${badgeStyle} ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer shadow-2xs whitespace-nowrap select-none ${badgeStyle} ${
           disabled ? "opacity-60 cursor-not-allowed" : ""
         }`}
       >
