@@ -14,6 +14,27 @@ import { getHoliday } from "./holidays";
 import { isSlotWithinAvailability, isDateInAbsence } from "./availability.service";
 import { RecurrenceRule } from "./session.types";
 
+function extractRescheduledToDate(rescheduledTo?: string, description?: string, notes?: string): string | undefined {
+  if (rescheduledTo) return rescheduledTo;
+  if (description) {
+    const match = description.match(/Reagendado al (\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/i);
+    if (match) {
+      const [, d, m, y, h, min] = match;
+      const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min));
+      if (!isNaN(date.getTime())) return date.toISOString();
+    }
+  }
+  if (notes) {
+    const match = notes.match(/reprogramado para el (\d{2})\/(\d{2})\/(\d{4}) a las (\d{2}):(\d{2})/i);
+    if (match) {
+      const [, d, m, y, h, min] = match;
+      const date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min));
+      if (!isNaN(date.getTime())) return date.toISOString();
+    }
+  }
+  return undefined;
+}
+
 /**
  * Computes calendar slots for a given time interval by combining:
  * 1. Recurring series expansion via RRule.
@@ -82,6 +103,11 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             (dbOverride.description?.toLowerCase().includes('reagendado') ||
              dbOverride.notes?.includes('[REAGENDADO]'));
           const status = isLegacyRescheduled ? ('rescheduled' as const) : dbOverride.status;
+          const resolvedRescheduledTo = extractRescheduledToDate(
+            dbOverride.rescheduledTo,
+            dbOverride.description,
+            dbOverride.notes
+          );
 
           agenda.push({
             uuid: dbOverride.uuid,
@@ -95,7 +121,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             modality: dbOverride.modality || rule.modality || 'in_person',
             price: dbOverride.priceAtSession,
             notes: dbOverride.notes,
-            rescheduledTo: dbOverride.rescheduledTo,
+            rescheduledTo: resolvedRescheduledTo,
             rescheduledFrom: dbOverride.rescheduledFrom,
             isRecurrent: true,
             holiday: getHoliday(slotDateTime, holidays),
@@ -141,6 +167,11 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
           (session.description?.toLowerCase().includes('reagendado') ||
            session.notes?.includes('[REAGENDADO]'));
         const status = isLegacyRescheduled ? ('rescheduled' as const) : session.status;
+        const resolvedRescheduledTo = extractRescheduledToDate(
+          session.rescheduledTo,
+          session.description,
+          session.notes
+        );
 
         agenda.push({
           uuid: session.uuid,
@@ -154,7 +185,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
           modality: session.modality || 'in_person',
           price: session.priceAtSession,
           notes: session.notes,
-          rescheduledTo: session.rescheduledTo,
+          rescheduledTo: resolvedRescheduledTo,
           rescheduledFrom: session.rescheduledFrom,
           isRecurrent: false,
           holiday: getHoliday(sessionDate, holidays),
