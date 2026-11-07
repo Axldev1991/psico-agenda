@@ -781,6 +781,10 @@ export async function seedAxelModelPatients(): Promise<{
     updatedAt: new Date().toISOString(),
   };
 
+  // Limpiar cualquier sesión previa de ambos pacientes para garantizar idempotencia
+  await db.sessions.where('patientUuid').equals(patientPasado.uuid).delete();
+  await db.sessions.where('patientUuid').equals(patientFuturo.uuid).delete();
+
   await db.patients.bulkPut([patientPasado, patientFuturo]);
   await db.sessions.bulkPut([sessionPasado1, sessionPasado2, sessionFuturo1]);
   await db.recurrenceRules.bulkPut([rulePasado, ruleFuturo]);
@@ -792,5 +796,15 @@ export async function ensureAxelModelPatients(): Promise<void> {
   const existing = await db.patients.get('patient-axel-pasado');
   if (!existing) {
     await seedAxelModelPatients();
+    return;
+  }
+
+  // Purgar sesiones programadas huérfanas creadas en Axel Pasado por la condición de carrera
+  const pasadosSessions = await db.sessions.where('patientUuid').equals('patient-axel-pasado').toArray();
+  const orphanScheduled = pasadosSessions.filter(
+    (s) => s.status === 'scheduled' && s.uuid !== 'session-axel-pasado-1' && s.uuid !== 'session-axel-pasado-2'
+  );
+  if (orphanScheduled.length > 0) {
+    await db.sessions.bulkDelete(orphanScheduled.map((s) => s.uuid));
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { isSameDay, parseISO } from "date-fns";
 import { Patient } from "../../domain/patient.types";
 import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { container } from "../../infrastructure/container";
@@ -20,10 +21,11 @@ export function usePatientDetail(
   );
   const patient = dbPatient || initialPatient;
 
-  const sessions = useLiveQuery(
+  const rawSessions = useLiveQuery(
     () => sessionRepo.getByPatient(patient.uuid),
     [patient.uuid]
-  ) || [];
+  );
+  const sessions = useMemo(() => rawSessions || [], [rawSessions]);
 
   // En la ficha clínica figuran:
   // 1. Sesiones pasadas o de hoy.
@@ -41,14 +43,27 @@ export function usePatientDetail(
   // Si el paciente no tiene sesiones registradas pero tiene un turno recurrente programado,
   // materializar de inmediato la primera sesión con su fecha programada.
   useEffect(() => {
-    const activeSessions = sessions.filter((s) => !s.deletedAt);
-    if (!patient || activeSessions.length > 0) return;
+    // Si la consulta reactiva de Dexie todavía no resolvió (undefined), evitar auto-instanciar
+    // para prevenir condiciones de carrera con colecciones vacías momentáneas.
+    if (!patient || rawSessions === undefined) return;
+    const activeSessions = rawSessions.filter((s) => !s.deletedAt);
+    if (activeSessions.length > 0) return;
 
     const autoInstantiateFirstRecurrentSession = async () => {
+      // Re-verificar directamente contra la base de datos para evitar inserciones duplicadas concurrentes
+      const existingSessions = await sessionRepo.getByPatient(patient.uuid);
+      const activeExisting = existingSessions.filter((s) => !s.deletedAt);
+      if (activeExisting.length > 0) return;
+
       const rule = await sessionRepo.getRecurrenceRuleByPatient(patient.uuid);
       if (rule) {
         const firstOccurrence = getFirstOccurrenceOfRule(rule);
         if (firstOccurrence) {
+          const alreadyExists = activeExisting.some((s) =>
+            isSameDay(parseISO(s.dateTime), firstOccurrence)
+          );
+          if (alreadyExists) return;
+
           const firstSession: Session = {
             uuid: crypto.randomUUID(),
             patientUuid: patient.uuid,
@@ -67,7 +82,7 @@ export function usePatientDetail(
     };
 
     autoInstantiateFirstRecurrentSession();
-  }, [patient?.uuid, sessions.length]);
+  }, [patient?.uuid, rawSessions]);
 
   const sortedSessions = useMemo(() => {
     return [...clinicalSessions].sort(
