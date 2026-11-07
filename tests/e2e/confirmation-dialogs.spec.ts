@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Confirmation Dialogs", () => {
-  const patientName = "Juan Perez";
-
   test.beforeEach(async ({ page }) => {
     // Navigate to root
     await page.goto("/");
@@ -10,6 +8,8 @@ test.describe("Confirmation Dialogs", () => {
   });
 
   test("should handle patient and appointment deletion confirmations", async ({ page }) => {
+    const patientName = `Juan Perez ${Date.now()}`;
+
     // Navigate to Fichero tab
     await page.getByRole("button", { name: "Fichero" }).click();
     
@@ -22,8 +22,8 @@ test.describe("Confirmation Dialogs", () => {
     const modalDialog = page.getByRole("dialog");
     await expect(modalDialog).toBeVisible();
     
-    await page.getByLabel(/Nombre completo/i).fill(patientName);
-    await page.getByRole("button", { name: "Guardar" }).click();
+    await page.locator("#p-name").fill(patientName);
+    await page.getByRole("button", { name: /Guardar/i }).click();
     
     // Wait for modal to close
     await expect(modalDialog).not.toBeVisible();
@@ -43,32 +43,27 @@ test.describe("Confirmation Dialogs", () => {
     const sessionModalDialog = page.getByRole("dialog");
     await expect(sessionModalDialog).toBeVisible();
     
-    // Select patient from select dropdown
-    const patientSelect = page.getByRole('combobox').first();
-    // Use selectOption by grabbing the option value, but since label is provided, it should work.
-    // However, if the label doesn't match perfectly, value might be needed. Let's select by value using evaluate or just click.
-    // Given the previous error: the modal did NOT close. Why? Probably because the selectOption didn't work or date is invalid.
-    await patientSelect.selectOption({ label: patientName });
+    await sessionModalDialog.locator("#modal-patient").selectOption({ label: patientName });
     
-    // Date input: DD/MM/AAAA
-    // Since we filled with YYYY-MM-DD, it might not have worked depending on the input type. The input is date type probably.
-    // Oh wait, in the error dump: 
-    // - textbox "Fecha del turno *": 20/26/1106
-    // So fill(new Date().toISOString().split("T")[0]) filled "20/26/1106". This is because the input handles formatted typing.
-    const dateInput = page.locator("#modal-date");
-    // Just click it and use the default value, or format explicitly if needed.
-    // Wait, the default value is probably empty.
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
-    // For date inputs, sometimes you need to fill in YYYY-MM-DD for native input date. But if it's text, it's DD/MM/AAAA.
-    // Let's clear it and type.
-    await dateInput.fill("");
-    await dateInput.type(`${day}${month}${year}`);
 
-    // Wait a bit or click outside
-    await page.locator('body').click();
+    const dateInput = sessionModalDialog.locator("#modal-date");
+    await dateInput.fill(`${day}/${month}/${year}`);
+
+    // Select or fill time
+    const slotPill = sessionModalDialog.locator('button[type="button"]').filter({ hasText: /^\d\d:\d\d$/ }).first();
+    if (await slotPill.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await slotPill.click();
+    } else {
+      const exceptionBtn = sessionModalDialog.getByRole("button", { name: /Horario fuera de agenda/i });
+      if (await exceptionBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await exceptionBtn.click();
+      }
+      await sessionModalDialog.locator("#modal-time").fill("15:00");
+    }
 
     // Submit the dialog button specifically
     const submitBtn = sessionModalDialog.locator('button[type="submit"]', { hasText: "Programar turno" });
@@ -76,15 +71,15 @@ test.describe("Confirmation Dialogs", () => {
     await expect(sessionModalDialog).not.toBeVisible();
 
     // The appointment should be visible
-    await expect(page.getByText(patientName).first()).toBeVisible();
+    const appointmentCard = page.locator("article").filter({ hasText: patientName }).first();
+    await expect(appointmentCard).toBeVisible();
 
     // --- Test Appointment Deletion ---
-    // Click the delete/trash icon on a non-recurrent appointment
-    const deleteAppointmentBtn = page.getByTitle("Eliminar turno").first();
+    const deleteAppointmentBtn = appointmentCard.getByTitle("Eliminar turno");
     await expect(deleteAppointmentBtn).toBeVisible();
     await deleteAppointmentBtn.click();
 
-    // The confirmation dialog might be the ONLY dialog open now
+    // The confirmation dialog appears
     const appointmentConfirmModal = page.getByRole("dialog");
     await expect(appointmentConfirmModal).toBeVisible();
     await expect(page.getByText("¿Eliminar este turno?")).toBeVisible();
@@ -96,14 +91,14 @@ test.describe("Confirmation Dialogs", () => {
     // Verify Cancel preserves appointment
     await appointmentCancelBtn.click();
     await expect(appointmentConfirmModal).not.toBeVisible();
-    await expect(page.getByText(patientName).first()).toBeVisible();
+    await expect(appointmentCard).toBeVisible();
 
     // Verify Escape closes dialog
     await deleteAppointmentBtn.click();
     await expect(appointmentConfirmModal).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(appointmentConfirmModal).not.toBeVisible();
-    await expect(page.getByText(patientName).first()).toBeVisible();
+    await expect(appointmentCard).toBeVisible();
 
     // Verify confirmation deletes appointment
     await deleteAppointmentBtn.click();
@@ -112,15 +107,19 @@ test.describe("Confirmation Dialogs", () => {
     await expect(appointmentConfirmModal).not.toBeVisible();
     
     // Appointment should be deleted
-    await expect(page.getByTitle("Eliminar turno")).not.toBeVisible();
+    await expect(appointmentCard).not.toBeVisible();
 
     // --- Test Patient Deletion ---
     // Navigate back to Fichero tab
     await page.getByRole("button", { name: "Fichero" }).click();
 
+    // Find the row for this patient
+    const patientRow = page.getByRole("row", { name: new RegExp(patientName) });
+    await expect(patientRow).toBeVisible();
+
     // Find the delete button for this patient.
-    const deletePatientBtn = page.getByTitle("Eliminar paciente").first();
-    await deletePatientBtn.click();
+    const deletePatientBtn = patientRow.getByTitle("Eliminar paciente");
+    await deletePatientBtn.click({ force: true });
 
     // Modal should appear
     const patientConfirmModal = page.getByRole("dialog");
@@ -134,22 +133,22 @@ test.describe("Confirmation Dialogs", () => {
     // Verify Cancel preserves patient
     await patientCancelBtn.click();
     await expect(patientConfirmModal).not.toBeVisible();
-    await expect(page.getByText(patientName).first()).toBeVisible();
+    await expect(patientRow).toBeVisible();
 
     // Verify Escape closes dialog
-    await deletePatientBtn.click();
+    await deletePatientBtn.click({ force: true });
     await expect(patientConfirmModal).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(patientConfirmModal).not.toBeVisible();
-    await expect(page.getByText(patientName).first()).toBeVisible();
+    await expect(patientRow).toBeVisible();
 
     // Verify confirmation deletes patient
-    await deletePatientBtn.click();
+    await deletePatientBtn.click({ force: true });
     await expect(patientConfirmModal).toBeVisible();
     await patientConfirmModal.getByRole("button", { name: "Eliminar paciente" }).click();
     await expect(patientConfirmModal).not.toBeVisible();
     
     // Patient should be deleted
-    await expect(page.getByText(patientName).first()).not.toBeVisible();
+    await expect(patientRow).not.toBeVisible();
   });
 });
