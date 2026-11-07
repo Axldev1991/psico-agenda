@@ -95,6 +95,34 @@ export function ActiveSessionHeader({
   const isMissed = selectedSession.status === "missed";
   const isRescheduled = selectedSession.status === "rescheduled";
 
+  const handleExportSession = () => {
+    // Generate simple HTML for single session
+    const htmlContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="utf-8"><title>Sesión ${selectedSessionNumber}</title></head>
+      <body style="font-family: Calibri, sans-serif;">
+        <h2>Sesión N° ${selectedSessionNumber}</h2>
+        <p><strong>Fecha:</strong> ${dateFormatted} ${timeFormatted} hs</p>
+        <p><strong>Estado:</strong> ${selectedSession.status}</p>
+        <p><strong>Tema:</strong> ${selectedSession.description || "N/A"}</p>
+        <div>${selectedSession.notes || ""}</div>
+      </body>
+      </html>
+    `;
+    const blob = new Blob(['\ufeff' + htmlContent], {
+      type: 'application/msword;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    a.href = url;
+    a.download = `sesion_${selectedSessionNumber}_${selectedSession.dateTime.split('T')[0]}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="bg-surface border border-line border-l-4 border-l-primary rounded-2xl p-4 shadow-xs space-y-3 select-none">
       {/* Row 1: Session number, Day, Time, Status */}
@@ -172,6 +200,16 @@ export function ActiveSessionHeader({
               }
             />
           )}
+          
+          <button
+            type="button"
+            onClick={handleExportSession}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-semibold rounded-full border border-line bg-surface hover:bg-bg-base text-ink-sub hover:text-ink transition-colors shadow-2xs cursor-pointer"
+            title="Exportar sesión individual a Word (.doc)"
+          >
+            <Icon name="download" size={14} />
+            <span className="hidden sm:inline">Exportar sesión</span>
+          </button>
         </div>
       </div>
 
