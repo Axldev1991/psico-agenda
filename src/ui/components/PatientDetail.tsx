@@ -47,6 +47,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
   const {
     patient,
     sortedSessions,
+    recurrenceRule,
     selectedSessionUuid,
     setSelectedSessionUuid,
     selectedSessionContentHtml,
@@ -167,7 +168,13 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
     <>
       <section className="space-y-6 view-transition">
         {/* Cabecera del Paciente */}
-        <PatientDetailHeader patient={patient} sessions={sortedSessions} onBack={onBack} onEdit={onEdit} />
+        <PatientDetailHeader
+          patient={patient}
+          sessions={sortedSessions}
+          recurrenceRule={recurrenceRule}
+          onBack={onBack}
+          onEdit={onEdit}
+        />
 
         {/* Workspace o Alerta de Lazy Loading */}
         {patient.isHistoryLoaded === false ? (

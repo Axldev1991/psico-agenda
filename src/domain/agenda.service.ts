@@ -265,6 +265,100 @@ export function getFirstOccurrenceOfRule(rule: RecurrenceRule, fromDate?: Date):
   }
 }
 
+const DAY_NAMES_ES = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+] as const;
+
+/**
+ * Returns a clinical, human-readable summary of a RecurrenceRule in Spanish.
+ * Example: "Viernes a las 10:00 hs (Semanal · Presencial)"
+ */
+export function formatRecurrenceRuleSummary(rule?: RecurrenceRule | null): string {
+  if (!rule || !rule.rruleString) {
+    return "Sin turno fijo programado";
+  }
+
+  // 1. Cadence
+  const cadence = parseCadenceFromRRule(rule.rruleString);
+  const cadenceLabel =
+    cadence === "monthly"
+      ? "Mensual"
+      : cadence === "biweekly"
+      ? "Quincenal"
+      : "Semanal";
+
+  // 2. Modality
+  const modalityLabel = rule.modality === "online" ? "Virtual" : "Presencial";
+
+  // 3. Days of week extraction strictly from the BYDAY segment
+  const byDayMatch = rule.rruleString.match(/BYDAY=([^;\n\r]+)/);
+  let daysIndices: number[] = [];
+
+  if (byDayMatch) {
+    const dayMatches = Array.from(
+      byDayMatch[1].matchAll(/(?:[+-]?\d)?(MO|TU|WE|TH|FR|SA|SU)/g)
+    );
+    const dayCodes = dayMatches.map((m) => m[1]);
+    const dayMap: Record<string, number> = {
+      MO: 0,
+      TU: 1,
+      WE: 2,
+      TH: 3,
+      FR: 4,
+      SA: 5,
+      SU: 6,
+    };
+
+    daysIndices = Array.from(
+      new Set(dayCodes.map((c) => dayMap[c]).filter((i) => i !== undefined))
+    ).sort((a, b) => a - b);
+  }
+
+  let daysText = "";
+  if (daysIndices.length > 0) {
+    const dayNames = daysIndices.map((i) => DAY_NAMES_ES[i]);
+    if (dayNames.length === 1) {
+      daysText = dayNames[0];
+    } else if (dayNames.length === 2) {
+      daysText = `${dayNames[0]} y ${dayNames[1]}`;
+    } else {
+      daysText = `${dayNames.slice(0, -1).join(", ")} y ${dayNames[dayNames.length - 1]}`;
+    }
+  } else if (rule.startDate) {
+    const parts = rule.startDate.split("-").map(Number);
+    if (parts.length === 3) {
+      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+      const dayIdx = (dt.getDay() + 6) % 7;
+      daysText = DAY_NAMES_ES[dayIdx];
+    }
+  }
+
+  const timeText = rule.startTime ? `a las ${rule.startTime} hs` : "";
+  const headerPart = [daysText, timeText].filter(Boolean).join(" ");
+
+  if (!headerPart) {
+    return `${cadenceLabel} · ${modalityLabel}`;
+  }
+
+  return `${headerPart} (${cadenceLabel} · ${modalityLabel})`;
+}
+
+/**
+ * Returns a formatted start date indicator for a recurrence rule, e.g. "Desde el 24/10/2026".
+ */
+export function formatRecurrenceStartDate(rule?: RecurrenceRule | null): string | null {
+  if (!rule || !rule.startDate) return null;
+  const parts = rule.startDate.split("-");
+  if (parts.length !== 3) return null;
+  return `Desde el ${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
 /**
  * Computes unbooked, free consultation slots for a given day within working clinical hours.
  */

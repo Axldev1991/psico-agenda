@@ -27,6 +27,11 @@ export function usePatientDetail(
   );
   const sessions = useMemo(() => rawSessions || [], [rawSessions]);
 
+  const recurrenceRule = useLiveQuery(
+    () => sessionRepo.getRecurrenceRuleByPatient(patient.uuid),
+    [patient.uuid]
+  );
+
   // En la ficha clínica figuran:
   // 1. Sesiones pasadas o de hoy.
   // 2. Sesiones ya atendidas/canceladas.
@@ -562,6 +567,7 @@ export function usePatientDetail(
   return {
     patient,
     sortedSessions,
+    recurrenceRule,
     selectedSessionUuid,
     setSelectedSessionUuid,
     selectedSessionContentHtml: sessionContents.get(selectedSessionUuid || "") || "",

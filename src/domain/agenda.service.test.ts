@@ -6,7 +6,9 @@ import {
   findConflictingSlot,
   rescheduleSlot,
   swapSlots,
-  getFirstOccurrenceOfRule
+  getFirstOccurrenceOfRule,
+  formatRecurrenceRuleSummary,
+  formatRecurrenceStartDate
 } from "./agenda.service";
 import { RecurrenceRule, Session } from "./session.types";
 import { Patient } from "./patient.types";
@@ -894,6 +896,94 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
 
       const result = getFirstOccurrenceOfRule(invalidRule);
       expect(result).toBeNull();
+    });
+  });
+
+  describe("formatRecurrenceRuleSummary & formatRecurrenceStartDate", () => {
+    it("returns 'Sin turno fijo programado' when rule is undefined or null", () => {
+      expect(formatRecurrenceRuleSummary(undefined)).toBe("Sin turno fijo programado");
+      expect(formatRecurrenceRuleSummary(null)).toBe("Sin turno fijo programado");
+    });
+
+    it("formats a weekly in-person rule correctly (Axel Pasado model)", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-axel-pasado",
+        startDate: "2026-10-24",
+        startTime: "10:00",
+        durationMinutes: 50,
+        modality: "in_person",
+        rruleString: "DTSTART:20261024T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=FR",
+      };
+
+      expect(formatRecurrenceRuleSummary(rule)).toBe(
+        "Viernes a las 10:00 hs (Semanal · Presencial)"
+      );
+      expect(formatRecurrenceStartDate(rule)).toBe("Desde el 24/10/2026");
+    });
+
+    it("formats a weekly virtual rule correctly (Axel Futuro model)", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-axel-futuro",
+        startDate: "2026-11-10",
+        startTime: "16:00",
+        durationMinutes: 50,
+        modality: "online",
+        rruleString: "DTSTART:20261110T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=TU",
+      };
+
+      expect(formatRecurrenceRuleSummary(rule)).toBe(
+        "Martes a las 16:00 hs (Semanal · Virtual)"
+      );
+    });
+
+    it("formats a biweekly rule correctly", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-biweekly",
+        startDate: "2026-05-20",
+        startTime: "15:00",
+        durationMinutes: 50,
+        modality: "in_person",
+        rruleString: "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=WE",
+      };
+
+      expect(formatRecurrenceRuleSummary(rule)).toBe(
+        "Miércoles a las 15:00 hs (Quincenal · Presencial)"
+      );
+    });
+
+    it("formats an ordinal monthly rule correctly", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-monthly",
+        startDate: "2026-06-01",
+        startTime: "09:30",
+        durationMinutes: 50,
+        modality: "online",
+        rruleString: "RRULE:FREQ=MONTHLY;BYDAY=1MO",
+      };
+
+      expect(formatRecurrenceRuleSummary(rule)).toBe(
+        "Lunes a las 09:30 hs (Mensual · Virtual)"
+      );
+    });
+
+    it("formats multiple recurrence days correctly (MO and TH)", () => {
+      const rule: RecurrenceRule = {
+        patientUuid: "p-multi",
+        startDate: "2026-06-01",
+        startTime: "11:00",
+        durationMinutes: 50,
+        modality: "in_person",
+        rruleString: "RRULE:FREQ=WEEKLY;BYDAY=MO,TH",
+      };
+
+      expect(formatRecurrenceRuleSummary(rule)).toBe(
+        "Lunes y Jueves a las 11:00 hs (Semanal · Presencial)"
+      );
+    });
+
+    it("formatRecurrenceStartDate returns null if no startDate", () => {
+      expect(formatRecurrenceStartDate(null)).toBeNull();
+      expect(formatRecurrenceStartDate({} as RecurrenceRule)).toBeNull();
     });
   });
 });

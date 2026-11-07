@@ -2,14 +2,16 @@
 
 import React from "react";
 import { Patient } from "../../../domain/patient.types";
-import { Session } from "../../../domain/session.types";
+import { Session, RecurrenceRule } from "../../../domain/session.types";
 import { calculateAge } from "../../../domain/patient.utils";
 import { generateClinicalHistoryDocument } from "../../../domain/export.service";
+import { formatRecurrenceRuleSummary, formatRecurrenceStartDate } from "../../../domain/agenda.service";
 import { Icon } from "../common/Icon";
 
 interface PatientDetailHeaderProps {
   patient: Patient;
   sessions: Session[];
+  recurrenceRule?: RecurrenceRule | null;
   onBack: () => void;
   onEdit: (patient: Patient) => void;
 }
@@ -23,6 +25,7 @@ const currencyFormatter = new Intl.NumberFormat("es-AR", {
 export function PatientDetailHeader({
   patient,
   sessions,
+  recurrenceRule,
   onBack,
   onEdit,
 }: PatientDetailHeaderProps) {
@@ -44,6 +47,9 @@ export function PatientDetailHeader({
   };
   const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
   const isUnderage = patient.type === "underage";
+  const hasRecurrence = Boolean(recurrenceRule && recurrenceRule.rruleString);
+  const recurrenceSummary = formatRecurrenceRuleSummary(recurrenceRule);
+  const recurrenceStartDateStr = formatRecurrenceStartDate(recurrenceRule);
 
   return (
     <header className="bg-surface border border-line rounded-2xl p-5 shadow-xs">
@@ -173,6 +179,62 @@ export function PatientDetailHeader({
             {patient.address || "—"}
           </span>
         </div>
+      </div>
+
+      {/* Turno Fijo / Recurrencia Programada */}
+      <div
+        data-testid="patient-recurrence-banner"
+        className={`mt-4 p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
+          hasRecurrence
+            ? "bg-primary/5 border-primary/25 shadow-2xs"
+            : "bg-bg-base/40 border-line/80 border-dashed"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+              hasRecurrence
+                ? "bg-primary-tint text-primary"
+                : "bg-bg-base text-ink-sub border border-line"
+            }`}
+          >
+            <Icon name="calendar" size={18} />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs uppercase font-bold tracking-wider ${
+                  hasRecurrence ? "text-primary" : "text-ink-sub"
+                }`}
+              >
+                Turno Fijo Programado
+              </span>
+              {hasRecurrence && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {recurrenceRule?.modality === "online" ? "Virtual" : "Presencial"}
+                </span>
+              )}
+            </div>
+            <div
+              data-testid="patient-recurrence-summary"
+              className={`text-base font-semibold mt-0.5 ${
+                hasRecurrence ? "text-ink" : "text-ink-sub font-normal"
+              }`}
+            >
+              {recurrenceSummary}
+            </div>
+          </div>
+        </div>
+
+        {recurrenceStartDateStr && (
+          <div
+            data-testid="patient-recurrence-start-date"
+            className="text-sm font-medium text-ink-sub self-start sm:self-auto pl-13 sm:pl-0"
+          >
+            <span>{recurrenceStartDateStr}</span>
+          </div>
+        )}
       </div>
     </header>
   );
