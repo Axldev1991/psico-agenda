@@ -87,6 +87,49 @@ describe('docx-exporter', () => {
       const html = generateSessionWordHtml(dummyPatient, session);
       expect(html).toContain('Sin anotaciones clínicas.');
     });
+
+    it('should strip mark tags when enablePunctuations is false', () => {
+      const htmlNotes = '<p>Test <mark data-color="yellow">highlight</mark></p>';
+      const session = { ...dummySession, notes: htmlNotes };
+      const html = generateSessionWordHtml(dummyPatient, session, {
+        clinicalFeatures: { enablePunctuations: false, enableMovements: true }
+      });
+      expect(html).toContain('<p>Test highlight</p>');
+      expect(html).not.toContain('<mark');
+    });
+
+    it('should include mark tags when enablePunctuations is true or undefined', () => {
+      const htmlNotes = '<p>Test <mark data-color="yellow">highlight</mark></p>';
+      const session = { ...dummySession, notes: htmlNotes };
+      
+      const html1 = generateSessionWordHtml(dummyPatient, session);
+      expect(html1).toContain('<mark data-color="yellow">highlight</mark>');
+
+      const html2 = generateSessionWordHtml(dummyPatient, session, {
+        clinicalFeatures: { enablePunctuations: true, enableMovements: true }
+      });
+      expect(html2).toContain('<mark data-color="yellow">highlight</mark>');
+    });
+
+    it('should include movement label when enableMovements is true or undefined and colorTag is present', () => {
+      const session = { ...dummySession, colorTag: 'indigo' };
+      
+      const html1 = generateSessionWordHtml(dummyPatient, session);
+      expect(html1).toContain('<strong>Movimiento:</strong> Control');
+
+      const html2 = generateSessionWordHtml(dummyPatient, session, {
+        clinicalFeatures: { enablePunctuations: true, enableMovements: true }
+      });
+      expect(html2).toContain('<strong>Movimiento:</strong> Control');
+    });
+
+    it('should omit movement label when enableMovements is false', () => {
+      const session = { ...dummySession, colorTag: 'indigo' };
+      const html = generateSessionWordHtml(dummyPatient, session, {
+        clinicalFeatures: { enablePunctuations: true, enableMovements: false }
+      });
+      expect(html).not.toContain('<strong>Movimiento:</strong> Control');
+    });
   });
 
   describe('generateFullHistoryWordHtml', () => {
@@ -126,6 +169,27 @@ describe('docx-exporter', () => {
       const patientWithoutHistory = { ...dummyPatient, clinicalHistory: undefined };
       const html = generateFullHistoryWordHtml(patientWithoutHistory);
       expect(html).toContain('Sin anotaciones registradas aún.');
+    });
+
+    it('should strip mark tags from clinical history when enablePunctuations is false', () => {
+      const patientWithMark = { ...dummyPatient, clinicalHistory: '<p>History with <mark>highlight</mark></p>' };
+      const html = generateFullHistoryWordHtml(patientWithMark, {
+        clinicalFeatures: { enablePunctuations: false, enableMovements: true }
+      });
+      expect(html).toContain('<p>History with highlight</p>');
+      expect(html).not.toContain('<mark');
+    });
+
+    it('should keep mark tags in clinical history when enablePunctuations is true or undefined', () => {
+      const patientWithMark = { ...dummyPatient, clinicalHistory: '<p>History with <mark>highlight</mark></p>' };
+      
+      const html1 = generateFullHistoryWordHtml(patientWithMark);
+      expect(html1).toContain('<p>History with <mark>highlight</mark></p>');
+
+      const html2 = generateFullHistoryWordHtml(patientWithMark, {
+        clinicalFeatures: { enablePunctuations: true, enableMovements: true }
+      });
+      expect(html2).toContain('<p>History with <mark>highlight</mark></p>');
     });
   });
 });

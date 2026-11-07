@@ -77,4 +77,37 @@ describe('export.service', () => {
     // Should escape non-HTML notes
     expect(html).toContain('Paciente refiere &quot;mejoría&quot;.');
   });
+
+  it('handles optional ClinicalFeaturesSettings for movements', () => {
+    const sessionWithMovement = { ...mockSessions[0], colorTag: 'indigo' };
+    
+    // By default, movements should be visible
+    const html1 = generateClinicalHistoryDocument(mockPatient, [sessionWithMovement]);
+    expect(html1).toContain('Movimiento: Control');
+
+    // When explicitly enabled
+    const html2 = generateClinicalHistoryDocument(mockPatient, [sessionWithMovement], { enableMovements: true, enablePunctuations: true });
+    expect(html2).toContain('Movimiento: Control');
+
+    // When disabled
+    const html3 = generateClinicalHistoryDocument(mockPatient, [sessionWithMovement], { enableMovements: false, enablePunctuations: true });
+    expect(html3).not.toContain('Movimiento: Control');
+  });
+
+  it('handles optional ClinicalFeaturesSettings for punctuations', () => {
+    const sessionWithPunctuation = { ...mockSessions[0], notes: '<p>Highlighted <mark data-color="yellow">text</mark></p>' };
+    
+    // By default, punctuations should be kept
+    const html1 = generateClinicalHistoryDocument(mockPatient, [sessionWithPunctuation]);
+    expect(html1).toContain('<mark data-color="yellow">text</mark>');
+
+    // When explicitly enabled
+    const html2 = generateClinicalHistoryDocument(mockPatient, [sessionWithPunctuation], { enableMovements: true, enablePunctuations: true });
+    expect(html2).toContain('<mark data-color="yellow">text</mark>');
+
+    // When disabled, marks should be stripped
+    const html3 = generateClinicalHistoryDocument(mockPatient, [sessionWithPunctuation], { enableMovements: true, enablePunctuations: false });
+    expect(html3).toContain('Highlighted text');
+    expect(html3).not.toContain('<mark');
+  });
 });

@@ -1,5 +1,5 @@
 import { Patient } from '../../domain/patient.types';
-import { Session } from '../../domain/session.types';
+import { Session, ClinicalFeaturesSettings } from '../../domain/session.types';
 
 const INK = '#1E2A32';
 const INK_2 = '#566670';
@@ -85,15 +85,28 @@ const SESSION_STATUS: Record<string, string> = {
   scheduled: 'Programado'
 };
 
+const defaultMovementLabels: Record<string, string> = {
+  indigo: 'Control',
+  rose: 'Cognitivo',
+  emerald: 'Fisiológico',
+  amber: 'Otro',
+};
+
 export const sessionStatusLabel = (status: string): string =>
   SESSION_STATUS[status] || 'Programado';
 
-function parseNotesToHtml(notes?: string): string {
+function parseNotesToHtml(notes?: string, enablePunctuations?: boolean): string {
   if (!notes) return `<p style="${m()} color:${INK_2}; font-style:italic;">Sin anotaciones clínicas.</p>`;
-  if (notes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(notes)) {
-    return notes;
+  
+  let processedNotes = notes;
+  if (enablePunctuations === false) {
+    processedNotes = processedNotes.replace(/<\/?mark[^>]*>/gi, '');
   }
-  let html = notes
+
+  if (processedNotes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(processedNotes)) {
+    return processedNotes;
+  }
+  let html = processedNotes
     .replace(/\n/g, '<br/>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>');
@@ -104,17 +117,28 @@ function parseNotesToHtml(notes?: string): string {
   return html;
 }
 
-export function generateSessionWordHtml(patient: Patient, session: Session, { now = new Date() }: { now?: Date } = {}): string {
+export function generateSessionWordHtml(
+  patient: Patient,
+  session: Session,
+  options: { now?: Date; clinicalFeatures?: ClinicalFeaturesSettings } = {}
+): string {
+  const { now = new Date(), clinicalFeatures } = options;
   const sessionDateObj = new Date(session.dateTime);
   const dateFormatted = isNaN(sessionDateObj.getTime())
     ? session.dateTime
     : formatSessionDate(sessionDateObj);
 
-  const notesHtml = parseNotesToHtml(session.notes);
+  const notesHtml = parseNotesToHtml(session.notes, clinicalFeatures?.enablePunctuations);
   const statusStr = sessionStatusLabel(session.status);
   const priceStr = `$${(session.priceAtSession ?? 0).toLocaleString('es-AR')} ARS`;
   const name = esc(patient.fullName);
   const exportedAt = esc(formatExportDate(now));
+  
+  let movementRowHtml = '';
+  if (clinicalFeatures?.enableMovements !== false && session.colorTag) {
+    const movementLabel = defaultMovementLabels[session.colorTag] || session.colorTag;
+    movementRowHtml = `<p style="${m(0, 0, 3)}"><strong>Movimiento:</strong> ${esc(movementLabel)}</p>`;
+  }
 
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word"
@@ -175,7 +199,8 @@ export function generateSessionWordHtml(patient: Patient, session: Session, { no
         <p style="${m(0, 0, 3)} font-size:9pt; font-weight:bold; color:${INK_2};">Detalle de la sesión</p>
         <p style="${m(0, 0, 3)}"><strong>Fecha:</strong> ${esc(dateFormatted)}</p>
         <p style="${m(0, 0, 3)}"><strong>Honorarios:</strong> ${priceStr}</p>
-        <p style="${m()}"><strong>Estado:</strong> ${esc(statusStr)}</p>
+        <p style="${m(0, 0, 3)}"><strong>Estado:</strong> ${esc(statusStr)}</p>
+        ${movementRowHtml}
       </td>
     </tr>
     <tr>
@@ -219,8 +244,12 @@ export function generateSessionWordHtml(patient: Patient, session: Session, { no
 </html>`;
 }
 
-export function exportSessionToWord(patient: Patient, session: Session) {
-  const htmlContent = generateSessionWordHtml(patient, session);
+export function exportSessionToWord(
+  patient: Patient,
+  session: Session,
+  clinicalFeatures?: ClinicalFeaturesSettings
+) {
+  const htmlContent = generateSessionWordHtml(patient, session, { clinicalFeatures });
 
   const blob = new Blob(['\ufeff' + htmlContent], {
     type: 'application/msword;charset=utf-8',
@@ -240,9 +269,18 @@ export function exportSessionToWord(patient: Patient, session: Session) {
   URL.revokeObjectURL(url);
 }
 
-export function generateFullHistoryWordHtml(patient: Patient, { now = new Date() }: { now?: Date } = {}): string {
+export function generateFullHistoryWordHtml(
+  patient: Patient,
+  options: { now?: Date; clinicalFeatures?: ClinicalFeaturesSettings } = {}
+): string {
+  const { now = new Date(), clinicalFeatures } = options;
   const name = esc(patient.fullName);
   const exportedAt = esc(formatExportDate(now));
+  
+  let processedHistory = patient.clinicalHistory || `<p style="color:${INK_2}; font-style:italic;">Sin anotaciones registradas aún.</p>`;
+  if (clinicalFeatures?.enablePunctuations === false && patient.clinicalHistory) {
+    processedHistory = processedHistory.replace(/<\/?mark[^>]*>/gi, '');
+  }
 
   return `<html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word"
@@ -312,7 +350,7 @@ export function generateFullHistoryWordHtml(patient: Patient, { now = new Date()
 
   <!-- HISTORIAL CLÍNICO: sesiones con su encabezado y sus notas -->
   <div style="${m()} font-family:${SANS}; font-size:11pt; line-height:1.55; color:${INK};">
-    ${patient.clinicalHistory || `<p style="color:${INK_2}; font-style:italic;">Sin anotaciones registradas aún.</p>`}
+    ${processedHistory}
   </div>
 
 </div>
@@ -335,8 +373,11 @@ export function generateFullHistoryWordHtml(patient: Patient, { now = new Date()
 </html>`;
 }
 
-export function exportFullHistoryToWord(patient: Patient) {
-  const htmlContent = generateFullHistoryWordHtml(patient);
+export function exportFullHistoryToWord(
+  patient: Patient,
+  clinicalFeatures?: ClinicalFeaturesSettings
+) {
+  const htmlContent = generateFullHistoryWordHtml(patient, { clinicalFeatures });
 
   const blob = new Blob(['\ufeff' + htmlContent], {
     type: 'application/msword;charset=utf-8',

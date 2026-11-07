@@ -1,5 +1,5 @@
 import { Patient } from './patient.types';
-import { Session } from './session.types';
+import { Session, ClinicalFeaturesSettings } from './session.types';
 
 const INK = '#1E2A32';       // texto principal
 const INK_2 = '#566670';     // texto secundario
@@ -18,12 +18,19 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function parseNotesToHtml(notes?: string): string {
+export function parseNotesToHtml(notes?: string, enablePunctuations?: boolean): string {
   if (!notes) return `<p style="margin: 0; color: ${INK_2}; font-style: italic;">Sin anotaciones clínicas.</p>`;
-  if (notes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(notes)) {
-    return notes;
+  
+  let processedNotes = notes;
+  if (enablePunctuations === false) {
+    processedNotes = processedNotes.replace(/<\/?mark[^>]*>/gi, '');
   }
-  return escapeHtml(notes)
+
+  if (processedNotes.trim().startsWith('<') || /<[a-z][\s\S]*>/i.test(processedNotes)) {
+    return processedNotes;
+  }
+
+  return escapeHtml(processedNotes)
     .replace(/\n/g, '<br/>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -39,7 +46,18 @@ function coverageText(healthInsurance?: string, affiliateNumber?: string): strin
   return 'Particular';
 }
 
-export function generateClinicalHistoryDocument(patient: Patient, sessions: Session[]): string {
+const defaultMovementLabels: Record<string, string> = {
+  indigo: 'Control',
+  rose: 'Cognitivo',
+  emerald: 'Fisiológico',
+  amber: 'Otro',
+};
+
+export function generateClinicalHistoryDocument(
+  patient: Patient,
+  sessions: Session[],
+  clinicalFeatures?: ClinicalFeaturesSettings
+): string {
   const sortedSessions = [...sessions].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const fullName = escapeHtml(patient.fullName);
@@ -97,13 +115,20 @@ export function generateClinicalHistoryDocument(patient: Patient, sessions: Sess
     }
     
     const statusText = statusMap[session.status] || session.status;
-    const notesHtml = parseNotesToHtml(session.notes);
+    const notesHtml = parseNotesToHtml(session.notes, clinicalFeatures?.enablePunctuations);
     const sessionNumber = index + 1;
+    
+    let subtitle = `Evolución clínica · ${dateFormatted} · <strong style="color: ${INK};">${statusText}</strong>`;
+    
+    if (clinicalFeatures?.enableMovements !== false && session.colorTag) {
+      const movementLabel = defaultMovementLabels[session.colorTag] || session.colorTag;
+      subtitle += ` · Movimiento: ${movementLabel}`;
+    }
     
     return `
       <div style="margin-bottom: 22pt; page-break-inside: avoid;">
         <p style="margin-top: 24pt; margin-right: 0; margin-bottom: 0; margin-left: 0; font-family: ${SERIF}; font-size: 13.5pt; font-weight: bold; line-height: 1.25; color: ${INK}; page-break-after: avoid;">Sesión N° ${sessionNumber}</p>
-        <p style="margin-top: 2pt; margin-right: 0; margin-bottom: 10pt; margin-left: 0; padding-bottom: 4pt; border-bottom: 1.5pt solid ${PRIMARY}; font-family: ${SANS}; font-size: 9.5pt; color: ${INK_2}; page-break-after: avoid;">Evolución clínica · ${dateFormatted} · <strong style="color: ${INK};">${statusText}</strong></p>
+        <p style="margin-top: 2pt; margin-right: 0; margin-bottom: 10pt; margin-left: 0; padding-bottom: 4pt; border-bottom: 1.5pt solid ${PRIMARY}; font-family: ${SANS}; font-size: 9.5pt; color: ${INK_2}; page-break-after: avoid;">${subtitle}</p>
         <div style="font-family: ${SANS}; font-size: 11pt; line-height: 1.55; color: ${INK};">
           ${notesHtml}
         </div>
