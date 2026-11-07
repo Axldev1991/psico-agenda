@@ -260,7 +260,9 @@ export function useCalendar() {
       if (slot.uuid) {
         const existing = await sessionRepo.getByUuid(slot.uuid);
         if (existing) {
-          existing.status = 'cancelled';
+          existing.status = result.cancelException.status;
+          existing.rescheduledTo = result.cancelException.rescheduledTo;
+          existing.notes = result.cancelException.notes;
           existing.description = `Reagendado al ${format(newDateTime, 'dd/MM/yyyy HH:mm')}`;
           existing.updatedAt = result.cancelException.updatedAt;
           await sessionRepo.save(existing);
@@ -320,12 +322,14 @@ export function useCalendar() {
     }
 
     for (const session of result.sessionsToSave) {
-      if (session.status === 'cancelled') {
+      if (session.status === 'rescheduled' || session.status === 'cancelled') {
         const isA = session.patientUuid === slotA.patientUuid;
         const otherPatientName = isA ? slotB.patientName : slotA.patientName;
         const existing = await sessionRepo.getByUuid(session.uuid);
         if (existing) {
-          existing.status = 'cancelled';
+          existing.status = session.status;
+          existing.rescheduledTo = session.rescheduledTo;
+          existing.notes = session.notes;
           existing.description = `Enroque con ${otherPatientName}`;
           existing.updatedAt = session.updatedAt;
           await sessionRepo.save(existing);

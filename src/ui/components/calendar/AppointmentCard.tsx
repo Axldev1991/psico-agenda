@@ -125,16 +125,27 @@ export function AppointmentCard({
             {isRescheduled && slot.rescheduledTo && (
               <span
                 title={`Reagendado para el ${format(new Date(slot.rescheduledTo), 'dd/MM/yyyy')} a las ${format(new Date(slot.rescheduledTo), 'HH:mm')} hs.`}
-                className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
+                className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
               >
-                <span>↻ Reagendado</span>
+                <Icon name="repeat" size={11} />
+                <span>Para el {format(new Date(slot.rescheduledTo), 'dd/MM')} {format(new Date(slot.rescheduledTo), 'HH:mm')} hs</span>
               </span>
             )}
             {isRescheduled && !slot.rescheduledTo && (
               <span
-                className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
+                className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs"
               >
-                <span>↻ Reagendado</span>
+                <Icon name="repeat" size={11} />
+                <span>Reagendado</span>
+              </span>
+            )}
+            {slot.rescheduledFrom && (
+              <span
+                title={`Turno reprogramado desde el ${format(new Date(slot.rescheduledFrom), 'dd/MM/yyyy')} a las ${format(new Date(slot.rescheduledFrom), 'HH:mm')} hs.`}
+                className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50/80 text-indigo-700 border border-indigo-200 shadow-2xs"
+              >
+                <Icon name="repeat" size={11} />
+                <span>Reprogramado (era {format(new Date(slot.rescheduledFrom), 'dd/MM')} {format(new Date(slot.rescheduledFrom), 'HH:mm')} hs)</span>
               </span>
             )}
           </div>

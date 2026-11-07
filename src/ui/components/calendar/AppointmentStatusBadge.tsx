@@ -14,7 +14,7 @@ interface AppointmentStatusBadgeProps {
 const STATUS_OPTIONS: {
   status: Session["status"];
   label: string;
-  icon: "check" | "alert" | "x";
+  icon: "check" | "alert" | "x" | "repeat";
   colorClass: string;
   bgClass: string;
 }[] = [
@@ -49,7 +49,7 @@ const STATUS_OPTIONS: {
   {
     status: "rescheduled",
     label: "Reagendado",
-    icon: "alert",
+    icon: "repeat",
     colorClass: "text-indigo-700",
     bgClass: "bg-indigo-50",
   },
@@ -97,7 +97,7 @@ export function AppointmentStatusBadge({
 
   // Badge visual config based on current status
   let badgeClass = "bg-primary-tint text-primary border-primary/30 hover:bg-primary-tint/80";
-  let badgeIcon: "check" | "alert" | "x" = "check";
+  let badgeIcon: "check" | "alert" | "x" | "repeat" = "check";
   let badgeLabel = "Agendado";
 
   if (isSuspended) {
@@ -117,8 +117,8 @@ export function AppointmentStatusBadge({
     badgeIcon = "alert";
     badgeLabel = "Ausente";
   } else if (status === "rescheduled") {
-    badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 line-through";
-    badgeIcon = "alert";
+    badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100";
+    badgeIcon = "repeat";
     badgeLabel = "Reagendado";
   }
 
