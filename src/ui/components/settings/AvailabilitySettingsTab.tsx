@@ -169,6 +169,7 @@ export function AvailabilitySettingsTab() {
         <button
           type="button"
           onClick={handleManualSave}
+          aria-label="Guardar disponibilidad"
           disabled={saveStatus === "saving"}
           className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 ${
             saveStatus === "saved"

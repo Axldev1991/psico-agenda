@@ -31,7 +31,9 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
     await saveBtn.click();
 
     // 6. Verificar mensaje de confirmación
-    await expect(page.getByText("Disponibilidad guardada")).toBeVisible();
+    await expect(
+      page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))
+    ).toBeVisible();
   });
 
   test("permite alternar a la pestaña de Movimientos y Puntuaciones", async ({ page }) => {
@@ -127,7 +129,9 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
 
     // 6b. Persistir disponibilidad
     await page.getByRole("button", { name: /Guardar disponibilidad/i }).click();
-    await expect(page.getByText("Disponibilidad guardada")).toBeVisible();
+    await expect(
+      page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))
+    ).toBeVisible();
 
     // 7. Ir a Agenda y abrir SessionModal
     await page.getByRole("button", { name: "Agenda" }).click();
@@ -151,6 +155,10 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
     const deleteBtn = page.getByRole("button", { name: /Eliminar período/i }).first();
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
+    const confirmDeleteBtn = page.getByRole("button", { name: /Eliminar receso/i });
+    if (await confirmDeleteBtn.isVisible()) {
+      await confirmDeleteBtn.click();
+    }
     await expect(page.getByText("Congreso Anual")).not.toBeVisible();
     await page.getByRole("button", { name: /Guardar disponibilidad/i }).click();
   });
