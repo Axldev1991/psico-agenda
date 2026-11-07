@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { format, addDays } from "date-fns";
 
 test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () => {
   test.beforeEach(async ({ page }) => {
@@ -79,22 +80,25 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
 
-    // 2. Agendar turno a las 09:00
+    // 2. Agendar turno a las 09:00 en un día hábil (Lunes de esta semana)
     await page.getByRole("button", { name: "Agenda" }).click();
+    const mondayBtn = page.getByRole("button", { name: /lun/i }).first();
+    if (await mondayBtn.isVisible()) {
+      await mondayBtn.click();
+    }
     await page.getByRole("button", { name: "Programar turno" }).first().click();
+
+    const today = new Date();
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek);
+    const mondayStr = `${String(monday.getDate()).padStart(2, "0")}/${String(monday.getMonth() + 1).padStart(2, "0")}/${monday.getFullYear()}`;
 
     const sessionModal = page.getByRole("dialog");
     await page.locator("#modal-patient").selectOption({ label: patientName });
+    await page.locator("#modal-date").fill(mondayStr);
     await page.locator("#modal-time").fill("09:00");
 
-    const dateInput = page.locator("#modal-date");
-    if (!(await dateInput.inputValue())) {
-      const today = new Date();
-      const dd = String(today.getDate()).padStart(2, "0");
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const yyyy = today.getFullYear();
-      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
-    }
     await sessionModal.getByRole("button", { name: "Programar turno" }).click();
     await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
 
@@ -127,7 +131,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await expect(rescheduleModal).not.toBeVisible();
 
     // 7. Verificar que el horario cambió en la tarjeta
-    await expect(appointmentCard.getByText(newTime.trim())).toBeVisible();
+    await expect(appointmentCard.getByText(newTime.trim(), { exact: true })).toBeVisible();
   });
 
   test("debe permitir enrocar turnos (swap) entre dos pacientes agendados", async ({
@@ -150,19 +154,23 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
 
-    // 2. Agendar a Alpha a las 10:00
+    // 2. Agendar a Alpha a las 10:00 en Lunes
     await page.getByRole("button", { name: "Agenda" }).click();
+    const mondayBtn = page.getByRole("button", { name: /lun/i }).first();
+    if (await mondayBtn.isVisible()) {
+      await mondayBtn.click();
+    }
+    const today = new Date();
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek);
+    const mondayStr = `${String(monday.getDate()).padStart(2, "0")}/${String(monday.getMonth() + 1).padStart(2, "0")}/${monday.getFullYear()}`;
+
     await page.getByRole("button", { name: "Programar turno" }).first().click();
     let modal = page.getByRole("dialog");
     await page.locator("#modal-patient").selectOption({ label: patientA });
+    await page.locator("#modal-date").fill(mondayStr);
     await page.locator("#modal-time").fill("10:00");
-    let dateInput = page.locator("#modal-date");
-    if (!(await dateInput.inputValue())) {
-      const today = new Date();
-      await dateInput.fill(
-        `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`
-      );
-    }
     await modal.getByRole("button", { name: "Programar turno" }).click();
     await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
 
@@ -170,14 +178,8 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await page.getByRole("button", { name: "Programar turno" }).first().click();
     modal = page.getByRole("dialog");
     await page.locator("#modal-patient").selectOption({ label: patientB });
+    await page.locator("#modal-date").fill(mondayStr);
     await page.locator("#modal-time").fill("11:00");
-    dateInput = page.locator("#modal-date");
-    if (!(await dateInput.inputValue())) {
-      const today = new Date();
-      await dateInput.fill(
-        `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`
-      );
-    }
     await modal.getByRole("button", { name: "Programar turno" }).click();
     await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
 
@@ -194,19 +196,22 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     // 5. Seleccionar a Beta en el selector de intercambio
     const swapSelect = rescheduleModal.locator("#swap-candidate");
     await expect(swapSelect).toBeVisible();
-    // Seleccionar la opción que contiene a PatientB
     await swapSelect.selectOption({ index: 1 });
 
-    // 6. Confirmar intercambio
+    // 6. Confirmar intercambio (y aceptar diálogo de confirmación segura)
     await rescheduleModal.getByRole("button", { name: "Confirmar cambio" }).click();
+    const confirmSwapBtn = page.getByRole("button", { name: "Intercambiar turnos" });
+    if (await confirmSwapBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await confirmSwapBtn.click();
+    }
     await expect(page.getByText("¡Intercambio de turnos realizado con éxito!")).toBeVisible();
     await expect(rescheduleModal).not.toBeVisible();
 
     // 7. Validar que ahora Alpha esté a las 11:00 y Beta a las 10:00
     const updatedCardA = page.locator("article", { hasText: patientA });
     const updatedCardB = page.locator("article", { hasText: patientB });
-    await expect(updatedCardA.getByText("11:00")).toBeVisible();
-    await expect(updatedCardB.getByText("10:00")).toBeVisible();
+    await expect(updatedCardA.getByText("11:00", { exact: true })).toBeVisible();
+    await expect(updatedCardB.getByText("10:00", { exact: true })).toBeVisible();
   });
 
   test("debe programar un turno recurrente mensual ordinal (E2E-07)", async ({ page }) => {
@@ -268,23 +273,25 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
 
-    // 2. Programar turno recurrente semanal inicial a las 10:00
+    // 2. Programar turno recurrente semanal inicial a las 10:00 en Lunes
     await page.getByRole("button", { name: "Agenda" }).click();
+    const mondayBtn = page.getByRole("button", { name: /lun/i }).first();
+    if (await mondayBtn.isVisible()) {
+      await mondayBtn.click();
+    }
+    const today = new Date();
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek);
+    const mondayStr = `${String(monday.getDate()).padStart(2, "0")}/${String(monday.getMonth() + 1).padStart(2, "0")}/${monday.getFullYear()}`;
+
     await page.getByRole("button", { name: "Programar turno" }).first().click();
 
     const sessionModal = page.getByRole("dialog");
     await page.locator("#modal-patient").selectOption({ label: patientName });
     await sessionModal.getByRole("checkbox").check();
+    await page.locator("#modal-date").fill(mondayStr);
     await page.locator("#modal-time").fill("10:00");
-
-    const dateInput = page.locator("#modal-date");
-    if (!(await dateInput.inputValue())) {
-      const today = new Date();
-      const dd = String(today.getDate()).padStart(2, "0");
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const yyyy = today.getFullYear();
-      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
-    }
 
     await sessionModal.getByRole("button", { name: "Programar turno" }).click();
     await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
@@ -311,8 +318,12 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const newTime = (await chosenSlotBtn.innerText()).trim();
     await chosenSlotBtn.click();
 
-    // 6. Confirmar reagendamiento permanente
+    // 6. Confirmar reagendamiento permanente (y aceptar diálogo de confirmación segura)
     await rescheduleModal.getByRole("button", { name: "Confirmar cambio" }).click();
+    const confirmPermanentBtn = page.getByRole("button", { name: "Modificar turno fijo" });
+    if (await confirmPermanentBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await confirmPermanentBtn.click();
+    }
     await expect(page.getByText("¡Turno reagendado correctamente!")).toBeVisible();
     await expect(rescheduleModal).not.toBeVisible();
 
@@ -322,6 +333,10 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
 
     // 8. Navegar a la semana siguiente y corroborar que el turno recurrente YA tiene el nuevo horario
     await page.getByRole("button", { name: "Semana siguiente" }).click();
+    const mondayNextWeekBtn = page.getByRole("button", { name: /lun/i }).first();
+    if (await mondayNextWeekBtn.isVisible()) {
+      await mondayNextWeekBtn.click();
+    }
     const nextWeekCard = page.locator("article", { hasText: patientName });
     await expect(nextWeekCard).toBeVisible();
     await expect(nextWeekCard.getByText(newTime)).toBeVisible();
