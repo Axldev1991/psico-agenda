@@ -1,6 +1,6 @@
 import { db } from './dexie.db';
 import { Patient } from '../../domain/patient.types';
-import { Session } from '../../domain/session.types';
+import { Session, RecurrenceRule } from '../../domain/session.types';
 
 export async function seedDemoData() {
   // 1. Pacientes de Demostración con Historias Clínicas Consolidadas (HTML WYSIWYG)
@@ -636,4 +636,161 @@ export async function seedNewPatientWithoutSessions(): Promise<{ patient: Patien
   await db.sessions.put(scheduledSession);
 
   return { patient: newPatient, session: scheduledSession };
+}
+
+export async function seedAxelModelPatients(): Promise<{
+  patientPasado: Patient;
+  patientFuturo: Patient;
+}> {
+  const now = new Date();
+
+  // 1. AXEL PASADO (Sesiones pasadas completadas con notas y regla recurrente iniciada en el pasado)
+  const pastDate1 = new Date(now);
+  pastDate1.setDate(now.getDate() - 14);
+  pastDate1.setHours(10, 0, 0, 0);
+
+  const pastDate2 = new Date(now);
+  pastDate2.setDate(now.getDate() - 7);
+  pastDate2.setHours(10, 0, 0, 0);
+
+  const pastStartDateStr = pastDate1.toISOString().split('T')[0];
+
+  const patientPasado: Patient = {
+    uuid: 'patient-axel-pasado',
+    fullName: 'Axel Pasado (Modelo)',
+    email: 'axel.pasado@ejemplo.com',
+    phone: '+54 11 4455-6677',
+    address: 'Av. Corrientes 1500, CABA',
+    healthInsurance: 'OSDE',
+    affiliateNumber: '2-3344556-01',
+    sessionPrice: 15000,
+    clinicalHistory: `
+      <h3 id="session-axel-p2" style="color: #4f46e5; margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; font-family: sans-serif;">📅 Sesión N° 2 — Hace 7 días, 10:00 hs</h3>
+      <p style="margin-top: 4px; color: #64748b; font-size: 10px;">Estado: Atendido · Cobrado (Efectivo)</p>
+      <div style="font-family: sans-serif; font-size: 11pt; line-height: 1.6; color: #334155;">
+        El paciente expone avances en el registro de metas semanales. Refiere disminución en la rumiación nocturna.<br/><br/>
+        <strong>Evolución clínica:</strong><br/>
+        - Revisión de tareas conductuales acordadas.<br/>
+        - <span style="background-color: #fef08a;">Reestructuración cognitiva</span> sobre autoexigencia laboral.
+      </div>
+      <br/>
+      <h3 id="session-axel-p1" style="color: #4f46e5; margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; font-family: sans-serif;">📅 Sesión N° 1 — Hace 14 días, 10:00 hs</h3>
+      <p style="margin-top: 4px; color: #64748b; font-size: 10px;">Estado: Atendido · Cobrado (Transferencia)</p>
+      <div style="font-family: sans-serif; font-size: 11pt; line-height: 1.6; color: #334155;">
+        Primera entrevista clínica. Admisión y encuadre terapéutico. Se acuerda frecuencia semanal los días viernes a las 10:00 hs.<br/><br/>
+        <strong>Motivo de consulta:</strong> Gestión del estrés y optimización de hábitos.
+      </div>
+    `,
+    isHistoryLoaded: true,
+    type: 'adult',
+    createdAt: pastDate1.toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const sessionPasado1: Session = {
+    uuid: 'session-axel-pasado-1',
+    patientUuid: patientPasado.uuid,
+    dateTime: pastDate1.toISOString(),
+    status: 'completed',
+    modality: 'in_person',
+    priceAtSession: 15000,
+    paymentStatus: 'paid',
+    paymentMethod: 'transfer',
+    description: 'Admisión y encuadre terapéutico',
+    colorTag: 'indigo',
+    notes: '<p>Primera entrevista clínica. Admisión y encuadre terapéutico. Se acuerda frecuencia semanal los días viernes a las 10:00 hs.</p>',
+    createdAt: pastDate1.toISOString(),
+    updatedAt: pastDate1.toISOString(),
+  };
+
+  const sessionPasado2: Session = {
+    uuid: 'session-axel-pasado-2',
+    patientUuid: patientPasado.uuid,
+    dateTime: pastDate2.toISOString(),
+    status: 'completed',
+    modality: 'in_person',
+    priceAtSession: 15000,
+    paymentStatus: 'paid',
+    paymentMethod: 'cash',
+    description: 'Seguimiento y metas conductuales',
+    colorTag: 'rose',
+    notes: '<p>El paciente expone avances en el registro de metas semanales. Refiere disminución en la rumiación nocturna.</p>',
+    createdAt: pastDate2.toISOString(),
+    updatedAt: pastDate2.toISOString(),
+  };
+
+  const dayNames = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
+  const pastDayOfWeek = (pastDate1.getDay() + 6) % 7;
+  const pastDayCode = dayNames[pastDayOfWeek];
+
+  const rulePasado: RecurrenceRule = {
+    patientUuid: patientPasado.uuid,
+    startDate: pastStartDateStr,
+    startTime: '10:00',
+    durationMinutes: 50,
+    modality: 'in_person',
+    rruleString: `DTSTART:${pastStartDateStr.replace(/-/g, '')}T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=${pastDayCode}`,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 2. AXEL FUTURO (Turno recurrente programado a futuro con primera sesión materializada)
+  const futureDate = new Date(now);
+  futureDate.setDate(now.getDate() + 4);
+  futureDate.setHours(16, 0, 0, 0);
+  const futureStartDateStr = futureDate.toISOString().split('T')[0];
+  const futureDayOfWeek = (futureDate.getDay() + 6) % 7;
+  const futureDayCode = dayNames[futureDayOfWeek];
+
+  const patientFuturo: Patient = {
+    uuid: 'patient-axel-futuro',
+    fullName: 'Axel Futuro (Modelo)',
+    email: 'axel.futuro@ejemplo.com',
+    phone: '+54 11 9988-7766',
+    address: 'Av. Santa Fe 2200, CABA',
+    healthInsurance: 'Particular',
+    affiliateNumber: '',
+    sessionPrice: 18000,
+    clinicalHistory: '',
+    isHistoryLoaded: true,
+    type: 'adult',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const sessionFuturo1: Session = {
+    uuid: 'session-axel-futuro-1',
+    patientUuid: patientFuturo.uuid,
+    dateTime: futureDate.toISOString(),
+    status: 'scheduled',
+    modality: 'online',
+    priceAtSession: 18000,
+    paymentStatus: 'pending',
+    description: 'Primera consulta / Entrevista inicial programada',
+    colorTag: 'indigo',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const ruleFuturo: RecurrenceRule = {
+    patientUuid: patientFuturo.uuid,
+    startDate: futureStartDateStr,
+    startTime: '16:00',
+    durationMinutes: 50,
+    modality: 'online',
+    rruleString: `DTSTART:${futureStartDateStr.replace(/-/g, '')}T000000Z\nRRULE:FREQ=WEEKLY;BYDAY=${futureDayCode}`,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await db.patients.bulkPut([patientPasado, patientFuturo]);
+  await db.sessions.bulkPut([sessionPasado1, sessionPasado2, sessionFuturo1]);
+  await db.recurrenceRules.bulkPut([rulePasado, ruleFuturo]);
+
+  return { patientPasado, patientFuturo };
+}
+
+export async function ensureAxelModelPatients(): Promise<void> {
+  const existing = await db.patients.get('patient-axel-pasado');
+  if (!existing) {
+    await seedAxelModelPatients();
+  }
 }

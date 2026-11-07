@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { driveLogger, LogEntry } from "../../infrastructure/drive/drive-logger";
-import { seedDemoData, seedNewPatientWithoutSessions } from "../../infrastructure/db/seed";
+import { seedDemoData, seedNewPatientWithoutSessions, seedAxelModelPatients } from "../../infrastructure/db/seed";
 import { Icon } from "./common/Icon";
 
 export function DevLogsConsole() {
@@ -11,6 +11,7 @@ export function DevLogsConsole() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [seedState, setSeedState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [newPatientState, setNewPatientState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [axelState, setAxelState] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   useEffect(() => {
     // 1. Check if ?dev=1 or ?dev=true is in URL
@@ -94,9 +95,24 @@ export function DevLogsConsole() {
     }
   };
 
+  const handleSeedAxel = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setAxelState("loading");
+    try {
+      await seedAxelModelPatients();
+      setAxelState("success");
+      setTimeout(() => setAxelState("idle"), 2500);
+    } catch (err) {
+      console.error(err);
+      setAxelState("error");
+      setTimeout(() => setAxelState("idle"), 2500);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).cargarPacienteNuevo = handleSeedNewPatient;
+      (window as any).cargarPacientesAxel = handleSeedAxel;
     }
   }, []);
 
@@ -194,6 +210,26 @@ export function DevLogsConsole() {
                   : newPatientState === "error"
                   ? "Error"
                   : "+ Paciente Nueva (turno próx. semana)"}
+              </span>
+            </button>
+
+            {/* Seed Axel Model Patients Button */}
+            <button
+              type="button"
+              onClick={handleSeedAxel}
+              disabled={axelState === "loading"}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Crea los pacientes modelo Axel Pasado y Axel Futuro para probar recurrencias e historiales"
+            >
+              <Icon name="plus" size={12} />
+              <span>
+                {axelState === "loading"
+                  ? "Creando..."
+                  : axelState === "success"
+                  ? "¡Modelos Axel creados!"
+                  : axelState === "error"
+                  ? "Error"
+                  : "+ Modelos Axel (Pasado y Futuro)"}
               </span>
             </button>
           </div>
