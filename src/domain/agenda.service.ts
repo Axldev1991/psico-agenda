@@ -77,13 +77,19 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
         const activeAbsence = isDateInAbsence(slotDateTime, absencePeriods);
 
         if (dbOverride) {
+          const isLegacyRescheduled =
+            dbOverride.status === 'cancelled' &&
+            (dbOverride.description?.toLowerCase().includes('reagendado') ||
+             dbOverride.notes?.includes('[REAGENDADO]'));
+          const status = isLegacyRescheduled ? ('rescheduled' as const) : dbOverride.status;
+
           agenda.push({
             uuid: dbOverride.uuid,
             patientUuid: rule.patientUuid,
             patientName: patient.fullName,
             dateTime: slotDateTime,
             durationMinutes: rule.durationMinutes,
-            status: dbOverride.status,
+            status,
             paymentStatus: dbOverride.paymentStatus || 'pending',
             paymentMethod: dbOverride.paymentMethod,
             modality: dbOverride.modality || rule.modality || 'in_person',
@@ -130,13 +136,19 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
       if (!alreadyCovered) {
         const patient = patientMap.get(session.patientUuid);
         const activeAbsence = isDateInAbsence(sessionDate, absencePeriods);
+        const isLegacyRescheduled =
+          session.status === 'cancelled' &&
+          (session.description?.toLowerCase().includes('reagendado') ||
+           session.notes?.includes('[REAGENDADO]'));
+        const status = isLegacyRescheduled ? ('rescheduled' as const) : session.status;
+
         agenda.push({
           uuid: session.uuid,
           patientUuid: session.patientUuid,
           patientName: patient ? patient.fullName : "Paciente Desconocido",
           dateTime: sessionDate,
           durationMinutes: 50,
-          status: session.status,
+          status,
           paymentStatus: session.paymentStatus || 'pending',
           paymentMethod: session.paymentMethod,
           modality: session.modality || 'in_person',
