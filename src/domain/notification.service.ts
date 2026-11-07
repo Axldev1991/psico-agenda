@@ -104,6 +104,50 @@ export function computeNotifications(params: ComputeNotificationParams): AppNoti
     }
   });
 
+  // 3. Rescheduled Sessions & Pending Evolutions
+  slots.forEach((slot) => {
+    const timeFormatted = format(slot.dateTime, 'HH:mm');
+    const dateFormatted = format(slot.dateTime, 'yyyy-MM-dd');
+
+    // Rescheduled Session
+    if (slot.status === 'rescheduled' || slot.rescheduledTo || slot.rescheduledFrom) {
+      const rescheduledId = `notif_rescheduled_${slot.uuid || slot.patientUuid}_${dateFormatted}_${timeFormatted}`;
+      if (!dismissedSet.has(rescheduledId)) {
+        notifications.push({
+          id: rescheduledId,
+          type: 'rescheduled_session',
+          severity: 'info',
+          title: 'Sesión reprogramada',
+          message: `La sesión con ${slot.patientName} ha sido reprogramada.`,
+          timestamp: slot.dateTime.toISOString(),
+          sessionUuid: slot.uuid,
+          patientUuid: slot.patientUuid,
+          patientName: slot.patientName,
+          sessionTime: timeFormatted,
+        });
+      }
+    }
+
+    // Pending Evolution
+    if (slot.status === 'completed' && slot.dateTime.getTime() < nowMs && (!slot.notes || slot.notes.trim() === '')) {
+      const pendingEvolId = `notif_pending_evolution_${slot.uuid || slot.patientUuid}_${dateFormatted}_${timeFormatted}`;
+      if (!dismissedSet.has(pendingEvolId)) {
+        notifications.push({
+          id: pendingEvolId,
+          type: 'pending_evolution',
+          severity: 'warning',
+          title: 'Evolución pendiente',
+          message: `Falta registrar la nota clínica de la sesión con ${slot.patientName}.`,
+          timestamp: slot.dateTime.toISOString(),
+          sessionUuid: slot.uuid,
+          patientUuid: slot.patientUuid,
+          patientName: slot.patientName,
+          sessionTime: timeFormatted,
+        });
+      }
+    }
+  });
+
   // Sort by severity (urgent > warning > info) then by timestamp
   return notifications.sort((a, b) => {
     const severityDiff = SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity];

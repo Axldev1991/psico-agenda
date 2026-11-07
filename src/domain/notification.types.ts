@@ -1,4 +1,4 @@
-export type NotificationType = 'imminent_session' | 'daily_summary' | 'recess_warning';
+export type NotificationType = 'imminent_session' | 'daily_summary' | 'recess_warning' | 'rescheduled_session' | 'pending_evolution';
 
 export type NotificationSeverity = 'info' | 'warning' | 'urgent';
 

@@ -150,6 +150,63 @@ describe('notification.service (TDD)', () => {
       expect(notifs[1].severity).toBe('warning');
       expect(notifs[2].severity).toBe('info');
     });
+
+    it('generates a rescheduled_session notification for rescheduled appointments', () => {
+      const slots = [
+        createMockSlot({
+          uuid: 'slot-rescheduled',
+          patientName: 'Mariana Ríos',
+          dateTime: new Date('2026-10-29T10:00:00.000Z'),
+          status: 'rescheduled',
+        }),
+        createMockSlot({
+          uuid: 'slot-rescheduled-prop',
+          patientName: 'Jorge López',
+          dateTime: new Date('2026-10-30T10:00:00.000Z'),
+          rescheduledTo: '2026-11-01T10:00:00.000Z',
+        }),
+      ];
+
+      const notifs = computeNotifications({ now: baseNow, slots });
+      const rescheduledNotifs = notifs.filter((n) => n.type === 'rescheduled_session');
+
+      expect(rescheduledNotifs).toHaveLength(2);
+      expect(rescheduledNotifs.map(n => n.patientName)).toContain('Mariana Ríos');
+      expect(rescheduledNotifs.map(n => n.patientName)).toContain('Jorge López');
+      expect(rescheduledNotifs[0].severity).toBe('info');
+    });
+
+    it('generates a pending_evolution notification for past completed appointments without notes', () => {
+      const slots = [
+        createMockSlot({
+          uuid: 'slot-completed-no-notes',
+          patientName: 'Pedro Paz',
+          dateTime: new Date('2026-10-27T10:00:00.000Z'), // Past
+          status: 'completed',
+          notes: '',
+        }),
+        createMockSlot({
+          uuid: 'slot-completed-with-notes',
+          patientName: 'Ana Silva',
+          dateTime: new Date('2026-10-27T11:00:00.000Z'), // Past
+          status: 'completed',
+          notes: 'Paciente estable.',
+        }),
+        createMockSlot({
+          uuid: 'slot-scheduled-past',
+          patientName: 'Luis Vera',
+          dateTime: new Date('2026-10-27T12:00:00.000Z'), // Past but scheduled
+          status: 'scheduled',
+        })
+      ];
+
+      const notifs = computeNotifications({ now: baseNow, slots });
+      const pendingEvolNotifs = notifs.filter((n) => n.type === 'pending_evolution');
+
+      expect(pendingEvolNotifs).toHaveLength(1);
+      expect(pendingEvolNotifs[0].patientName).toBe('Pedro Paz');
+      expect(pendingEvolNotifs[0].severity).toBe('warning');
+    });
   });
 
   describe('dismissNotification', () => {
