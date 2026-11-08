@@ -104,37 +104,42 @@ export function DriveCard({
   return (
     <div className="relative" ref={menuRef}>
       <div className="bg-surface border border-line rounded-xl p-3 space-y-2.5 shadow-xs">
-        {/* Connection status header with Respaldo badge */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2.5 h-2.5 shrink-0 rounded-full ${
-                syncStatus === "syncing" ? "bg-warn animate-pulse" : "bg-ok"
-              }`}
-              aria-hidden="true"
-            />
-            <span className="text-sm font-semibold text-ink">Google Drive</span>
-          </div>
-
+        {/* Connection status header */}
+        <div className="flex items-center gap-2">
           <span
-            className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap select-none ${
+            className={`w-2 h-2 shrink-0 rounded-full ${
+              syncStatus === "syncing" ? "bg-warn animate-pulse" : "bg-ok"
+            }`}
+            aria-hidden="true"
+          />
+          <span className="text-sm font-semibold text-ink whitespace-nowrap">
+            Drive conectado
+          </span>
+        </div>
+
+        {/* Respaldo status badge & timestamp on a single clean line */}
+        <div className="flex items-center gap-2 flex-nowrap">
+          <span
+            className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap select-none ${
               syncStatus === "syncing"
                 ? "bg-warn-tint text-warn border border-warn/30 animate-pulse"
                 : "bg-emerald-600 text-white shadow-2xs"
             }`}
           >
-            {syncStatus === "syncing" ? "Sincronizando" : "Respaldo al día"}
+            <Icon
+              name={syncStatus === "syncing" ? "refresh" : "check"}
+              size={12}
+              className={syncStatus === "syncing" ? "animate-spin" : ""}
+            />
+            <span>{syncStatus === "syncing" ? "Sincronizando..." : "Respaldo al día"}</span>
           </span>
-        </div>
 
-        {/* Sync timestamp - full width so text is never cut off */}
-        <p className="text-xs text-ink-sub pl-4.5 leading-normal">
-          {syncStatus === "syncing"
-            ? "Sincronizando cambios con la nube..."
-            : lastSynced
-            ? `Sincronizado ${lastSynced}`
-            : "Respaldo automático activo"}
-        </p>
+          {lastSynced && syncStatus !== "syncing" && (
+            <span className="text-xs text-ink-sub whitespace-nowrap">
+              {lastSynced.replace(/\s*[aApP]\.\s*[mM]\.?/, "").trim()}
+            </span>
+          )}
+        </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
