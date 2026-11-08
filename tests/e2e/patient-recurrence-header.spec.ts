@@ -6,45 +6,18 @@ test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", ()
     await page.waitForLoadState("domcontentloaded");
   });
 
-  test("debe mostrar el turno fijo programado en la ficha de Axel Pasado y Axel Futuro, y neutral en paciente nuevo", async ({
+  test("debe purgar modelos de prueba y mostrar el banner reactivo al programar recurrencia", async ({
     page,
   }) => {
     // 1. Ir a Fichero
     await page.getByRole("button", { name: "Fichero" }).click();
 
-    // 2. Abrir ficha de Axel Pasado
-    const axelPasadoRow = page.getByRole("row", { name: /Axel Pasado/i });
-    await expect(axelPasadoRow).toBeVisible();
-    await axelPasadoRow.getByRole("button", { name: /Ficha/i }).click();
+    // 2. Verificar que los pacientes modelo de prueba NO existen en la clínica
+    await expect(page.getByRole("row", { name: /Axel Pasado \(Modelo\)/i })).not.toBeVisible();
+    await expect(page.getByRole("row", { name: /Axel Futuro \(Modelo\)/i })).not.toBeVisible();
 
-    // Validar encabezado de Axel Pasado
-    await expect(page.getByRole("heading", { level: 1, name: /Axel Pasado/i })).toBeVisible();
-
-    const bannerPasado = page.getByTestId("patient-recurrence-banner");
-    await expect(bannerPasado).toBeVisible();
-    await expect(bannerPasado.getByText("Turno Fijo Programado")).toBeVisible();
-    await expect(bannerPasado.getByText(/10:00 hs/i)).toBeVisible();
-    await expect(bannerPasado.getByText(/Semanal · Presencial/i)).toBeVisible();
-    await expect(bannerPasado.getByTestId("patient-recurrence-start-date")).toBeVisible();
-
-    // 3. Volver al Fichero y abrir ficha de Axel Futuro
-    await page.getByRole("button", { name: "Volver al fichero de pacientes" }).click();
-    const axelFuturoRow = page.getByRole("row", { name: /Axel Futuro/i });
-    await expect(axelFuturoRow).toBeVisible();
-    await axelFuturoRow.getByRole("button", { name: /Ficha/i }).click();
-
-    // Validar encabezado de Axel Futuro
-    await expect(page.getByRole("heading", { level: 1, name: /Axel Futuro/i })).toBeVisible();
-
-    const bannerFuturo = page.getByTestId("patient-recurrence-banner");
-    await expect(bannerFuturo).toBeVisible();
-    await expect(bannerFuturo.getByText("Turno Fijo Programado")).toBeVisible();
-    await expect(bannerFuturo.getByText(/16:00 hs/i)).toBeVisible();
-    await expect(bannerFuturo.getByText(/Semanal · Virtual/i)).toBeVisible();
-
-    // 4. Crear un nuevo paciente sin turno fijo y verificar estado neutral
-    await page.getByRole("button", { name: "Volver al fichero de pacientes" }).click();
-    const uniqueName = `Paciente Sin Recurrencia ${Date.now()}`;
+    // 3. Crear un nuevo paciente sin turno fijo y verificar estado neutral en su ficha
+    const uniqueName = `Paciente Clínico ${Date.now()}`;
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(uniqueName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
@@ -54,8 +27,52 @@ test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", ()
     await expect(newPatientRow).toBeVisible();
     await newPatientRow.getByRole("button", { name: /Ficha/i }).click();
 
-    const bannerNuevo = page.getByTestId("patient-recurrence-banner");
-    await expect(bannerNuevo).toBeVisible();
-    await expect(bannerNuevo.getByText("Sin turno fijo programado")).toBeVisible();
+    const bannerNeutral = page.getByTestId("patient-recurrence-banner");
+    await expect(bannerNeutral).toBeVisible();
+    await expect(bannerNeutral.getByText("Sin turno fijo programado")).toBeVisible();
+
+    // 4. Ir a la Agenda y programar un turno recurrente semanal para este paciente
+    await page.getByRole("button", { name: "Agenda" }).click();
+    const openSessionBtn = page.getByRole("button", { name: "Programar turno" }).first();
+    await openSessionBtn.click();
+
+    const sessionModal = page.getByRole("dialog");
+    await expect(sessionModal).toBeVisible();
+    await page.locator("#modal-patient").selectOption({ label: uniqueName });
+
+    const recurrentCheckbox = sessionModal.getByRole("checkbox");
+    await recurrentCheckbox.check();
+    await expect(recurrentCheckbox).toBeChecked();
+
+    const dateInput = page.locator("#modal-date");
+    const currentValue = await dateInput.inputValue();
+    if (!currentValue) {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, "0");
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const yyyy = today.getFullYear();
+      await dateInput.fill(`${dd}/${mm}/${yyyy}`);
+    }
+
+    await sessionModal.getByRole("button", { name: "Programar turno" }).click();
+    await expect(page.getByText("¡Turno programado correctamente!")).toBeVisible();
+    await expect(sessionModal).not.toBeVisible();
+
+    // 5. Volver a la ficha del paciente y verificar que el banner reactivo muestra el turno fijo
+    await page.getByRole("button", { name: "Fichero" }).click();
+
+    const bannerScheduled = page.getByTestId("patient-recurrence-banner");
+    const isBannerVisible = await bannerScheduled.isVisible().catch(() => false);
+    if (!isBannerVisible) {
+      const patientRow = page.getByRole("row", { name: new RegExp(uniqueName) });
+      await patientRow.getByRole("button", { name: /Ficha/i }).click();
+    }
+
+    await expect(bannerScheduled).toBeVisible();
+    await expect(bannerScheduled.getByText("Turno Fijo Programado", { exact: true })).toBeVisible();
+    await expect(bannerScheduled.getByTestId("patient-recurrence-summary")).not.toHaveText("Sin turno fijo programado");
+    await expect(bannerScheduled.getByTestId("patient-recurrence-summary")).toContainText("Semanal");
+    await expect(bannerScheduled.getByTestId("patient-recurrence-start-date")).toBeVisible();
+    await expect(bannerScheduled.getByTestId("patient-recurrence-start-date")).toBeVisible();
   });
 });

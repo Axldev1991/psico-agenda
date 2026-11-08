@@ -673,6 +673,104 @@ describe('DriveSyncService', () => {
         ])
       );
     });
+
+    it('should strictly filter out model patients and never upload or download them', async () => {
+      mockGetAll.mockResolvedValue([
+        { uuid: 'patient-axel-pasado', fullName: 'Axel Pasado (Modelo)', updatedAt: '2026-11-07T12:00:00Z' },
+        { uuid: 'patient-real-1', fullName: 'Paciente Real', updatedAt: '2026-11-07T12:00:00Z' },
+      ]);
+      mockGetAvailabilitySettings.mockResolvedValue({
+        weekly: {},
+        defaultSessionDurationMinutes: 50,
+        intervalStepMinutes: 60,
+      });
+
+      mockDownloadFile.mockImplementation(async (_folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [
+              { uuid: 'patient-axel-futuro', fullName: 'Axel Futuro (Modelo)', updatedAt: '2026-11-07T12:00:00Z' },
+              { uuid: 'patient-remote-1', fullName: 'Remoto Real', updatedAt: '2026-11-07T12:00:00Z' },
+            ],
+            recurrenceRules: [
+              { patientUuid: 'patient-axel-futuro', rruleString: 'FREQ=WEEKLY', startDate: '2026-11-07', startTime: '10:00', durationMinutes: 50 },
+            ],
+            exportedAt: '2026-11-07T12:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      // Model patients should never be saved locally
+      expect(mockSaveAllPatients).toHaveBeenCalledWith(
+        expect.not.arrayContaining([
+          expect.objectContaining({ uuid: 'patient-axel-pasado' }),
+          expect.objectContaining({ uuid: 'patient-axel-futuro' }),
+        ])
+      );
+
+      // index-db.json upload must never contain model patients
+      const uploadCalls = mockUploadFile.mock.calls;
+      const indexDbUpload = uploadCalls.find((call) => call[1] === 'index-db.json');
+      expect(indexDbUpload).toBeDefined();
+      if (!indexDbUpload) throw new Error('index-db.json upload not found');
+      const uploadedIndex = JSON.parse(indexDbUpload[3]);
+      const uploadedUuids = uploadedIndex.patients.map((p: any) => p.uuid);
+      expect(uploadedUuids).not.toContain('patient-axel-pasado');
+      expect(uploadedUuids).not.toContain('patient-axel-futuro');
+      expect(uploadedUuids).toContain('patient-real-1');
+      expect(uploadedUuids).toContain('patient-remote-1');
+    });
+
+    it('should retain newer local punctuation colors during Drive sync via LWW', async () => {
+      mockGetAll.mockResolvedValue([]);
+      mockGetAvailabilitySettings.mockResolvedValue({
+        weekly: {},
+        defaultSessionDurationMinutes: 50,
+        intervalStepMinutes: 60,
+      });
+
+      mockGetPunctuationConfigs.mockResolvedValue([
+        {
+          key: 'yellow',
+          color: '#EAB308',
+          label: 'Amarillo Terapeuta',
+          updatedAt: '2026-11-08T12:00:00.000Z',
+        },
+      ]);
+
+      mockDownloadFile.mockImplementation(async (_folder, filename) => {
+        if (filename === 'index-db.json') {
+          return JSON.stringify({
+            patients: [],
+            punctuationConfigs: [
+              {
+                key: 'yellow',
+                color: '#FEF08A',
+                label: 'Amarillo Viejo Remoto',
+                updatedAt: '2026-11-01T10:00:00.000Z',
+              },
+            ],
+            exportedAt: '2026-11-01T10:00:00Z',
+          });
+        }
+        return null;
+      });
+
+      await service.performSync('fake-token');
+
+      expect(mockSaveAllPunctuationConfigs).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            key: 'yellow',
+            color: '#EAB308',
+            label: 'Amarillo Terapeuta',
+          }),
+        ])
+      );
+    });
   });
 });
 

@@ -35,12 +35,14 @@ export interface MovementConfig {
   key: string;              // indigo, rose, emerald, amber
   color: string;            // indigo, rose, emerald, amber, sky, violet, etc.
   label: string;            // Control, Cognitivo, Fisiológico, Otro, etc.
+  updatedAt?: string;       // ISO timestamp for LWW sync resolution
 }
 
 export interface PunctuationConfig {
   key: string;              // yellow, green, purple, orange, or custom ID
   color: string;            // hex color code
   label: string;            // Amarillo, Verde, Lavanda, Arena, etc.
+  updatedAt?: string;       // ISO timestamp for LWW sync resolution
 }
 
 export interface ClinicalFeaturesSettings {

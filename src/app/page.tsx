@@ -19,7 +19,7 @@ import { BrandLogo } from "../ui/components/navigation/BrandLogo";
 import { NotificationBell } from "../ui/components/navigation/NotificationBell";
 import { useNotifications } from "../ui/hooks/useNotifications";
 import { initGlobalErrorTelemetry } from "../infrastructure/drive/drive-logger";
-import { ensureAxelModelPatients } from "../infrastructure/db/seed";
+import { purgeAxelModelPatients } from "../infrastructure/db/cleanup.service";
 
 function HomeContent() {
   const { patients, addPatient, updatePatient } = usePatients();
@@ -56,10 +56,10 @@ function HomeContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
 
-  // Initialize global error telemetry (DLP-sanitized error forwarding to Vercel logs)
+  // Initialize global error telemetry and purge demo artifacts from active practice
   useEffect(() => {
     initGlobalErrorTelemetry();
-    ensureAxelModelPatients().catch(console.error);
+    purgeAxelModelPatients().catch(console.error);
   }, []);
 
   // Inactivity auto-blur: shield sensitive records after 5 minutes of no input

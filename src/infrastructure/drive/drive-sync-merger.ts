@@ -1,5 +1,5 @@
 import { ExtraNote } from "../../domain/extra-note.types";
-import { Session, RecurrenceRule } from "../../domain/session.types";
+import { Session, RecurrenceRule, PunctuationConfig, MovementConfig } from "../../domain/session.types";
 
 /**
  * Parses a timestamp string into milliseconds, falling back to 0 if invalid or absent.
@@ -141,4 +141,80 @@ export function mergeRecurrenceRulesByLWW(
   }
 
   return Array.from(ruleMap.values());
+}
+
+/**
+ * Merges local and remote punctuation configurations using Last-Write-Wins (LWW) keyed by key.
+ * - If a config exists only locally: retained.
+ * - If a config exists only remotely: added.
+ * - If a config exists on both sides: compares updatedAt timestamp.
+ *   Remote wins only if remote.updatedAt is strictly newer than local.updatedAt.
+ *   Ties or missing timestamps deterministically retain the local version (preventing remote wipe).
+ */
+export function mergePunctuationConfigsByLWW(
+  localConfigs: PunctuationConfig[] = [],
+  remoteConfigs: PunctuationConfig[] = []
+): PunctuationConfig[] {
+  const configMap = new Map<string, PunctuationConfig>();
+
+  for (const local of localConfigs) {
+    if (local.key) {
+      configMap.set(local.key, local);
+    }
+  }
+
+  for (const remote of remoteConfigs) {
+    if (!remote.key) continue;
+
+    const local = configMap.get(remote.key);
+    if (!local) {
+      configMap.set(remote.key, remote);
+      continue;
+    }
+
+    const localTime = parseTimestamp(local.updatedAt);
+    const remoteTime = parseTimestamp(remote.updatedAt);
+
+    if (remoteTime > localTime) {
+      configMap.set(remote.key, remote);
+    }
+  }
+
+  return Array.from(configMap.values());
+}
+
+/**
+ * Merges local and remote movement configurations using Last-Write-Wins (LWW) keyed by key.
+ * Ties or missing timestamps deterministically retain the local version.
+ */
+export function mergeMovementConfigsByLWW(
+  localConfigs: MovementConfig[] = [],
+  remoteConfigs: MovementConfig[] = []
+): MovementConfig[] {
+  const configMap = new Map<string, MovementConfig>();
+
+  for (const local of localConfigs) {
+    if (local.key) {
+      configMap.set(local.key, local);
+    }
+  }
+
+  for (const remote of remoteConfigs) {
+    if (!remote.key) continue;
+
+    const local = configMap.get(remote.key);
+    if (!local) {
+      configMap.set(remote.key, remote);
+      continue;
+    }
+
+    const localTime = parseTimestamp(local.updatedAt);
+    const remoteTime = parseTimestamp(remote.updatedAt);
+
+    if (remoteTime > localTime) {
+      configMap.set(remote.key, remote);
+    }
+  }
+
+  return Array.from(configMap.values());
 }

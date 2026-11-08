@@ -7,7 +7,14 @@ import { AvailabilitySettings } from "../../domain/availability.types";
 import { mergeAvailabilitySettings } from "../../domain/availability.service";
 import { ExtraNote } from "../../domain/extra-note.types";
 import { driveLogger } from "./drive-logger";
-import { mergeSessionsByLWW, mergeExtraNotesByLWW, mergeRecurrenceRulesByLWW } from "./drive-sync-merger";
+import {
+  mergeSessionsByLWW,
+  mergeExtraNotesByLWW,
+  mergeRecurrenceRulesByLWW,
+  mergePunctuationConfigsByLWW,
+  mergeMovementConfigsByLWW,
+} from "./drive-sync-merger";
+import { MODEL_PATIENT_UUIDS } from "../db/cleanup.service";
 import { container } from "../container";
 
 const driveRepo = container.getDriveRepository();
@@ -164,6 +171,13 @@ export class DriveSyncService {
       }
     }
 
+    // Filtrar estrictamente pacientes modelo de prueba tanto locales como remotos
+    const isModelUuid = (uuid?: string) => MODEL_PATIENT_UUIDS.includes(uuid as any);
+
+    const safeLocalPatients = localPatients.filter(p => !isModelUuid(p.uuid));
+    const safeLocalRecurrence = localRecurrence.filter(r => !isModelUuid(r.patientUuid));
+    const safeLocalExtraNotes = localExtraNotes.filter(n => !isModelUuid(n.patientUuid));
+
     let remotePatients: Patient[] = [];
     let remoteRecurrence: RecurrenceRule[] = [];
     let remoteExtraNotes: ExtraNote[] = [];
@@ -173,16 +187,16 @@ export class DriveSyncService {
  
     if (remoteIndexStr) {
       const indexData = JSON.parse(remoteIndexStr);
-      remotePatients = indexData.patients || [];
-      remoteRecurrence = indexData.recurrenceRules || [];
-      remoteExtraNotes = indexData.extraNotes || [];
+      remotePatients = (indexData.patients || []).filter((p: Patient) => !isModelUuid(p.uuid));
+      remoteRecurrence = (indexData.recurrenceRules || []).filter((r: RecurrenceRule) => !isModelUuid(r.patientUuid));
+      remoteExtraNotes = (indexData.extraNotes || []).filter((n: ExtraNote) => !isModelUuid(n.patientUuid));
       remoteSettings = indexData.movementConfigs || [];
       remotePunctuation = indexData.punctuationConfigs || [];
       remoteAvailability = indexData.availabilitySettings;
     } else if (isMigrating && remoteBackupData) {
-      remotePatients = remoteBackupData.patients || [];
-      remoteRecurrence = remoteBackupData.recurrenceRules || [];
-      remoteExtraNotes = remoteBackupData.extraNotes || [];
+      remotePatients = (remoteBackupData.patients || []).filter((p: Patient) => !isModelUuid(p.uuid));
+      remoteRecurrence = (remoteBackupData.recurrenceRules || []).filter((r: RecurrenceRule) => !isModelUuid(r.patientUuid));
+      remoteExtraNotes = (remoteBackupData.extraNotes || []).filter((n: ExtraNote) => !isModelUuid(n.patientUuid));
     }
 
     // Fusión de Pacientes (Comparando por UUID y updatedAt)
@@ -191,7 +205,7 @@ export class DriveSyncService {
     const patientsToDownload: string[] = [];
 
     // 1. Inicializar el mapa con todos los pacientes locales (que contienen el historial clínico local)
-    localPatients.forEach(localP => {
+    safeLocalPatients.forEach(localP => {
       patientMap.set(localP.uuid, localP);
     });
 
@@ -238,7 +252,7 @@ export class DriveSyncService {
     });
 
     // 3. Identificar pacientes locales nuevos que no existen remotamente -> subir
-    localPatients.forEach(localP => {
+    safeLocalPatients.forEach(localP => {
       const existsRemote = remotePatients.some(remoteP => remoteP.uuid === localP.uuid);
       if (!existsRemote && localP.isHistoryLoaded !== false) {
         patientsToUpload.push(localP.uuid);
@@ -330,22 +344,16 @@ export class DriveSyncService {
     }
 
     // Fusión de Reglas de Recurrencia con Last-Write-Wins (LWW)
-    const mergedRecurrence = mergeRecurrenceRulesByLWW(localRecurrence, remoteRecurrence);
+    const mergedRecurrence = mergeRecurrenceRulesByLWW(safeLocalRecurrence, remoteRecurrence);
 
-    // Fusión de Configuración de Movimientos
-    const settingsMap = new Map<string, MovementConfig>();
-    localSettings.forEach(s => settingsMap.set(s.key, s));
-    remoteSettings.forEach(s => settingsMap.set(s.key, s));
-    const mergedSettings = Array.from(settingsMap.values());
+    // Fusión de Configuración de Movimientos con Last-Write-Wins (LWW)
+    const mergedSettings = mergeMovementConfigsByLWW(localSettings, remoteSettings);
  
-    // Fusión de Configuración de Puntuaciones
-    const punctuationMap = new Map<string, PunctuationConfig>();
-    localPunctuation.forEach(p => punctuationMap.set(p.key, p));
-    remotePunctuation.forEach(p => punctuationMap.set(p.key, p));
-    const mergedPunctuation = Array.from(punctuationMap.values());
+    // Fusión de Configuración de Puntuaciones con Last-Write-Wins (LWW)
+    const mergedPunctuation = mergePunctuationConfigsByLWW(localPunctuation, remotePunctuation);
  
-    // Fusión de Extra Notes
-    const mergedExtraNotes = mergeExtraNotesByLWW(localExtraNotes, remoteExtraNotes);
+    // Fusión de Extra Notes con Last-Write-Wins (LWW)
+    const mergedExtraNotes = mergeExtraNotesByLWW(safeLocalExtraNotes, remoteExtraNotes);
 
     // Escribir datos consolidados localmente
     await patientRepo.saveAll(mergedPatients);

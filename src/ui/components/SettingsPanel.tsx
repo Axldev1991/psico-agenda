@@ -37,10 +37,10 @@ export function SettingsPanel() {
   ];
 
   const defaultPunctuation: PunctuationConfig[] = [
-    { key: "yellow", color: "#8A5A12", label: "Seguimiento" },
-    { key: "green", color: "#2F6B4A", label: "Positivo" },
-    { key: "purple", color: "#5A3E86", label: "Reflexión" },
-    { key: "orange", color: "#2C5F6B", label: "Evaluación" },
+    { key: "yellow", color: "#FEF08A", label: "Amarillo" },
+    { key: "green", color: "#BBF7D0", label: "Verde" },
+    { key: "purple", color: "#E9D5FF", label: "Lavanda" },
+    { key: "orange", color: "#FED7AA", label: "Arena" },
   ];
 
   useEffect(() => {
@@ -166,11 +166,16 @@ export function SettingsPanel() {
   const handleSave = async () => {
     setSaveStatus("saving");
     const minDelay = new Promise((resolve) => setTimeout(resolve, 450));
+    const now = new Date().toISOString();
+    const stampedMovements = localConfigs.map((c) => ({ ...c, updatedAt: now }));
+    const stampedPunctuation = localPunctuation.map((p) => ({ ...p, updatedAt: now }));
+    const stampedFeatures = { ...features, updatedAt: now };
+
     try {
       await Promise.all([
-        updateAllMovementConfigs(localConfigs),
-        updateAllPunctuationConfigs(localPunctuation),
-        updateClinicalFeatures(features),
+        updateAllMovementConfigs(stampedMovements),
+        updateAllPunctuationConfigs(stampedPunctuation),
+        updateClinicalFeatures(stampedFeatures),
         minDelay,
       ]);
       setSaveStatus("saved");

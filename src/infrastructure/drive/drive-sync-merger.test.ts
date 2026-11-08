@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { mergeSessionsByLWW, mergeExtraNotesByLWW, mergeRecurrenceRulesByLWW } from "./drive-sync-merger";
-import { Session, RecurrenceRule } from "../../domain/session.types";
+import {
+  mergeSessionsByLWW,
+  mergeExtraNotesByLWW,
+  mergeRecurrenceRulesByLWW,
+  mergePunctuationConfigsByLWW,
+  mergeMovementConfigsByLWW,
+} from "./drive-sync-merger";
+import { Session, RecurrenceRule, PunctuationConfig, MovementConfig } from "../../domain/session.types";
 import { ExtraNote } from "../../domain/extra-note.types";
 
 describe("mergeSessionsByLWW", () => {
@@ -405,6 +411,126 @@ describe("mergeRecurrenceRulesByLWW", () => {
     const merged = mergeRecurrenceRulesByLWW([localRule], [remoteRule]);
     expect(merged).toHaveLength(1);
     expect(merged[0].modality).toBe("online");
+  });
+});
+
+describe("mergePunctuationConfigsByLWW", () => {
+  it("retains newer local punctuation config when local.updatedAt > remote.updatedAt", () => {
+    const localPunc: PunctuationConfig = {
+      key: "yellow",
+      color: "#FFD700",
+      label: "Mi Amarillo Personalizado",
+      updatedAt: "2026-11-08T12:00:00Z",
+    };
+    const remotePunc: PunctuationConfig = {
+      key: "yellow",
+      color: "#FEF08A",
+      label: "Amarillo",
+      updatedAt: "2026-11-05T10:00:00Z",
+    };
+
+    const merged = mergePunctuationConfigsByLWW([localPunc], [remotePunc]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].color).toBe("#FFD700");
+    expect(merged[0].label).toBe("Mi Amarillo Personalizado");
+  });
+
+  it("updates with newer remote punctuation config when remote.updatedAt > local.updatedAt", () => {
+    const localPunc: PunctuationConfig = {
+      key: "green",
+      color: "#BBF7D0",
+      label: "Verde Viejo",
+      updatedAt: "2026-11-01T10:00:00Z",
+    };
+    const remotePunc: PunctuationConfig = {
+      key: "green",
+      color: "#10B981",
+      label: "Verde Esmeralda",
+      updatedAt: "2026-11-08T15:00:00Z",
+    };
+
+    const merged = mergePunctuationConfigsByLWW([localPunc], [remotePunc]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].color).toBe("#10B981");
+    expect(merged[0].label).toBe("Verde Esmeralda");
+  });
+
+  it("retains local version when timestamps tie or when remote lacks updatedAt", () => {
+    const localPunc: PunctuationConfig = {
+      key: "purple",
+      color: "#A855F7",
+      label: "Violeta Clínico",
+      updatedAt: "2026-11-08T12:00:00Z",
+    };
+    const remotePunc: PunctuationConfig = {
+      key: "purple",
+      color: "#E9D5FF",
+      label: "Lavanda Default",
+    };
+
+    const merged = mergePunctuationConfigsByLWW([localPunc], [remotePunc]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].color).toBe("#A855F7");
+    expect(merged[0].label).toBe("Violeta Clínico");
+  });
+
+  it("unions disjoint local and remote punctuation keys", () => {
+    const localPunc: PunctuationConfig = {
+      key: "yellow",
+      color: "#FFD700",
+      label: "Amarillo",
+      updatedAt: "2026-11-08T12:00:00Z",
+    };
+    const remotePunc: PunctuationConfig = {
+      key: "custom_blue",
+      color: "#3B82F6",
+      label: "Azul Remoto",
+      updatedAt: "2026-11-08T11:00:00Z",
+    };
+
+    const merged = mergePunctuationConfigsByLWW([localPunc], [remotePunc]);
+    expect(merged).toHaveLength(2);
+    expect(merged.map((p) => p.key)).toEqual(["yellow", "custom_blue"]);
+  });
+});
+
+describe("mergeMovementConfigsByLWW", () => {
+  it("retains newer local movement config when local.updatedAt > remote.updatedAt", () => {
+    const localMv: MovementConfig = {
+      key: "indigo",
+      color: "#1E3A8A",
+      label: "Control Local",
+      updatedAt: "2026-11-08T12:00:00Z",
+    };
+    const remoteMv: MovementConfig = {
+      key: "indigo",
+      color: "#2D4C85",
+      label: "Control Default",
+      updatedAt: "2026-11-05T10:00:00Z",
+    };
+
+    const merged = mergeMovementConfigsByLWW([localMv], [remoteMv]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].color).toBe("#1E3A8A");
+    expect(merged[0].label).toBe("Control Local");
+  });
+
+  it("retains local version when timestamps tie or when remote lacks updatedAt", () => {
+    const localMv: MovementConfig = {
+      key: "rose",
+      color: "#BE123C",
+      label: "Cognitivo Local",
+      updatedAt: "2026-11-08T12:00:00Z",
+    };
+    const remoteMv: MovementConfig = {
+      key: "rose",
+      color: "#86315F",
+      label: "Cognitivo Viejo",
+    };
+
+    const merged = mergeMovementConfigsByLWW([localMv], [remoteMv]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].color).toBe("#BE123C");
   });
 });
 
