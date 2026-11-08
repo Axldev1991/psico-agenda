@@ -20,7 +20,10 @@ class ServiceContainer {
     this.register<ISettingsRepository>("settingsRepository", new DexieSettingsRepository());
     this.register<IExtraNoteRepository>("extraNoteRepository", new DexieExtraNoteRepository());
     this.register<IDriveRepository>("driveRepository", new GoogleDriveRepository());
-    this.register<DriveFolderSyncService>("driveFolderSyncService", new DriveFolderSyncService());
+    this.register<DriveFolderSyncService>(
+      "driveFolderSyncService",
+      new DriveFolderSyncService(this.getDriveRepository(), this.getExtraNoteRepository())
+    );
   }
 
   register<T>(key: string, instance: T) {

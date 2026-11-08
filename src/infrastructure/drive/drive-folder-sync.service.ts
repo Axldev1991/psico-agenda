@@ -2,23 +2,38 @@ import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
 import { generateFullHistoryWordHtml, generateSessionWordHtml, generateExtraNotesWordHtml } from "../export/docx-exporter";
 import { driveLogger } from "./drive-logger";
-import { container } from "../container";
+import type { IDriveRepository } from "../../repositories/drive.repository";
+import type { IExtraNoteRepository } from "../../repositories/extra-note.repository";
+
+export function extractFolderUuidSuffix(uuid: string): string {
+  if (uuid.includes("-demo-")) return uuid;
+  if (uuid.startsWith("patient-")) {
+    // Para identificadores con prefijo 'patient-', usamos los últimos 8 caracteres para garantizar unicidad y evitar colisiones
+    return uuid.slice(-8);
+  }
+  // Para UUIDs estándar v4 (ej. 8f4b238e-9d2a...), los primeros 8 son únicos
+  return uuid.substring(0, 8);
+}
 
 export class DriveFolderSyncService {
+  constructor(
+    private customDriveRepo?: IDriveRepository,
+    private customExtraNoteRepo?: IExtraNoteRepository
+  ) {}
+
   /**
    * Sincronizador de la estructura visible del consultorio (.doc y .json) en Google Drive.
    */
   async syncVisibleFiles(patients: Patient[], sessions: Session[]): Promise<void> {
-    const driveRepo = container.getDriveRepository();
+    const driveRepo = this.customDriveRepo || (await import("../container")).container.getDriveRepository();
+    const extraNoteRepo = this.customExtraNoteRepo || (await import("../container")).container.getExtraNoteRepository();
     try {
       driveLogger.log("info", "Creando/Buscando carpetas de consultorio en Google Drive...");
       const rootFolderId = await driveRepo.getOrCreateFolder("PSICO-AGENDA");
       const pacientesFolderId = await driveRepo.getOrCreateFolder("pacientes", rootFolderId);
 
       for (const patient of patients) {
-        const partialUuid = patient.uuid.includes("-demo-") 
-          ? patient.uuid 
-          : patient.uuid.substring(0, 8);
+        const partialUuid = extractFolderUuidSuffix(patient.uuid);
         const patientFolderName = `${patient.fullName}_${partialUuid}`;
 
         // DLP Guard: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto
@@ -120,7 +135,6 @@ export class DriveFolderSyncService {
           console.error("Error verificando o resguardando el Word existente:", metadataErr);
         }
 
-        const extraNoteRepo = container.getExtraNoteRepository();
         let extraNotesContent = "";
         try {
           const patientExtraNotes = await extraNoteRepo.getByPatient(patient.uuid);

@@ -345,10 +345,15 @@ export class GoogleDriveRepository implements IDriveRepository {
 
     const data = await response.json();
     if (data.files && data.files.length > 0) {
-      return {
-        id: data.files[0].id,
-        name: data.files[0].name,
-      };
+      // Priorizar coincidencia que efectivamente termine con el sufijo identificador
+      const match = data.files.find((f: any) => f.name.endsWith(`_${suffix}`) || f.name.endsWith(suffix));
+      if (match) {
+        return {
+          id: match.id,
+          name: match.name,
+        };
+      }
+      return null;
     }
     return null;
   }
