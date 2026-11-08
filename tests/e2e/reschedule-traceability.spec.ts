@@ -86,5 +86,23 @@ test.describe("Reschedule Traceability and Badges", () => {
     
     const originBadge = newCard.locator("span", { hasText: /^Reprogramado/ }).first();
     await expect(originBadge).toContainText(`Reprogramado (era ${dd}/${mm} 10:00 hs)`);
+
+    // 5. Ir al Fichero del paciente y verificar que NO aparece la sesión fantasma reagendada sin notas
+    await page.getByRole("button", { name: "Fichero" }).click();
+    const patientRow = page.getByRole("row", { name: new RegExp(patientName) });
+    await expect(patientRow).toBeVisible();
+    await patientRow.getByRole("button", { name: /Ficha/i }).click();
+
+    // En el índice de sesiones lateral, debe haber una única sesión (la activa/reagendada), numerada como Sesión N° 1
+    const sessionNav = page.getByRole("navigation", { name: "Índice de sesiones" });
+    await expect(sessionNav).toBeVisible();
+
+    const sessionButtons = sessionNav.locator("button").filter({ hasText: /Sesión N°/i });
+    await expect(sessionButtons).toHaveCount(1);
+    await expect(sessionButtons.first()).toContainText("Sesión N° 1");
+    await expect(sessionButtons.first()).toContainText("11:00 hs");
+
+    // No debe existir ninguna sesión con badge de estado 'Reagendado' en el índice
+    await expect(sessionNav.getByText("Reagendado", { exact: true })).not.toBeVisible();
   });
 });

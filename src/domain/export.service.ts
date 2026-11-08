@@ -1,5 +1,6 @@
 import { Patient } from './patient.types';
 import { Session, ClinicalFeaturesSettings } from './session.types';
+import { hasActualClinicalNotes } from './patient.utils';
 
 const INK = '#1E2A32';       // texto principal
 const INK_2 = '#566670';     // texto secundario
@@ -60,6 +61,12 @@ export function generateClinicalHistoryDocument(
   extraNotesContent?: string
 ): string {
   const sortedSessions = [...sessions].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  const exportableSessions = sortedSessions.filter((s) => {
+    if (s.status === 'rescheduled' || s.status === 'cancelled') {
+      return hasActualClinicalNotes(s.notes);
+    }
+    return true;
+  });
 
   const fullName = escapeHtml(patient.fullName);
   const birthDate = escapeHtml(patient.birthDate || 'No registrada');
@@ -100,7 +107,7 @@ export function generateClinicalHistoryDocument(
     'missed': 'Ausente / No asistió'
   };
 
-  const sessionsHtml = sortedSessions.map((session, index) => {
+  const sessionsHtml = exportableSessions.map((session, index) => {
     let dateFormatted = '';
     try {
       dateFormatted = new Date(session.dateTime).toLocaleDateString('es-AR', {

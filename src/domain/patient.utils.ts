@@ -156,11 +156,26 @@ export function findInitialSession<T extends { uuid: string; dateTime: string; s
 }
 
 /**
+ * Determines whether a session's notes string contains actual drafted clinical notes,
+ * ignoring administrative agenda tags (e.g. "[REAGENDADO] Turno reprogramado...") or empty HTML wrappers.
+ */
+export function hasActualClinicalNotes(notes?: string): boolean {
+  if (!notes) return false;
+  const clean = notes
+    .replace(/<[^>]*>/g, "")
+    .replace(/\[REAGENDADO\][^\n]*/gi, "")
+    .replace(/\[RECALENDARIZADO\][^\n]*/gi, "")
+    .replace(/Escribí la evolución clínica aquí\.\.\./gi, "")
+    .trim();
+  return clean.length > 0;
+}
+
+/**
  * Rebuilds unified clinical history HTML inserting standard session headers.
  * Avoids including future scheduled sessions that do not have actual clinical notes.
  */
 export function rebuildClinicalHistory(
-  sessions: { uuid: string; dateTime: string; status: string }[],
+  sessions: { uuid: string; dateTime: string; status: string; notes?: string }[],
   sessionContents: Map<string, string>,
   referenceDate: Date = new Date()
 ): string {
@@ -174,18 +189,24 @@ export function rebuildClinicalHistory(
     999
   ).getTime();
 
-  // Filtrar para no incorporar turnos futuros 'scheduled' que no tengan notas
+  // Filtrar para no incorporar turnos que no tengan notas reales si son futuros 'scheduled' o turnos 'rescheduled'/'cancelled'
   const sessionsToInclude = sessions.filter((s) => {
-    if (sessionContents.has(s.uuid)) {
-      const content = sessionContents.get(s.uuid) || "";
-      const text = content.replace(/<[^>]*>/g, "").trim();
-      if (text && text !== "Escribí la evolución clínica aquí...") {
-        return true;
-      }
-    }
-    if (s.status !== "scheduled") {
+    const rawNote = sessionContents.get(s.uuid) ?? s.notes;
+    const hasNotes = hasActualClinicalNotes(rawNote);
+
+    if (hasNotes) {
       return true;
     }
+
+    // Turnos cancelados o reagendados sin notas no se incluyen en la historia clínica
+    if (s.status === "rescheduled" || s.status === "cancelled") {
+      return false;
+    }
+
+    if (s.status === "completed" || s.status === "missed") {
+      return true;
+    }
+
     return new Date(s.dateTime).getTime() <= endOfRefDay;
   });
 
@@ -335,17 +356,19 @@ export function extractHighlights(
 
 /**
  * Filters sessions relevant for the clinical file timeline:
- * 1. Past sessions or sessions scheduled for today.
- * 2. Non-scheduled sessions (e.g. completed, cancelled with reason).
+ * 1. Past sessions or sessions scheduled for today (excluding empty rescheduled/cancelled appointments).
+ * 2. Clinically completed or missed sessions.
  * 3. Sessions that have drafted clinical notes.
  * 4. Explicit target session if provided.
  * 5. The next immediate upcoming scheduled session (so the therapist can prepare/draft notes ahead of time).
+ * 6. Rescheduled or cancelled sessions are excluded by default unless they have drafted notes or explicit opt-in.
  */
 export function filterClinicalSessions<T extends { uuid: string; dateTime: string; status: string; notes?: string }>(
   sessions: T[],
   options?: {
     targetSessionUuid?: string | null;
     referenceDate?: Date;
+    includeRescheduledAndCancelled?: boolean;
   }
 ): T[] {
   if (!sessions || sessions.length === 0) return [];
@@ -362,6 +385,7 @@ export function filterClinicalSessions<T extends { uuid: string; dateTime: strin
   ).getTime();
 
   const targetSessionUuid = options?.targetSessionUuid;
+  const includeRescheduledAndCancelled = options?.includeRescheduledAndCancelled ?? false;
 
   // Encontrar la próxima sesión futura programada (la más cercana en el tiempo que aún no ocurrió)
   const futureScheduled = sessions
@@ -372,13 +396,22 @@ export function filterClinicalSessions<T extends { uuid: string; dateTime: strin
 
   return sessions.filter((s) => {
     if ((s as any).deletedAt) return false;
+
+    const hasRealNotes = hasActualClinicalNotes(s.notes);
     const isTarget = !!targetSessionUuid && s.uuid === targetSessionUuid;
+    const isRescheduledOrCancelled = s.status === "rescheduled" || s.status === "cancelled";
+
+    // Si el turno fue cancelado o reagendado, solo es clínicamente relevante si la terapeuta
+    // redactó notas clínicas (ej: justificación, aviso médico) o si se pide explícitamente ver el historial completo.
+    if (isRescheduledOrCancelled && !includeRescheduledAndCancelled && !hasRealNotes && !isTarget) {
+      return false;
+    }
+
     const isPastOrToday = new Date(s.dateTime).getTime() <= endOfRefDay;
-    const isNotScheduled = s.status !== "scheduled";
-    const hasRealNotes = !!(s.notes && s.notes.replace(/<[^>]*>/g, "").trim());
+    const isClinicalOccurrence = s.status === "completed" || s.status === "missed";
     const isNextUpcoming = !!nextUpcomingUuid && s.uuid === nextUpcomingUuid;
 
-    return isTarget || isPastOrToday || isNotScheduled || hasRealNotes || isNextUpcoming;
+    return isTarget || isClinicalOccurrence || isPastOrToday || hasRealNotes || isNextUpcoming;
   });
 }
 

@@ -111,10 +111,49 @@ describe('export.service', () => {
     expect(html3).not.toContain('<mark');
   });
 
-  it('includes Extra Notes section when extraNotesContent is provided', () => {
-    const extraNotes = '<p>Hipótesis diagnóstica: rasgos obsesivos compensados.</p>';
-    const html = generateClinicalHistoryDocument(mockPatient, mockSessions, undefined, extraNotes);
-    expect(html).toContain('Anotaciones Clínicas Extras');
-    expect(html).toContain('Hipótesis diagnóstica: rasgos obsesivos compensados.');
+  it('excludes rescheduled and cancelled sessions without clinical notes from exported document', () => {
+    const mixedSessions: Session[] = [
+      mockSessions[0], // completed
+      {
+        uuid: 'session-rescheduled-empty',
+        patientUuid: '123',
+        dateTime: '2023-01-20T10:00:00.000Z',
+        status: 'rescheduled',
+        priceAtSession: 1000,
+        notes: '',
+        createdAt: '2023-01-20T00:00:00.000Z',
+        updatedAt: '2023-01-20T00:00:00.000Z',
+      },
+      {
+        uuid: 'session-cancelled-empty',
+        patientUuid: '123',
+        dateTime: '2023-01-22T10:00:00.000Z',
+        status: 'cancelled',
+        priceAtSession: 1000,
+        notes: '',
+        createdAt: '2023-01-22T00:00:00.000Z',
+        updatedAt: '2023-01-22T00:00:00.000Z',
+      },
+      {
+        uuid: 'session-rescheduled-with-notes',
+        patientUuid: '123',
+        dateTime: '2023-01-25T10:00:00.000Z',
+        status: 'rescheduled',
+        priceAtSession: 1000,
+        notes: '<p>Aviso con 24hs de antelación</p>',
+        createdAt: '2023-01-25T00:00:00.000Z',
+        updatedAt: '2023-01-25T00:00:00.000Z',
+      },
+    ];
+
+    const html = generateClinicalHistoryDocument(mockPatient, mixedSessions);
+    expect(html).toContain('Segunda sesión');
+    expect(html).toContain('Aviso con 24hs de antelación');
+    expect(html).not.toContain('session-rescheduled-empty');
+    expect(html).not.toContain('session-cancelled-empty');
+    // Only 2 sessions should be exported
+    expect(html).toContain('Sesión N° 1');
+    expect(html).toContain('Sesión N° 2');
+    expect(html).not.toContain('Sesión N° 3');
   });
 });

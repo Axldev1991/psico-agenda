@@ -174,6 +174,29 @@ describe("Patient Utilities", () => {
       expect(rebuilt).toContain("id=\"session-anchor-futureWithNotes\"");
       expect(rebuilt).not.toContain("id=\"session-anchor-futureEmpty\"");
     });
+
+    it("should exclude rescheduled and cancelled sessions without notes from rebuilt history", () => {
+      const refDate = new Date("2026-10-28T12:00:00.000Z");
+      const sessions = [
+        { uuid: "s-completed", dateTime: "2026-10-21T14:00:00.000Z", status: "completed" },
+        { uuid: "s-rescheduled-empty", dateTime: "2026-10-25T14:00:00.000Z", status: "rescheduled" },
+        { uuid: "s-cancelled-empty", dateTime: "2026-10-26T14:00:00.000Z", status: "cancelled" },
+        { uuid: "s-rescheduled-notes", dateTime: "2026-10-27T14:00:00.000Z", status: "rescheduled" },
+      ];
+
+      const sessionContents = new Map([
+        ["s-completed", "<p>Atendido</p>"],
+        ["s-rescheduled-empty", ""],
+        ["s-cancelled-empty", ""],
+        ["s-rescheduled-notes", "<p>Aviso de reagendamiento por viaje</p>"],
+      ]);
+
+      const rebuilt = rebuildClinicalHistory(sessions, sessionContents, refDate);
+      expect(rebuilt).toContain("id=\"session-anchor-s-completed\"");
+      expect(rebuilt).toContain("id=\"session-anchor-s-rescheduled-notes\"");
+      expect(rebuilt).not.toContain("id=\"session-anchor-s-rescheduled-empty\"");
+      expect(rebuilt).not.toContain("id=\"session-anchor-s-cancelled-empty\"");
+    });
   });
 
   describe("findInitialSession", () => {
@@ -327,6 +350,50 @@ describe("Patient Utilities", () => {
       });
       expect(result).toHaveLength(1);
       expect(result[0].uuid).toBe("s-active");
+    });
+
+    it("excludes rescheduled and cancelled sessions without notes from the clinical timeline", () => {
+      const sessions = [
+        // Sesión pasada atendida con nota
+        { uuid: "s-attended", dateTime: "2026-10-25T16:00:00.000Z", status: "completed", notes: "Evolución real" },
+        // Sesión pasada que fue reagendada (sin notas clínicas)
+        { uuid: "s-rescheduled-empty", dateTime: "2026-11-03T16:00:00.000Z", status: "rescheduled", notes: "" },
+        // Sesión futura cancelada (sin notas clínicas)
+        { uuid: "s-cancelled-empty", dateTime: "2026-11-10T16:00:00.000Z", status: "cancelled", notes: "" },
+        // Sesión eventual reagendada donde sí vendrá el paciente
+        { uuid: "s-rescheduled-target", dateTime: "2026-11-07T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      // Debe incluir únicamente la atendida y la próxima agendada (s-rescheduled-target)
+      expect(result.map((s) => s.uuid)).toEqual(["s-attended", "s-rescheduled-target"]);
+      expect(result.map((s) => s.uuid)).not.toContain("s-rescheduled-empty");
+      expect(result.map((s) => s.uuid)).not.toContain("s-cancelled-empty");
+    });
+
+    it("preserves rescheduled or cancelled sessions if they contain drafted clinical notes", () => {
+      const sessions = [
+        { uuid: "s-rescheduled-notes", dateTime: "2026-11-03T16:00:00.000Z", status: "rescheduled", notes: "Paciente avisó con certificado médico" },
+        { uuid: "s-next", dateTime: "2026-11-07T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, { referenceDate });
+      expect(result.map((s) => s.uuid)).toContain("s-rescheduled-notes");
+      expect(result.map((s) => s.uuid)).toContain("s-next");
+    });
+
+    it("allows optional inclusion of rescheduled and cancelled sessions via includeRescheduledAndCancelled", () => {
+      const sessions = [
+        { uuid: "s-rescheduled-empty", dateTime: "2026-11-03T16:00:00.000Z", status: "rescheduled", notes: "" },
+        { uuid: "s-next", dateTime: "2026-11-07T16:00:00.000Z", status: "scheduled", notes: "" },
+      ];
+
+      const result = filterClinicalSessions(sessions, {
+        referenceDate,
+        includeRescheduledAndCancelled: true,
+      });
+      expect(result.map((s) => s.uuid)).toContain("s-rescheduled-empty");
+      expect(result.map((s) => s.uuid)).toContain("s-next");
     });
   });
 });
