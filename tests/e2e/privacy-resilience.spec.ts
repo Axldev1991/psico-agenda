@@ -79,7 +79,7 @@ test.describe("Fase 3: Privacidad, Resiliencia y Accesibilidad Modal", () => {
 
     // 4. Alternar a Anotaciones Extras
     await extraNotesTab.click();
-    await expect(page.getByText("Anotaciones Clínicas Extras")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: "Anotaciones Clínicas Extras" })).toBeVisible();
 
     // 5. Volver a Expediente Continuo
     await timelineTab.click();
