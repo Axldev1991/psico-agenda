@@ -233,11 +233,17 @@ export function mergeAvailabilitySettings(
 
   const updatedAt = isRemoteNewer ? remote.updatedAt : (local.updatedAt || remote.updatedAt);
 
+  // Respetar LWW: si uno de los lados es más reciente según updatedAt, sus períodos de ausencia (incluyendo eliminaciones) prevalecen
+  const hasTimestamps = localTime > 0 || remoteTime > 0;
+  const absencePeriods = hasTimestamps
+    ? (isRemoteNewer ? (remote.absencePeriods || []) : (local.absencePeriods || []))
+    : Array.from(absenceMap.values());
+
   return {
     weekly,
     defaultSessionDurationMinutes,
     intervalStepMinutes,
-    absencePeriods: Array.from(absenceMap.values()),
+    absencePeriods,
     updatedAt,
   };
 }

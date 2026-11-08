@@ -337,6 +337,43 @@ describe('availability.service (TDD)', () => {
       expect(merged.defaultSessionDurationMinutes).toBe(60);
       expect(merged.weekly[3].ranges).toEqual([{ start: '10:00', end: '16:00' }]);
     });
+
+    it('respects local absencePeriods deletion when local is newer than remote', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.absencePeriods = []; // User deleted all recess periods locally
+      local.updatedAt = '2026-11-08T15:00:00.000Z';
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.absencePeriods = [
+        { id: 'vac-1', startDate: '2026-10-29', endDate: '2026-11-05', reason: 'Vacaciones!' },
+        { id: 'vac-2', startDate: '2026-10-30', endDate: '2026-11-06', reason: 'Visita del Papa' },
+      ];
+      remote.updatedAt = '2026-11-08T14:00:00.000Z'; // 1 hour older
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.absencePeriods).toEqual([]);
+      expect(merged.updatedAt).toBe('2026-11-08T15:00:00.000Z');
+    });
+
+    it('respects remote absencePeriods when remote is newer than local', () => {
+      const local = getDefaultAvailabilitySettings();
+      local.absencePeriods = [
+        { id: 'old-local', startDate: '2026-07-01', endDate: '2026-07-15', reason: 'Antiguo' },
+      ];
+      local.updatedAt = '2026-11-01T10:00:00.000Z';
+
+      const remote = getDefaultAvailabilitySettings();
+      remote.absencePeriods = [
+        { id: 'new-remote', startDate: '2026-12-20', endDate: '2026-12-31', reason: 'Navidad' },
+      ];
+      remote.updatedAt = '2026-11-08T12:00:00.000Z';
+
+      const merged = mergeAvailabilitySettings(local, remote);
+      expect(merged.absencePeriods).toEqual([
+        { id: 'new-remote', startDate: '2026-12-20', endDate: '2026-12-31', reason: 'Navidad' },
+      ]);
+      expect(merged.updatedAt).toBe('2026-11-08T12:00:00.000Z');
+    });
   });
 });
 
