@@ -56,7 +56,8 @@ const defaultMovementLabels: Record<string, string> = {
 export function generateClinicalHistoryDocument(
   patient: Patient,
   sessions: Session[],
-  clinicalFeatures?: ClinicalFeaturesSettings
+  clinicalFeatures?: ClinicalFeaturesSettings,
+  extraNotesContent?: string
 ): string {
   const sortedSessions = [...sessions].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
@@ -206,6 +207,18 @@ export function generateClinicalHistoryDocument(
       <div style="margin-top: 15pt;">
         ${sessionsHtml || `<p style="margin: 0; color: ${INK_2}; font-style: italic;">Sin sesiones registradas.</p>`}
       </div>
+
+      ${extraNotesContent && extraNotesContent.trim() !== '' ? `
+      <!-- ANOTACIONES CLÍNICAS EXTRAS -->
+      <div style="margin-top: 30pt; page-break-inside: avoid;">
+        <div style="font-family: ${SERIF}; font-size: 13.5pt; font-weight: bold; color: ${PRIMARY}; padding-bottom: 4pt; border-bottom: 1.5pt solid ${PRIMARY}; margin-bottom: 12pt;">
+          Anotaciones Clínicas Extras
+        </div>
+        <div style="font-family: ${SANS}; font-size: 11pt; line-height: 1.55; color: ${INK};">
+          ${extraNotesContent}
+        </div>
+      </div>
+      ` : ''}
 
       <!-- PIE DE PÁGINA MSO -->
       <table style="width: 100%; border-collapse: collapse; margin-top: 40pt;">

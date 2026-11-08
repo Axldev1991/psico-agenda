@@ -1,6 +1,6 @@
 import { Patient } from "../../domain/patient.types";
 import { Session } from "../../domain/session.types";
-import { generateFullHistoryWordHtml, generateSessionWordHtml } from "../export/docx-exporter";
+import { generateFullHistoryWordHtml, generateSessionWordHtml, generateExtraNotesWordHtml } from "../export/docx-exporter";
 import { driveLogger } from "./drive-logger";
 import { container } from "../container";
 
@@ -120,13 +120,35 @@ export class DriveFolderSyncService {
           console.error("Error verificando o resguardando el Word existente:", metadataErr);
         }
 
-        const fullHistoryHtml = generateFullHistoryWordHtml(patient);
+        const extraNoteRepo = container.getExtraNoteRepository();
+        let extraNotesContent = "";
+        try {
+          const patientExtraNotes = await extraNoteRepo.getByPatient(patient.uuid);
+          if (patientExtraNotes.length > 0) {
+            extraNotesContent = patientExtraNotes.map(n => n.content).join("<br/><br/>");
+          }
+        } catch (e) {
+          console.warn("Falla al recuperar anotaciones extras para volcado:", e);
+        }
+
+        const fullHistoryHtml = generateFullHistoryWordHtml(patient, { extraNotesContent });
         await driveRepo.uploadFileToFolder(
           patientFolderId,
           docFilename,
           "application/msword",
           "\ufeff" + fullHistoryHtml
         );
+
+        if (extraNotesContent) {
+          const extraDocFilename = "Anotaciones_Extras.doc";
+          const extraDocHtml = generateExtraNotesWordHtml(patient, extraNotesContent);
+          await driveRepo.uploadFileToFolder(
+            patientFolderId,
+            extraDocFilename,
+            "application/msword",
+            "\ufeff" + extraDocHtml
+          );
+        }
 
         // C. Subir evoluciones individuales en la subcarpeta 'sesiones' (sólo atendidas)
         const patientSessions = sessions.filter(s => s.patientUuid === patient.uuid && s.status === "completed");

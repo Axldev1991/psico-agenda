@@ -6,7 +6,10 @@ import { Session, RecurrenceRule } from "../../../domain/session.types";
 import { calculateAge } from "../../../domain/patient.utils";
 import { generateClinicalHistoryDocument } from "../../../domain/export.service";
 import { formatRecurrenceRuleSummary, formatRecurrenceStartDate } from "../../../domain/agenda.service";
+import { container } from "../../../infrastructure/container";
 import { Icon } from "../common/Icon";
+
+const extraNoteRepo = container.getExtraNoteRepository();
 
 interface PatientDetailHeaderProps {
   patient: Patient;
@@ -29,8 +32,18 @@ export function PatientDetailHeader({
   onBack,
   onEdit,
 }: PatientDetailHeaderProps) {
-  const handleExport = () => {
-    const htmlContent = generateClinicalHistoryDocument(patient, sessions);
+  const handleExport = async () => {
+    let extraNotesContent = "";
+    try {
+      const extraNotes = await extraNoteRepo.getByPatient(patient.uuid);
+      if (extraNotes.length > 0) {
+        extraNotesContent = extraNotes.map((n) => n.content).join("<br/><br/>");
+      }
+    } catch (e) {
+      console.warn("Falla al recuperar anotaciones extras para exportar:", e);
+    }
+
+    const htmlContent = generateClinicalHistoryDocument(patient, sessions, undefined, extraNotesContent);
     const blob = new Blob(['\ufeff' + htmlContent], {
       type: 'application/msword;charset=utf-8',
     });

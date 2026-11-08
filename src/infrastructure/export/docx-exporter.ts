@@ -271,9 +271,9 @@ export function exportSessionToWord(
 
 export function generateFullHistoryWordHtml(
   patient: Patient,
-  options: { now?: Date; clinicalFeatures?: ClinicalFeaturesSettings } = {}
+  options: { now?: Date; clinicalFeatures?: ClinicalFeaturesSettings; extraNotesContent?: string } = {}
 ): string {
-  const { now = new Date(), clinicalFeatures } = options;
+  const { now = new Date(), clinicalFeatures, extraNotesContent } = options;
   const name = esc(patient.fullName);
   const exportedAt = esc(formatExportDate(now));
   
@@ -353,6 +353,21 @@ export function generateFullHistoryWordHtml(
     ${processedHistory}
   </div>
 
+  ${extraNotesContent && extraNotesContent.trim() !== '' ? `
+  ${gap(20)}
+  <table ${TABLE_ATTRS} style="${TABLE_STYLE}">
+    <tr>
+      <td style="${sideBorder('bottom', 1.5, PRIMARY)} padding:0pt 0pt 4pt 0pt;">
+        <p style="${m()} font-family:${SERIF}; font-size:14pt; font-weight:bold; color:${PRIMARY};">Anotaciones Clínicas Extras</p>
+      </td>
+    </tr>
+  </table>
+  ${gap(8)}
+  <div style="${m()} font-family:${SANS}; font-size:11pt; line-height:1.55; color:${INK};">
+    ${extraNotesContent}
+  </div>
+  ` : ''}
+
 </div>
 
 <!-- PIE DE PÁGINA MSO -->
@@ -394,4 +409,98 @@ export function exportFullHistoryToWord(
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function generateExtraNotesWordHtml(
+  patient: Patient,
+  extraNotesContent: string,
+  options: { now?: Date } = {}
+): string {
+  const { now = new Date() } = options;
+  const name = esc(patient.fullName);
+  const exportedAt = esc(formatExportDate(now));
+
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>Anotaciones extras - ${name}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page Section1 {
+      size: 21cm 29.7cm;
+      margin: 2.2cm 2.3cm 2.4cm 2.3cm;
+      mso-header-margin: 1.2cm;
+      mso-footer-margin: 1.2cm;
+      mso-footer: f1;
+    }
+    div.Section1 { page: Section1; }
+    body { font-family: ${SANS}; font-size: 11pt; line-height: 1.5; color: ${INK}; background-color: #ffffff; }
+    p { margin-top: 0; margin-right: 0; margin-bottom: 6pt; margin-left: 0; }
+    p.MsoFooter { margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; }
+  </style>
+</head>
+<body style="font-family:${SANS}; font-size:11pt; line-height:1.5; color:${INK};">
+<div class="Section1">
+  <table ${TABLE_ATTRS} style="${TABLE_STYLE}">
+    <tr>
+      <td width="62%" valign="bottom" style="${sideBorder('bottom', 2, PRIMARY)} padding:0pt 0pt 6pt 0pt;">
+        <p style="${m()} font-family:${SERIF}; font-size:18pt; font-weight:bold; line-height:1.1; color:${INK};">Psico-Agenda</p>
+        <p style="${m(2)} font-family:${SANS}; font-size:10pt; color:${INK_2};">Anotaciones clínicas extras</p>
+      </td>
+      <td width="38%" valign="bottom" align="right" style="${sideBorder('bottom', 2, PRIMARY)} padding:0pt 0pt 6pt 12pt; font-family:${SANS}; font-size:9.5pt; line-height:1.4; color:${INK_2};">
+        Documento de uso profesional<br/>Exportado el ${exportedAt}
+      </td>
+    </tr>
+  </table>
+
+  ${gap(16)}
+
+  <table ${TABLE_ATTRS} style="${TABLE_STYLE} font-family:${SANS}; font-size:10pt;">
+    <tr>
+      <td width="54%" valign="top" style="${NO_BORDER} padding:0pt 16pt 12pt 0pt;">
+        <p style="${m(0, 0, 3)} font-size:9pt; font-weight:bold; color:${INK_2};">Paciente</p>
+        <p style="${m(0, 0, 4)} font-family:${SERIF}; font-size:15pt; font-weight:bold; line-height:1.25; color:${INK};">${name}</p>
+        <p style="${m()} font-size:9pt; color:${INK_2};">ID: <span style="font-family:${MONO}; font-size:8.5pt;">${esc(patient.uuid)}</span></p>
+      </td>
+      <td width="46%" valign="top" style="${sideBorder('left', 0.75, RULE)} padding:0pt 0pt 12pt 16pt; font-size:10pt; color:${INK};">
+        <p style="${m(0, 0, 3)} font-size:9pt; font-weight:bold; color:${INK_2};">Ficha clínica</p>
+        <p style="${m(0, 0, 3)}"><strong>Cobertura:</strong> ${esc(coverageText(patient))}</p>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="${sideBorder('top', 0.75, RULE)} padding:0pt; font-size:1pt; line-height:1pt; mso-line-height-rule:exactly;">&nbsp;</td>
+    </tr>
+  </table>
+
+  ${gap(12)}
+
+  <div style="${m()} font-family:${SANS}; font-size:11pt; line-height:1.55; color:${INK};">
+    ${extraNotesContent}
+  </div>
+</div>
+
+<div style="mso-element:footer" id="f1">
+  <table ${TABLE_ATTRS} style="${TABLE_STYLE}">
+    <tr>
+      <td valign="top" style="${sideBorder('top', 0.75, RULE)} padding:5pt 0pt 0pt 0pt; font-family:${SANS}; font-size:9pt; color:${INK_2};">
+        Documento clínico confidencial · ${name}
+      </td>
+      <td valign="top" align="right" style="${sideBorder('top', 0.75, RULE)} padding:5pt 0pt 0pt 0pt; font-family:${SANS}; font-size:9pt; color:${INK_2};">
+        <!--[if supportFields]>Página <span style='mso-element:field-begin'></span> PAGE <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span> de <span style='mso-element:field-begin'></span> NUMPAGES <span style='mso-element:field-separator'></span>1<span style='mso-element:field-end'></span><![endif]-->
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>`;
 }

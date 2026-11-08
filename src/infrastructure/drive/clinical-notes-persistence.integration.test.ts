@@ -110,6 +110,7 @@ vi.mock('../db/dexie-extra-note.repository', () => ({
   DexieExtraNoteRepository: class {
     getAll = mockGetExtraNotes;
     saveAll = mockSaveAllExtraNotes;
+    getByPatient = vi.fn().mockResolvedValue([]);
   },
 }));
 

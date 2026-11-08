@@ -12,6 +12,7 @@ interface RichTextEditorProps {
   variant?: "standard" | "continuous";
   minHeight?: string;
   onBlur?: () => void;
+  showHighlighters?: boolean;
 }
 
 export function RichTextEditor({
@@ -21,6 +22,7 @@ export function RichTextEditor({
   variant = "standard",
   minHeight = "380px",
   onBlur,
+  showHighlighters = true,
 }: RichTextEditorProps) {
   const { punctuationConfigs, clinicalFeatures } = useSettings();
   const editorRef = useRef<HTMLDivElement>(null);
@@ -197,7 +199,7 @@ export function RichTextEditor({
               )}
             </div>
 
-            {clinicalFeatures.enablePunctuations && (
+            {showHighlighters && clinicalFeatures.enablePunctuations && (
               <>
                 <div className="h-4 w-px bg-line mx-1" />
 

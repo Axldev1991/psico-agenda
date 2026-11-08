@@ -110,4 +110,11 @@ describe('export.service', () => {
     expect(html3).toContain('Highlighted text');
     expect(html3).not.toContain('<mark');
   });
+
+  it('includes Extra Notes section when extraNotesContent is provided', () => {
+    const extraNotes = '<p>Hipótesis diagnóstica: rasgos obsesivos compensados.</p>';
+    const html = generateClinicalHistoryDocument(mockPatient, mockSessions, undefined, extraNotes);
+    expect(html).toContain('Anotaciones Clínicas Extras');
+    expect(html).toContain('Hipótesis diagnóstica: rasgos obsesivos compensados.');
+  });
 });

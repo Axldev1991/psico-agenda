@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   generateSessionWordHtml,
-  generateFullHistoryWordHtml
+  generateFullHistoryWordHtml,
+  generateExtraNotesWordHtml,
 } from './docx-exporter';
 import { Patient } from '../../domain/patient.types';
 import { Session } from '../../domain/session.types';
@@ -190,6 +191,26 @@ describe('docx-exporter', () => {
         clinicalFeatures: { enablePunctuations: true, enableMovements: true }
       });
       expect(html2).toContain('<p>History with <mark>highlight</mark></p>');
+    });
+
+    it('should include Anotaciones Clínicas Extras when extraNotesContent is provided', () => {
+      const html = generateFullHistoryWordHtml(dummyPatient, {
+        extraNotesContent: '<p>Interconsulta con psiquiatra: medicación ajustada.</p>',
+      });
+      expect(html).toContain('Anotaciones Clínicas Extras');
+      expect(html).toContain('Interconsulta con psiquiatra: medicación ajustada.');
+    });
+  });
+
+  describe('generateExtraNotesWordHtml', () => {
+    it('should generate standalone Word HTML for extra notes', () => {
+      const html = generateExtraNotesWordHtml(
+        dummyPatient,
+        '<p>Llamada telefónica con familiar el 08/11/2026.</p>'
+      );
+      expect(html).toContain('Anotaciones clínicas extras');
+      expect(html).toContain('Juan Perez');
+      expect(html).toContain('Llamada telefónica con familiar el 08/11/2026.');
     });
   });
 });
