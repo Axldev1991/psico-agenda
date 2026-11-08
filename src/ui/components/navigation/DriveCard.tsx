@@ -105,28 +105,19 @@ export function DriveCard({
     <div className="relative" ref={menuRef}>
       <div className="bg-surface border border-line rounded-xl p-3 space-y-2.5 shadow-xs">
         {/* Connection status header with Respaldo badge */}
-        <div className="flex items-start justify-between gap-1.5">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <span
-              className={`w-2 h-2 shrink-0 rounded-full ${
+              className={`w-2.5 h-2.5 shrink-0 rounded-full ${
                 syncStatus === "syncing" ? "bg-warn animate-pulse" : "bg-ok"
               }`}
               aria-hidden="true"
             />
-            <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-sm font-semibold text-ink truncate">Drive conectado</span>
-              <span className="text-xs text-ink-sub truncate">
-                {syncStatus === "syncing"
-                  ? "Sincronizando..."
-                  : lastSynced
-                  ? `Sincronizado ${lastSynced}`
-                  : "Respaldo activo"}
-              </span>
-            </div>
+            <span className="text-sm font-semibold text-ink">Google Drive</span>
           </div>
 
           <span
-            className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap select-none ${
+            className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap select-none ${
               syncStatus === "syncing"
                 ? "bg-warn-tint text-warn border border-warn/30 animate-pulse"
                 : "bg-emerald-600 text-white shadow-2xs"
@@ -135,6 +126,15 @@ export function DriveCard({
             {syncStatus === "syncing" ? "Sincronizando" : "Respaldo al día"}
           </span>
         </div>
+
+        {/* Sync timestamp - full width so text is never cut off */}
+        <p className="text-xs text-ink-sub pl-4.5 leading-normal">
+          {syncStatus === "syncing"
+            ? "Sincronizando cambios con la nube..."
+            : lastSynced
+            ? `Sincronizado ${lastSynced}`
+            : "Respaldo automático activo"}
+        </p>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
