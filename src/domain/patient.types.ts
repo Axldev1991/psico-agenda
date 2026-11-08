@@ -10,6 +10,7 @@ export interface Patient {
   clinicalHistory?: string;  // Historial clínico unificado en HTML enriquecido
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string; // ISO timestamp for soft deletion (tombstone for LWW sync)
   type?: 'adult' | 'underage';
   birthDate?: string; // YYYY-MM-DD
   status?: 'active' | 'inactive';

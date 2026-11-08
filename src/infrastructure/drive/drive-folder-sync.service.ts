@@ -34,6 +34,21 @@ export class DriveFolderSyncService {
 
       for (const patient of patients) {
         const partialUuid = extractFolderUuidSuffix(patient.uuid);
+
+        // Si el paciente fue marcado como eliminado (soft delete), movemos su carpeta en Drive a la papelera
+        if (patient.deletedAt) {
+          const existingFolder = await driveRepo.findFolderBySuffix(partialUuid, pacientesFolderId);
+          if (existingFolder) {
+            driveLogger.log("info", `[Trash] Moviendo carpeta de paciente eliminado [${partialUuid}] a la papelera de Drive`);
+            try {
+              await driveRepo.trashFile(existingFolder.id);
+            } catch (trashErr) {
+              console.error("Error moviendo carpeta a papelera en Drive:", trashErr);
+            }
+          }
+          continue;
+        }
+
         const patientFolderName = `${patient.fullName}_${partialUuid}`;
 
         // DLP Guard: Si el historial no está cargado localmente, no sobrescribimos el archivo remoto

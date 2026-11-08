@@ -56,4 +56,9 @@ export interface IDriveRepository {
    * Obtiene los metadatos básicos de un archivo en una carpeta específica.
    */
   getFileMetadata(folderId: string, filename: string): Promise<{ id: string; modifiedTime: string; name: string } | null>;
+
+  /**
+   * Mueve un archivo o carpeta a la papelera de Google Drive (borrado seguro recuperable).
+   */
+  trashFile(fileId: string): Promise<void>;
 }

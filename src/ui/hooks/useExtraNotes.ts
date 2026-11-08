@@ -75,7 +75,15 @@ export function useExtraNotes(initialFilters?: ExtraNoteFilterOptions) {
   };
 
   const removeNote = async (uuid: string): Promise<void> => {
-    await repository.delete(uuid);
+    const existing = await repository.getByUuid(uuid);
+    if (!existing) return;
+    const now = new Date().toISOString();
+    const updated: ExtraNote = {
+      ...existing,
+      deletedAt: now,
+      updatedAt: now,
+    };
+    await repository.save(updated);
   };
 
   return {

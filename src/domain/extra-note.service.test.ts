@@ -166,5 +166,22 @@ describe('ExtraNote Service', () => {
       expect(filtered).toHaveLength(1);
       expect(filtered[0].uuid).toBe('2');
     });
+
+    it('excludes soft-deleted notes', () => {
+      const withDeleted: ExtraNote[] = [
+        ...notes,
+        {
+          uuid: '5-deleted',
+          content: 'Deleted note',
+          tags: [],
+          isPinned: false,
+          createdAt: '2024-01-01T10:00:00Z',
+          updatedAt: '2024-01-01T11:00:00Z',
+          deletedAt: '2024-01-01T11:00:00Z',
+        },
+      ];
+      const filtered = filterExtraNotes(withDeleted, {});
+      expect(filtered.map(n => n.uuid)).not.toContain('5-deleted');
+    });
   });
 });

@@ -282,6 +282,56 @@ describe("mergeExtraNotesByLWW", () => {
     expect(merged.map(n => n.uuid)).toContain("n-remote");
   });
 
+  it("preserves soft-deleted extra note tombstone when local deletion is newer than remote active note", () => {
+    const localDeletedNote: ExtraNote = {
+      uuid: "n-deleted",
+      content: "Deleted note",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-11T12:00:00Z",
+      deletedAt: "2026-10-11T12:00:00Z",
+    };
+
+    const remoteActiveNote: ExtraNote = {
+      uuid: "n-deleted",
+      content: "Active note from before",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-05T10:00:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([localDeletedNote], [remoteActiveNote]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].deletedAt).toBe("2026-10-11T12:00:00Z");
+  });
+
+  it("accepts remote soft-deleted extra note tombstone when remote deletion is newer than local active note", () => {
+    const localActiveNote: ExtraNote = {
+      uuid: "n-deleted",
+      content: "Local active note",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-05T10:00:00Z",
+    };
+
+    const remoteDeletedNote: ExtraNote = {
+      uuid: "n-deleted",
+      content: "Deleted note",
+      tags: [],
+      isPinned: false,
+      createdAt: "2026-10-01T00:00:00Z",
+      updatedAt: "2026-10-11T12:00:00Z",
+      deletedAt: "2026-10-11T12:00:00Z",
+    };
+
+    const merged = mergeExtraNotesByLWW([localActiveNote], [remoteDeletedNote]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].deletedAt).toBe("2026-10-11T12:00:00Z");
+  });
+
   it("resolves ties in favor of local version deterministically", () => {
     const localNote: ExtraNote = {
       uuid: "n-tie",

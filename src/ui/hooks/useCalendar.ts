@@ -71,8 +71,9 @@ export function useCalendar() {
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  // 1. Cargar pacientes para asociar nombres a los UUIDs
-  const patients = useLiveQuery(() => patientRepo.getAll()) || [];
+  // 1. Cargar pacientes para asociar nombres a los UUIDs (excluyendo eliminados)
+  const rawPatients = useLiveQuery(() => patientRepo.getAll()) || [];
+  const patients = rawPatients.filter(p => !p.deletedAt);
   const patientMap = new Map(patients.map(p => [p.uuid, p]));
 
   // 2. Cargar sesiones grabadas físicamente

@@ -10,7 +10,7 @@ export function usePatients() {
   // ¡Esto nos da reactividad en tiempo real sin necesidad de un state manager complejo!
   const rawPatients = useLiveQuery(() => repository.getAll());
   const loading = rawPatients === undefined;
-  const patients = rawPatients || [];
+  const patients = (rawPatients || []).filter(p => !p.deletedAt);
 
   const addPatient = async (patientData: Omit<Patient, 'uuid' | 'createdAt' | 'updatedAt'>) => {
     const newPatient: Patient = {
@@ -24,7 +24,40 @@ export function usePatients() {
   };
 
   const removePatient = async (uuid: string) => {
-    await repository.delete(uuid);
+    const existing = await repository.getByUuid(uuid);
+    if (!existing) return;
+    const now = new Date().toISOString();
+    const updated: Patient = {
+      ...existing,
+      deletedAt: now,
+      updatedAt: now,
+    };
+    await repository.save(updated);
+
+    // Cascading soft-delete to sessions and extra notes, and delete recurrence rule
+    const sessionRepo = container.getSessionRepository();
+    const extraNoteRepo = container.getExtraNoteRepository();
+
+    const patientSessions = await sessionRepo.getByPatient(uuid);
+    if (patientSessions.length > 0) {
+      const softDeletedSessions = patientSessions.map(s => ({
+        ...s,
+        deletedAt: s.deletedAt || now,
+        updatedAt: now,
+      }));
+      await sessionRepo.saveAll(softDeletedSessions);
+    }
+    await sessionRepo.deleteRecurrenceRule(uuid);
+
+    const patientNotes = await extraNoteRepo.getByPatient(uuid);
+    if (patientNotes.length > 0) {
+      const softDeletedNotes = patientNotes.map(n => ({
+        ...n,
+        deletedAt: n.deletedAt || now,
+        updatedAt: now,
+      }));
+      await extraNoteRepo.saveAll(softDeletedNotes);
+    }
   };
 
   const updatePatient = async (

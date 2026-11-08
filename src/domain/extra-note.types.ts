@@ -8,6 +8,7 @@ export interface ExtraNote {
   isPinned: boolean;
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
+  deletedAt?: string; // ISO timestamp for soft deletion (tombstone for LWW sync)
 }
 
 export interface ExtraNoteFilterOptions {

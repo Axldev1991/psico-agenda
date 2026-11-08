@@ -532,4 +532,25 @@ export class GoogleDriveRepository implements IDriveRepository {
     }
     return null;
   }
+
+  async trashFile(fileId: string): Promise<void> {
+    if (!this.accessToken) throw new Error("No hay una sesión activa de Google.");
+
+    driveLogger.log("request", `PATCH Mover a la papelera en Drive (ID: ${fileId})`);
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ trashed: true }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      driveLogger.log("error", `Error moviendo a papelera ${fileId}: ${response.status} - ${errText}`);
+    } else {
+      driveLogger.log("response", `Archivo/carpeta ${fileId} movido a la papelera exitosamente.`);
+    }
+  }
 }

@@ -45,9 +45,23 @@ export function useRecentPatients() {
     setRecentPatientUuids([]);
   }, []);
 
+  const removeRecentPatient = useCallback((uuid: string) => {
+    if (!uuid) return;
+    setRecentPatientUuids((prev) => {
+      const next = prev.filter((id) => id !== uuid);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.error("Error updating recent patients in localStorage:", e);
+      }
+      return next;
+    });
+  }, []);
+
   return {
     recentPatientUuids,
     addRecentPatient,
+    removeRecentPatient,
     clearRecentPatients,
   };
 }

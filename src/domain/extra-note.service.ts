@@ -60,6 +60,9 @@ export function filterExtraNotes(
   filters: ExtraNoteFilterOptions
 ): ExtraNote[] {
   return notes.filter((note) => {
+    // 0. Exclude soft-deleted notes
+    if (note.deletedAt) return false;
+
     // 1. Filter by patient
     if (filters.patientUuid !== undefined) {
       if (note.patientUuid !== filters.patientUuid) {

@@ -225,12 +225,12 @@ export class DriveSyncService {
 
         if (localTime > remoteTime) {
           driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Los cambios locales son más recientes. Subiendo...`);
-          if (localP.isHistoryLoaded !== false) {
+          if (localP.isHistoryLoaded !== false && !localP.deletedAt) {
             patientsToUpload.push(localP.uuid);
           }
         } else if (remoteTime > localTime) {
           driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Los datos remotos son más recientes. Descargando...`);
-          if (localP.isHistoryLoaded === true || remoteP.status === 'active') {
+          if (!remoteP.deletedAt && (localP.isHistoryLoaded === true || remoteP.status === 'active')) {
             patientsToDownload.push(localP.uuid);
           }
           const historyBackup = localP.clinicalHistory;
@@ -243,10 +243,12 @@ export class DriveSyncService {
           driveLogger.log("info", `  -> Paciente [${localP.uuid.substring(0, 8)}]: Tiempos iguales. Sin acción.`);
         }
       } else {
-        // Solo existe remotamente -> descargar
-        patientMap.set(remoteP.uuid, remoteP);
-        if (remoteP.status === 'active' || isMigrating) {
-          patientsToDownload.push(remoteP.uuid);
+        // Solo existe remotamente -> descargar SOLO si no está marcado como eliminado
+        if (!remoteP.deletedAt) {
+          patientMap.set(remoteP.uuid, remoteP);
+          if (remoteP.status === 'active' || isMigrating) {
+            patientsToDownload.push(remoteP.uuid);
+          }
         }
       }
     });
@@ -254,7 +256,7 @@ export class DriveSyncService {
     // 3. Identificar pacientes locales nuevos que no existen remotamente -> subir
     safeLocalPatients.forEach(localP => {
       const existsRemote = remotePatients.some(remoteP => remoteP.uuid === localP.uuid);
-      if (!existsRemote && localP.isHistoryLoaded !== false) {
+      if (!existsRemote && localP.isHistoryLoaded !== false && !localP.deletedAt) {
         patientsToUpload.push(localP.uuid);
       }
     });
