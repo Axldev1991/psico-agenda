@@ -20,6 +20,7 @@ import { NotificationBell } from "../ui/components/navigation/NotificationBell";
 import { useNotifications } from "../ui/hooks/useNotifications";
 import { initGlobalErrorTelemetry } from "../infrastructure/drive/drive-logger";
 import { purgeAxelModelPatients } from "../infrastructure/db/cleanup.service";
+import { seedLocalTestPatient } from "../infrastructure/db/seed-local-test";
 
 function HomeContent() {
   const { patients, addPatient, updatePatient } = usePatients();
@@ -51,6 +52,7 @@ function HomeContent() {
     closeSessionModal,
     navigateToPatientDetail,
     toast,
+    showToast,
   } = useUIState();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -60,6 +62,16 @@ function HomeContent() {
   useEffect(() => {
     initGlobalErrorTelemetry();
     purgeAxelModelPatients().catch(console.error);
+
+    // Carga de paciente de prueba local exclusivamente bajo solicitud explícita vía URL (?seedTestPatient=true)
+    if (typeof window !== "undefined" && window.location.search.includes("seedTestPatient=true")) {
+      seedLocalTestPatient()
+        .then(() => {
+          showToast("Paciente de prueba local cargado con éxito.", "success");
+          window.history.replaceState({}, "", "/");
+        })
+        .catch(console.error);
+    }
   }, []);
 
   // Inactivity auto-blur: shield sensitive records after 5 minutes of no input
