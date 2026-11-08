@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { Patient } from "../../domain/patient.types";
 import { Session, PaymentStatus, PaymentMethod } from "../../domain/session.types";
 import { useSettings } from "../hooks/useSettings";
 import { resolveClinicalTag } from "../utils/clinical-tags";
 import { Icon } from "./common/Icon";
 import { AppointmentPaymentBadge } from "./calendar/AppointmentPaymentBadge";
+import { exportSessionToDocx } from "../../infrastructure/export/docx-generator";
 
 interface ActiveSessionHeaderProps {
+  patient?: Patient;
   selectedSession: Session;
   selectedSessionNumber: number | null;
   selectedSessionDateFormatted: string;
@@ -17,6 +20,7 @@ interface ActiveSessionHeaderProps {
 }
 
 export function ActiveSessionHeader({
+  patient,
   selectedSession,
   selectedSessionNumber,
   changeSessionDescription,
@@ -95,32 +99,21 @@ export function ActiveSessionHeader({
   const isMissed = selectedSession.status === "missed";
   const isRescheduled = selectedSession.status === "rescheduled";
 
-  const handleExportSession = () => {
-    // Generate simple HTML for single session
-    const htmlContent = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"><title>Sesión ${selectedSessionNumber}</title></head>
-      <body style="font-family: Calibri, sans-serif;">
-        <h2>Sesión N° ${selectedSessionNumber}</h2>
-        <p><strong>Fecha:</strong> ${dateFormatted} ${timeFormatted} hs</p>
-        <p><strong>Estado:</strong> ${selectedSession.status}</p>
-        <p><strong>Tema:</strong> ${selectedSession.description || "N/A"}</p>
-        <div>${selectedSession.notes || ""}</div>
-      </body>
-      </html>
-    `;
-    const blob = new Blob(['\ufeff' + htmlContent], {
-      type: 'application/msword;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    
-    a.href = url;
-    a.download = `sesion_${selectedSessionNumber}_${selectedSession.dateTime.split('T')[0]}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExportSession = async () => {
+    try {
+      const dummyPatient: Patient = patient || {
+        uuid: selectedSession.patientUuid,
+        fullName: "Paciente",
+        sessionPrice: selectedSession.priceAtSession,
+        createdAt: selectedSession.createdAt,
+        updatedAt: selectedSession.updatedAt,
+      };
+      await exportSessionToDocx(dummyPatient, selectedSession, selectedSessionNumber, {
+        clinicalFeatures,
+      });
+    } catch (err) {
+      console.error("Error al exportar sesión a DOCX:", err);
+    }
   };
 
   return (
@@ -205,7 +198,7 @@ export function ActiveSessionHeader({
             type="button"
             onClick={handleExportSession}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-semibold rounded-full border border-line bg-surface hover:bg-bg-base text-ink-sub hover:text-ink transition-colors shadow-2xs cursor-pointer"
-            title="Exportar sesión individual a Word (.doc)"
+            title="Exportar sesión individual a Word (.docx)"
           >
             <Icon name="download" size={14} />
             <span className="hidden sm:inline">Exportar sesión</span>

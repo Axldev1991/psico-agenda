@@ -4,7 +4,7 @@ import React from "react";
 import { Patient } from "../../../domain/patient.types";
 import { Session, RecurrenceRule } from "../../../domain/session.types";
 import { calculateAge } from "../../../domain/patient.utils";
-import { generateClinicalHistoryDocument } from "../../../domain/export.service";
+import { exportFullHistoryToDocx } from "../../../infrastructure/export/docx-generator";
 import { formatRecurrenceRuleSummary, formatRecurrenceStartDate } from "../../../domain/agenda.service";
 import { container } from "../../../infrastructure/container";
 import { Icon } from "../common/Icon";
@@ -43,20 +43,11 @@ export function PatientDetailHeader({
       console.warn("Falla al recuperar anotaciones extras para exportar:", e);
     }
 
-    const htmlContent = generateClinicalHistoryDocument(patient, sessions, undefined, extraNotesContent);
-    const blob = new Blob(['\ufeff' + htmlContent], {
-      type: 'application/msword;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const safeName = patient.fullName.replace(/\s+/g, '_');
-    
-    a.href = url;
-    a.download = `${safeName}_historial.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      await exportFullHistoryToDocx(patient, sessions, { extraNotesContent });
+    } catch (err) {
+      console.error("Error al exportar historial a DOCX:", err);
+    }
   };
   const age = patient.birthDate ? calculateAge(patient.birthDate) : null;
   const isUnderage = patient.type === "underage";

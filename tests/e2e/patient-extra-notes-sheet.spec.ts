@@ -79,6 +79,6 @@ test.describe("Hoja en Blanco de Anotaciones Clínicas Extras", () => {
     await page.getByRole("button", { name: /Exportar Historial/i }).click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toContain("_historial.doc");
+    expect(download.suggestedFilename()).toContain("_historial.docx");
   });
 });

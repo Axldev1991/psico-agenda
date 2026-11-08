@@ -257,6 +257,7 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
                       {selectedSession && selectedSessionNumber ? (
                         <div key={selectedSession.uuid} className="space-y-4 view-transition">
                           <ActiveSessionHeader
+                            patient={patient}
                             selectedSession={selectedSession}
                             selectedSessionNumber={selectedSessionNumber}
                             selectedSessionDateFormatted={selectedSessionDateFormatted}

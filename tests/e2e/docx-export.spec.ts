@@ -59,9 +59,9 @@ test.describe("Word/DOCX clinical history file export", () => {
     await page.getByRole("button", { name: "Exportar historial" }).click();
     const download = await downloadPromise;
 
-    // Assert download initiates and suggested filename ends with .doc
+    // Assert download initiates and suggested filename ends with .docx
     const suggestedFilename = download.suggestedFilename();
-    expect(suggestedFilename).toMatch(/\.doc$/);
+    expect(suggestedFilename).toMatch(/\.docx$/);
 
     // Assert non-zero size
     const downloadPath = await download.path();
@@ -75,9 +75,9 @@ test.describe("Word/DOCX clinical history file export", () => {
     await page.getByRole("button", { name: "Exportar sesión" }).click();
     const sessionDownload = await sessionDownloadPromise;
 
-    // Assert download initiates and suggested filename ends with .doc
+    // Assert download initiates and suggested filename ends with .docx
     const sessionSuggestedFilename = sessionDownload.suggestedFilename();
-    expect(sessionSuggestedFilename).toMatch(/\.doc$/);
+    expect(sessionSuggestedFilename).toMatch(/\.docx$/);
     const sessionDownloadPath = await sessionDownload.path();
     if (sessionDownloadPath) {
       const stats = fs.statSync(sessionDownloadPath);
