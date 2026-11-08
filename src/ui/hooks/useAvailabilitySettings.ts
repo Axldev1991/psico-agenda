@@ -13,6 +13,7 @@ import {
   copySchedule as domainCopySchedule,
 } from '../../domain/availability.service';
 import { useGoogleDrive } from './useGoogleDrive';
+import { useUIState } from '../context/UIContext';
 
 const settingsRepo = container.getSettingsRepository();
 
@@ -24,9 +25,9 @@ export function useAvailabilitySettings() {
   const [isDirty, setIsDirty] = useState(false);
 
   const { performSync, googleToken } = useGoogleDrive();
+  const { setUnsavedChangesGuard } = useUIState();
   const settingsRef = useRef(settings);
   const isDirtyRef = useRef(false);
-  const debounceTimerRef = useRef<any>(null);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -44,6 +45,29 @@ export function useAvailabilitySettings() {
       console.error('Error reloading availability settings:', e);
     }
   }, []);
+
+  // Sincronizar guardia de navegación con UIContext
+  useEffect(() => {
+    if (setUnsavedChangesGuard) {
+      setUnsavedChangesGuard(
+        isDirty
+          ? {
+              isDirty: true,
+              message:
+                'Tenés cambios sin guardar en tu configuración de disponibilidad y recesos. Si salís ahora, se perderán las modificaciones.',
+              onDiscard: () => {
+                reload();
+              },
+            }
+          : null
+      );
+    }
+    return () => {
+      if (setUnsavedChangesGuard) {
+        setUnsavedChangesGuard(null);
+      }
+    };
+  }, [isDirty, reload, setUnsavedChangesGuard]);
 
   // Load initial settings and listen to updates across components
   useEffect(() => {
@@ -134,31 +158,15 @@ export function useAvailabilitySettings() {
     }
   }, [googleToken, performSync]);
 
-  const triggerDebouncedSave = useCallback(() => {
+  const markDirty = useCallback(() => {
     isDirtyRef.current = true;
     setIsDirty(true);
     setSaveStatus('idle');
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      save();
-    }, 1200);
-  }, [save]);
-
-  // Auto-save on unmount if there were pending changes
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      if (isDirtyRef.current) {
-        const toSave: AvailabilitySettings = {
-          ...settingsRef.current,
-          updatedAt: new Date().toISOString(),
-        };
-        settingsRepo.saveAvailabilitySettings(toSave).catch((err) => {
-          console.error('Error forzando guardado de disponibilidad al desmontar:', err);
-        });
-      }
-    };
   }, []);
+
+  const discardChanges = useCallback(async () => {
+    await reload();
+  }, [reload]);
 
   const updateDayEnabled = useCallback((day: number, enabled: boolean) => {
     setSettings((prev) => {
@@ -181,8 +189,8 @@ export function useAvailabilitySettings() {
       };
     });
     setErrorMessage(null);
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const updateRange = useCallback((day: number, index: number, field: 'start' | 'end', value: string) => {
     setSettings((prev) => {
@@ -205,8 +213,8 @@ export function useAvailabilitySettings() {
       };
     });
     setErrorMessage(null);
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const addRange = useCallback((day: number) => {
     setSettings((prev) => {
@@ -229,8 +237,8 @@ export function useAvailabilitySettings() {
       };
     });
     setErrorMessage(null);
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const removeRange = useCallback((day: number, index: number) => {
     setSettings((prev) => {
@@ -251,8 +259,8 @@ export function useAvailabilitySettings() {
       };
     });
     setErrorMessage(null);
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const copyDaySchedule = useCallback((fromDay: number, toDays: number[]) => {
     setSettings((prev) => {
@@ -263,16 +271,16 @@ export function useAvailabilitySettings() {
       };
     });
     setErrorMessage(null);
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const updateSessionDuration = useCallback((durationMinutes: number) => {
     setSettings((prev) => ({
       ...prev,
       defaultSessionDurationMinutes: durationMinutes,
     }));
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const addAbsencePeriod = useCallback((period: Omit<AbsencePeriod, 'id'>) => {
     const newPeriod: AbsencePeriod = {
@@ -283,16 +291,16 @@ export function useAvailabilitySettings() {
       ...prev,
       absencePeriods: [...(prev.absencePeriods || []), newPeriod],
     }));
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   const removeAbsencePeriod = useCallback((id: string) => {
     setSettings((prev) => ({
       ...prev,
       absencePeriods: (prev.absencePeriods || []).filter((p) => p.id !== id),
     }));
-    triggerDebouncedSave();
-  }, [triggerDebouncedSave]);
+    markDirty();
+  }, [markDirty]);
 
   return {
     settings,
@@ -310,5 +318,6 @@ export function useAvailabilitySettings() {
     removeAbsencePeriod,
     reload,
     save,
+    discardChanges,
   };
 }

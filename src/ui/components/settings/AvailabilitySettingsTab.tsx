@@ -41,6 +41,7 @@ export function AvailabilitySettingsTab() {
     addAbsencePeriod,
     removeAbsencePeriod,
     save,
+    discardChanges,
   } = useAvailabilitySettings();
 
   const handleManualSave = async () => {
@@ -144,7 +145,7 @@ export function AvailabilitySettingsTab() {
           {saveStatus === "saving" ? (
             <>
               <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-ink font-medium">Guardando cambios automáticamente...</span>
+              <span className="text-ink font-medium">Guardando cambios...</span>
             </>
           ) : saveStatus === "saved" ? (
             <>
@@ -154,43 +155,57 @@ export function AvailabilitySettingsTab() {
               <span className="text-ok font-medium">Cambios guardados y sincronizados</span>
             </>
           ) : isDirty ? (
-            <span className="text-warn font-medium flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-warn animate-pulse" />
-              <span>Guardando en un instante...</span>
+            <span className="text-warn font-semibold flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-warn animate-pulse" />
+              <span>Tenés cambios sin guardar</span>
             </span>
           ) : (
             <span className="text-ink-sub flex items-center gap-1.5">
-              <Icon name="check" size={14} className="text-ink-muted" />
+              <Icon name="check" size={14} className="text-ok" />
               <span>Disponibilidad al día</span>
             </span>
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleManualSave}
-          aria-label="Guardar disponibilidad"
-          disabled={saveStatus === "saving"}
-          className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 ${
-            saveStatus === "saved"
-              ? "bg-ok hover:bg-ok text-white"
-              : "bg-primary hover:bg-primary-hover text-surface"
-          }`}
-        >
-          {saveStatus === "saving" ? (
-            <>
-              <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
-              <span>Guardando...</span>
-            </>
-          ) : saveStatus === "saved" ? (
-            <>
-              <Icon name="check" size={15} />
-              <span>Guardado con éxito</span>
-            </>
-          ) : (
-            <span>Guardar ahora</span>
+        <div className="flex items-center gap-2">
+          {isDirty && (
+            <button
+              type="button"
+              onClick={discardChanges}
+              className="px-4 py-2 text-sm font-medium rounded-xl border border-line hover:bg-bg-base text-ink-sub hover:text-ink transition-colors cursor-pointer"
+            >
+              Descartar
+            </button>
           )}
-        </button>
+
+          <button
+            type="button"
+            onClick={handleManualSave}
+            aria-label="Guardar disponibilidad"
+            disabled={saveStatus === "saving" || !isDirty}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+              saveStatus === "saved"
+                ? "bg-ok hover:bg-ok text-white"
+                : isDirty
+                ? "bg-primary hover:bg-primary-hover text-surface"
+                : "bg-surface border border-line-control text-ink-sub opacity-60"
+            }`}
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <span className="h-3.5 w-3.5 border-2 border-surface border-t-transparent rounded-full animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : saveStatus === "saved" ? (
+              <>
+                <Icon name="check" size={15} />
+                <span>Guardado</span>
+              </>
+            ) : (
+              <span>Guardar cambios</span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

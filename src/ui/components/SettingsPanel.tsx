@@ -19,7 +19,28 @@ export function SettingsPanel() {
     updateAllPunctuationConfigs,
     updateClinicalFeatures,
   } = useSettings();
-  const { confirm, showToast } = useUIState();
+  const { confirm, showToast, unsavedChangesGuard, setUnsavedChangesGuard } = useUIState();
+
+  const handleSwitchSettingsTab = async (nextTab: "availability" | "categories" | "factory_reset") => {
+    if (nextTab === settingsTab) return;
+    if (unsavedChangesGuard?.isDirty) {
+      const proceed = await confirm({
+        title: "¿Descartar cambios?",
+        description:
+          unsavedChangesGuard.message ||
+          "Tenés cambios sin guardar en tu configuración. Si salís ahora, se perderán las modificaciones.",
+        confirmText: "Descartar y salir",
+        cancelText: "Quedarme a guardar",
+        variant: "warning",
+      });
+      if (!proceed) return;
+      if (unsavedChangesGuard.onDiscard) {
+        unsavedChangesGuard.onDiscard();
+      }
+      setUnsavedChangesGuard(null);
+    }
+    setSettingsTab(nextTab);
+  };
 
   const [localConfigs, setLocalConfigs] = useState<MovementConfig[]>([]);
   const [localPunctuation, setLocalPunctuation] = useState<PunctuationConfig[]>([]);
@@ -209,7 +230,7 @@ export function SettingsPanel() {
             type="button"
             role="tab"
             aria-selected={settingsTab === "availability"}
-            onClick={() => setSettingsTab("availability")}
+            onClick={() => handleSwitchSettingsTab("availability")}
             className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               settingsTab === "availability"
                 ? "border-primary text-primary"
@@ -223,7 +244,7 @@ export function SettingsPanel() {
             type="button"
             role="tab"
             aria-selected={settingsTab === "categories"}
-            onClick={() => setSettingsTab("categories")}
+            onClick={() => handleSwitchSettingsTab("categories")}
             className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               settingsTab === "categories"
                 ? "border-primary text-primary"
@@ -237,7 +258,7 @@ export function SettingsPanel() {
             type="button"
             role="tab"
             aria-selected={settingsTab === "factory_reset"}
-            onClick={() => setSettingsTab("factory_reset")}
+            onClick={() => handleSwitchSettingsTab("factory_reset")}
             className={`pb-2.5 text-base font-semibold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               settingsTab === "factory_reset"
                 ? "border-err text-err font-bold"

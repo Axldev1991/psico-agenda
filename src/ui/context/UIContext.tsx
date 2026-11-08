@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Patient } from "../../domain/patient.types";
 import { ConfirmationModal, ConfirmVariant } from "../components/common/ConfirmationModal";
 
@@ -26,9 +26,15 @@ interface ConfirmState {
   resolve: (value: boolean) => void;
 }
 
+export interface UnsavedChangesGuard {
+  isDirty: boolean;
+  message?: string;
+  onDiscard?: () => void;
+}
+
 export interface UIContextType {
   activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
+  setActiveTab: (tab: ActiveTab) => void | Promise<void>;
   selectedPatientForDetail: Patient | null;
   setSelectedPatientForDetail: (patient: Patient | null) => void;
   targetSessionUuidForDetail: string | null;
@@ -43,16 +49,18 @@ export interface UIContextType {
   closeSessionModal: () => void;
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
-  navigateToPatientDetail: (patient: Patient, sessionUuid?: string) => void;
+  navigateToPatientDetail: (patient: Patient, sessionUuid?: string) => void | Promise<void>;
   toast: Toast | null;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
   confirm: (options: ConfirmDialogOptions) => Promise<boolean>;
+  unsavedChangesGuard: UnsavedChangesGuard | null;
+  setUnsavedChangesGuard: (guard: UnsavedChangesGuard | null) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("calendar");
+  const [activeTab, setActiveTabState] = useState<ActiveTab>("calendar");
   const [selectedPatientForDetail, setSelectedPatientForDetail] = useState<Patient | null>(null);
   const [targetSessionUuidForDetail, setTargetSessionUuidForDetail] = useState<string | null>(null);
   const [patientToEdit, setPatientToEdit] = useState<Patient | null>(null);
@@ -61,6 +69,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [unsavedChangesGuard, setUnsavedChangesGuard] = useState<UnsavedChangesGuard | null>(null);
 
   const confirm = (options: ConfirmDialogOptions): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
@@ -86,6 +95,39 @@ export function UIProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Browser-level safety net for tab close / reload when dirty
+  useEffect(() => {
+    if (!unsavedChangesGuard?.isDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [unsavedChangesGuard?.isDirty]);
+
+  const setActiveTab = async (newTab: ActiveTab) => {
+    if (newTab === activeTab) return;
+    if (unsavedChangesGuard?.isDirty) {
+      const proceed = await confirm({
+        title: "¿Descartar cambios?",
+        description:
+          unsavedChangesGuard.message ||
+          "Tenés cambios sin guardar en tu configuración. Si salís ahora, se perderán las modificaciones.",
+        confirmText: "Descartar y salir",
+        cancelText: "Quedarme a guardar",
+        variant: "warning",
+      });
+      if (!proceed) return;
+
+      if (unsavedChangesGuard.onDiscard) {
+        unsavedChangesGuard.onDiscard();
+      }
+      setUnsavedChangesGuard(null);
+    }
+    setActiveTabState(newTab);
+  };
+
   const openNewPatientModal = () => {
     setPatientToEdit(null);
     setIsPatientModalOpen(true);
@@ -109,10 +151,27 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setIsSessionModalOpen(false);
   };
 
-  const navigateToPatientDetail = (patient: Patient, sessionUuid?: string) => {
+  const navigateToPatientDetail = async (patient: Patient, sessionUuid?: string) => {
+    if (unsavedChangesGuard?.isDirty) {
+      const proceed = await confirm({
+        title: "¿Descartar cambios?",
+        description:
+          unsavedChangesGuard.message ||
+          "Tenés cambios sin guardar en tu configuración. Si salís ahora, se perderán las modificaciones.",
+        confirmText: "Descartar y salir",
+        cancelText: "Quedarme a guardar",
+        variant: "warning",
+      });
+      if (!proceed) return;
+
+      if (unsavedChangesGuard.onDiscard) {
+        unsavedChangesGuard.onDiscard();
+      }
+      setUnsavedChangesGuard(null);
+    }
     setSelectedPatientForDetail(patient);
     setTargetSessionUuidForDetail(sessionUuid || null);
-    setActiveTab("patients");
+    setActiveTabState("patients");
   };
 
   const showToast = (message: string, type: "success" | "info" | "error" = "success") => {
@@ -146,6 +205,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
         toast,
         showToast,
         confirm,
+        unsavedChangesGuard,
+        setUnsavedChangesGuard,
       }}
     >
       {children}
