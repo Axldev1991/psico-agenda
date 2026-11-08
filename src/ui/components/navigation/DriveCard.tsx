@@ -104,24 +104,36 @@ export function DriveCard({
   return (
     <div className="relative" ref={menuRef}>
       <div className="bg-surface border border-line rounded-xl p-3 space-y-2.5 shadow-xs">
-        {/* Connection status header */}
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`w-2 h-2 shrink-0 rounded-full ${
-              syncStatus === "syncing" ? "bg-warn animate-pulse" : "bg-ok"
-            }`}
-            aria-hidden="true"
-          />
-          <div className="flex flex-col leading-tight overflow-hidden">
-            <span className="text-sm font-semibold text-ink">Drive conectado</span>
-            <span className="text-sm text-ink-sub truncate">
-              {syncStatus === "syncing"
-                ? "Sincronizando..."
-                : lastSynced
-                ? `Sincronizado ${lastSynced}`
-                : "Respaldo activo"}
-            </span>
+        {/* Connection status header with Respaldo badge */}
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-2 h-2 shrink-0 rounded-full ${
+                syncStatus === "syncing" ? "bg-warn animate-pulse" : "bg-ok"
+              }`}
+              aria-hidden="true"
+            />
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className="text-sm font-semibold text-ink truncate">Drive conectado</span>
+              <span className="text-xs text-ink-sub truncate">
+                {syncStatus === "syncing"
+                  ? "Sincronizando..."
+                  : lastSynced
+                  ? `Sincronizado ${lastSynced}`
+                  : "Respaldo activo"}
+              </span>
+            </div>
           </div>
+
+          <span
+            className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap select-none ${
+              syncStatus === "syncing"
+                ? "bg-warn-tint text-warn border border-warn/30 animate-pulse"
+                : "bg-emerald-600 text-white shadow-2xs"
+            }`}
+          >
+            {syncStatus === "syncing" ? "Sincronizando" : "Respaldo al día"}
+          </span>
         </div>
 
         {/* Action buttons */}

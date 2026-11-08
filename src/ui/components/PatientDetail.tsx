@@ -13,7 +13,6 @@ import { PatientDetailHeader } from "./patient-detail/PatientDetailHeader";
 import { PatientArchivedNotice } from "./patient-detail/PatientArchivedNotice";
 import { PatientSearchFilters } from "./patient-detail/PatientSearchFilters";
 import { PatientExtraNotes } from "./patient-detail/PatientExtraNotes";
-import { SyncStatusBadge } from "./patient-detail/SyncStatusBadge";
 import { Icon } from "./common/Icon";
 
 interface PatientDetailProps {
@@ -311,15 +310,6 @@ export function PatientDetail({ patient: initialPatient, onBack, onEdit }: Patie
           </div>
         )}
       </section>
-
-      {/* Semáforo de Respaldo Flotante */}
-      <SyncStatusBadge
-        googleToken={googleToken}
-        syncStatus={syncStatus}
-        isLocalSaving={isLocalSaving}
-        saveFeedback={saveFeedback}
-        hasPendingDriveUpload={hasPendingDriveUpload}
-      />
     </>
   );
 }
