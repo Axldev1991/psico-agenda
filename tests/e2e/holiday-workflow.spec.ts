@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Holiday Workflow and Biweekly Rescheduling", () => {
   test.beforeEach(async ({ page }) => {
+    // Congelar reloj a una fecha fija para que el test nunca sea frágil ante el paso del tiempo
+    await page.clock.setFixedTime(new Date("2026-11-17T12:00:00Z"));
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
