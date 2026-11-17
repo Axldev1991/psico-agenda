@@ -44,32 +44,32 @@ test.describe("Holiday Workflow and Biweekly Rescheduling", () => {
     await expect(page.getByText(/Día de la Soberanía Nacional/i).first()).toBeVisible();
     await expect(card.getByText("Presencial · 50 min")).toBeVisible();
 
-    // 5. Verificar botón [✓ Atender] presente y clickearlo
-    const atenderBtn = card.getByRole("button", { name: /atender/i });
-    await expect(atenderBtn).toBeVisible();
-    await atenderBtn.click();
+    // 5. En feriado por defecto el estado es [No atender]
+    const noAtenderBtn = card.getByRole("button", { name: "No atender" });
+    await expect(noAtenderBtn).toBeVisible();
+    await noAtenderBtn.click();
 
-    // 6. Confirmar en el modal de confirmación
+    // 6. Confirmar en el modal de confirmación para pasar a atender
     const confirmDialog = page.getByRole("dialog");
     await expect(confirmDialog).toBeVisible();
     await expect(confirmDialog.getByText("¿Atender en feriado?")).toBeVisible();
     await confirmDialog.getByRole("button", { name: "Atender feriado" }).click();
     await expect(confirmDialog).not.toBeVisible();
 
-    // 7. El botón ahora debe ser [✕ No atender]
-    const noAtenderBtn = card.getByRole("button", { name: /no atender/i });
-    await expect(noAtenderBtn).toBeVisible();
+    // 7. El botón ahora indica que el turno se atiende: [✓ Atender]
+    const atenderBtn = card.getByRole("button", { name: "Atender" });
+    await expect(atenderBtn).toBeVisible();
 
-    // 8. Clickear [✕ No atender] y desmarcar con confirmación
-    await noAtenderBtn.click();
+    // 8. Clickear [✓ Atender] y desmarcar con confirmación
+    await atenderBtn.click();
     const unmarkDialog = page.getByRole("dialog");
     await expect(unmarkDialog).toBeVisible();
     await expect(unmarkDialog.getByText("¿Desmarcar atención en feriado?")).toBeVisible();
     await unmarkDialog.getByRole("button", { name: "No atender" }).click();
     await expect(unmarkDialog).not.toBeVisible();
 
-    // El botón vuelve a ser [✓ Atender]
-    await expect(card.getByRole("button", { name: /atender/i })).toBeVisible();
+    // El botón vuelve a indicar [No atender]
+    await expect(card.getByRole("button", { name: "No atender" })).toBeVisible();
 
     // 9. Verificar menú contextual de 3 puntos
     const moreActionsBtn = card.getByRole("button", { name: "Más acciones" });

@@ -251,11 +251,11 @@ export function AppointmentCard({
       {/* Right side: Action buttons */}
       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end">
         {slot.holiday && !slot.absence && !isCancelled && !isRescheduled && onToggleHolidayWorked && (
-          !slot.isHolidayWorked ? (
+          slot.isHolidayWorked ? (
             <button
               type="button"
               onClick={handleToggleHolidayWorked}
-              title="Atender este turno en feriado"
+              title="Atención confirmada en feriado. Clic para desmarcar"
               className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-surface rounded-lg transition-colors cursor-pointer text-sm font-semibold flex items-center gap-1.5 shadow-2xs"
             >
               <Icon name="check" size={14} />
@@ -265,11 +265,11 @@ export function AppointmentCard({
             <button
               type="button"
               onClick={handleToggleHolidayWorked}
-              title="Desmarcar atención en feriado"
-              className="px-3 py-1.5 border border-err/40 hover:border-err bg-err-tint/40 hover:bg-err-tint text-err rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
+              title="No se atiende por feriado. Clic para marcar atención"
+              className="px-3 py-1.5 border border-line hover:border-line-control bg-surface hover:bg-bg-base text-ink-sub hover:text-ink rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
             >
-              <Icon name="x" size={14} />
-              <span className="line-through">No atender</span>
+              <Icon name="x" size={14} className="text-warn" />
+              <span>No atender</span>
             </button>
           )
         )}
