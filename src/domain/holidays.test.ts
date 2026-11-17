@@ -60,7 +60,7 @@ describe('holidays.ts', () => {
       localStorageMock.setItem('ar-holidays-2026', 'invalid-json');
 
       const apiResponse = [
-        { motivo: 'Día de Prueba', dia: 15, mes: 3, tipo: 'inamovible' }
+        { fecha: '2026-03-15', nombre: 'Día de Prueba', tipo: 'inamovible' }
       ];
 
       fetchMock.mockResolvedValueOnce({
@@ -78,7 +78,7 @@ describe('holidays.ts', () => {
 
     it('fetches from API and populates cache if no cache exists', async () => {
       const apiResponse = [
-        { motivo: 'Feriado Nuevo', dia: 10, mes: 5, tipo: 'trasladable' }
+        { fecha: '2027-05-10', nombre: 'Feriado Nuevo', tipo: 'trasladable' }
       ];
 
       fetchMock.mockResolvedValueOnce({
@@ -88,7 +88,7 @@ describe('holidays.ts', () => {
 
       const result = await fetchArgentinaHolidays(2027);
 
-      expect(fetchMock).toHaveBeenCalledWith('https://nolaborables.com.ar/api/v1/feriados/2027?incluir=opcional');
+      expect(fetchMock).toHaveBeenCalledWith('https://api.argentinadatos.com/v1/feriados/2027');
       expect(result).toEqual([{ date: '2027-05-10', name: 'Feriado Nuevo' }]);
       expect(localStorageMock.setItem).toHaveBeenCalledWith('ar-holidays-2027', JSON.stringify([{ date: '2027-05-10', name: 'Feriado Nuevo' }]));
     });

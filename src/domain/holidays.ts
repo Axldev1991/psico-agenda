@@ -25,11 +25,10 @@ export const ARGENTINA_HOLIDAYS_2026: Holiday[] = [
   { date: '2026-12-25', name: 'Navidad' },
 ];
 
-interface ApiHoliday {
-  motivo: string;
-  dia: number;
-  mes: number;
+interface ArgentinaDatosHoliday {
+  fecha: string;
   tipo: string;
+  nombre: string;
 }
 
 // Carga los feriados desde la API y los cachea en localStorage para garantizar offline
@@ -48,22 +47,18 @@ export async function fetchArgentinaHolidays(year: number): Promise<Holiday[]> {
     }
   }
 
-  // 2. Si no hay caché, ir a buscar a la API oficial
+  // 2. Si no hay caché, ir a buscar a la API oficial (ArgentinaDatos)
   try {
-    const response = await fetch(`https://nolaborables.com.ar/api/v1/feriados/${year}?incluir=opcional`);
+    const response = await fetch(`https://api.argentinadatos.com/v1/feriados/${year}`);
     if (!response.ok) throw new Error('API no disponible');
 
-    const data: ApiHoliday[] = await response.json();
+    const data: ArgentinaDatosHoliday[] = await response.json();
     
-    // Traducir formato de la API al nuestro
-    const formatted: Holiday[] = data.map(h => {
-      const monthStr = String(h.mes).padStart(2, '0');
-      const dayStr = String(h.dia).padStart(2, '0');
-      return {
-        date: `${year}-${monthStr}-${dayStr}`,
-        name: h.motivo
-      };
-    });
+    // Traducir formato de la API al nuestro (fecha ya viene en YYYY-MM-DD)
+    const formatted: Holiday[] = data.map(h => ({
+      date: h.fecha,
+      name: h.nombre
+    }));
 
     // Guardar en caché para futuras visitas offline
     if (typeof window !== 'undefined') {
