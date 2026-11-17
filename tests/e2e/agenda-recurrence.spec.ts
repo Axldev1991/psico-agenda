@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { format, addDays } from "date-fns";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -13,7 +16,11 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const patientName = `Paciente Recurrente ${Date.now()}`;
 
     // 1. Crear el paciente
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
@@ -42,7 +49,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const dateInput = page.locator("#modal-date");
     const currentValue = await dateInput.inputValue();
     if (!currentValue) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();
@@ -74,7 +81,11 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const patientName = `Paciente Reagenda ${Date.now()}`;
 
     // 1. Crear el paciente
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
@@ -88,7 +99,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     }
     await page.getByRole("button", { name: "Programar turno" }).first().click();
 
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const dayOfWeek = (today.getDay() + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - dayOfWeek);
@@ -148,7 +159,11 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const patientB = `Paciente Beta ${timestamp}`;
 
     // 1. Crear ambos pacientes
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
 
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientA);
@@ -166,7 +181,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     if (await mondayBtn.isVisible()) {
       await mondayBtn.click();
     }
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const dayOfWeek = (today.getDay() + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - dayOfWeek);
@@ -230,7 +245,11 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const patientName = `Paciente Mensual ${Date.now()}`;
 
     // 1. Crear el paciente
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
@@ -253,7 +272,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     // Asegurar fecha y hora
     const dateInput = page.locator("#modal-date");
     if (!(await dateInput.inputValue())) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();
@@ -279,7 +298,11 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     const patientName = `Paciente Permanente ${Date.now()}`;
 
     // 1. Crear paciente
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
@@ -291,7 +314,7 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     if (await mondayBtn.isVisible()) {
       await mondayBtn.click();
     }
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const dayOfWeek = (today.getDay() + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - dayOfWeek);

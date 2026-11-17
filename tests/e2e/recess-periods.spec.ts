@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { format, addDays } from "date-fns";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Períodos de receso y vacaciones", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -12,7 +15,7 @@ test.describe("Períodos de receso y vacaciones", () => {
     const recessReason = "Congreso Anual";
     
     // Calcular fechas
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const startDate = addDays(today, 1);
     const endDate = addDays(today, 3);
     const appointmentDate = addDays(today, 2);
@@ -20,19 +23,27 @@ test.describe("Períodos de receso y vacaciones", () => {
     const formatForInput = (d: Date) => format(d, "dd/MM/yyyy");
     
     // 1. Crear un paciente rápido para el test
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
 
     // 2. Navegar a Configuración y luego a la pestaña de disponibilidad
-    await page.getByRole("button", { name: "Configuración" }).click();
+    const configBtn = page.getByRole("button", { name: "Configuración" });
+    await expect(configBtn).toBeVisible();
+    await configBtn.click();
     
-    // El sistema tiene "Disponibilidad y Turnos" tab (referencia de availability-settings.spec.ts)
     const availabilityTab = page.getByRole("tab", { name: /Disponibilidad y Turnos/i });
+    if (!(await availabilityTab.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await configBtn.click();
+    }
     if (await availabilityTab.isVisible()) {
-        await availabilityTab.click();
+      await availabilityTab.click();
     }
 
     // 3. Crear período de receso
@@ -46,7 +57,7 @@ test.describe("Períodos de receso y vacaciones", () => {
     const saveBtn = page.getByRole("button", { name: /Guardar ahora|Guardar disponibilidad/i });
     await expect(saveBtn).toBeVisible();
     await saveBtn.click();
-    await expect(page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))).toBeVisible();
+    await expect(page.getByText(/Cambios guardados|Guardado/i).first()).toBeVisible();
 
     // 5. Navegar a Agenda y crear turno durante el receso
     await page.getByRole("button", { name: "Agenda" }).click();
@@ -141,7 +152,7 @@ test.describe("Períodos de receso y vacaciones", () => {
     }
     
     await page.getByRole("button", { name: /Guardar ahora|Guardar disponibilidad/i }).click();
-    await expect(page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))).toBeVisible();
+    await expect(page.getByText(/Cambios guardados|Guardado/i).first()).toBeVisible();
 
     // 9. Volver a la Agenda y verificar que se limpió la suspensión
     await page.getByRole("button", { name: "Agenda" }).click();

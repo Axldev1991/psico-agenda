@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Notificaciones y Recordatorios Clínicos", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -40,7 +43,7 @@ test.describe("Notificaciones y Recordatorios Clínicos", () => {
     const dateInput = page.locator("#modal-date");
     const currentValue = await dateInput.inputValue();
     if (!currentValue) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();
@@ -109,7 +112,7 @@ test.describe("Notificaciones y Recordatorios Clínicos", () => {
     await page.locator("#modal-patient").selectOption({ label: patientName2 });
     
     // Asegurarse de re-llenar la fecha
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const dd = String(today.getDate()).padStart(2, "0");
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const yyyy = today.getFullYear();

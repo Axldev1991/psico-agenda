@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -10,7 +13,13 @@ test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", ()
     page,
   }) => {
     // 1. Ir a Fichero
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await expect(ficheroBtn).toBeVisible();
+    await ficheroBtn.click();
+    const nuevoPacienteBtn = page.getByRole("button", { name: /Nuevo paciente/i });
+    if (!(await nuevoPacienteBtn.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await ficheroBtn.click();
+    }
 
     // 2. Verificar que los pacientes modelo de prueba NO existen en la clínica
     await expect(page.getByRole("row", { name: /Axel Pasado \(Modelo\)/i })).not.toBeVisible();
@@ -18,7 +27,7 @@ test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", ()
 
     // 3. Crear un nuevo paciente sin turno fijo y verificar estado neutral en su ficha
     const uniqueName = `Paciente Clínico ${Date.now()}`;
-    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+    await nuevoPacienteBtn.click();
     await page.locator("#p-name").fill(uniqueName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -47,7 +56,7 @@ test.describe("Visualización de Turno Fijo / Recurrencia en Ficha Clínica", ()
     const dateInput = page.locator("#modal-date");
     const currentValue = await dateInput.inputValue();
     if (!currentValue) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();

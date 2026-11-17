@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Word/DOCX clinical history file export", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -11,8 +14,14 @@ test.describe("Word/DOCX clinical history file export", () => {
     const patientName = `Word Export Patient ${Date.now()}`;
 
     // 1. Crear un paciente y agendar un turno con notas
-    await page.getByRole("button", { name: "Fichero" }).click();
-    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await expect(ficheroBtn).toBeVisible();
+    await ficheroBtn.click();
+    const nuevoPacienteBtn = page.getByRole("button", { name: /Nuevo paciente/i });
+    if (!(await nuevoPacienteBtn.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await ficheroBtn.click();
+    }
+    await nuevoPacienteBtn.click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -25,7 +34,7 @@ test.describe("Word/DOCX clinical history file export", () => {
     const dateInput = page.locator("#modal-date");
     const currentValue = await dateInput.inputValue();
     if (!currentValue) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();

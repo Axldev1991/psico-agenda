@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Confirmation Dialogs", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     // Navigate to root
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
@@ -11,7 +14,11 @@ test.describe("Confirmation Dialogs", () => {
     const patientName = `Juan Perez ${Date.now()}`;
 
     // Navigate to Fichero tab
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
     
     // Create a new patient first
     const newPatientBtn = page.getByRole("button", { name: /Nuevo paciente/i });
@@ -45,7 +52,7 @@ test.describe("Confirmation Dialogs", () => {
     
     await sessionModalDialog.locator("#modal-patient").selectOption({ label: patientName });
     
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const day = String(today.getDate()).padStart(2, '0');
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const year = today.getFullYear();
@@ -75,9 +82,19 @@ test.describe("Confirmation Dialogs", () => {
     await expect(appointmentCard).toBeVisible();
 
     // --- Test Appointment Deletion ---
-    const deleteAppointmentBtn = appointmentCard.getByTitle("Eliminar turno");
-    await expect(deleteAppointmentBtn).toBeVisible();
-    await deleteAppointmentBtn.click();
+    const triggerDeleteAppointment = async () => {
+      const moreActionsBtn = appointmentCard.getByRole("button", { name: "Más acciones" });
+      if (await moreActionsBtn.isVisible()) {
+        await moreActionsBtn.click();
+        await page.getByRole("menuitem", { name: "Eliminar turno" }).click();
+      } else {
+        const deleteAppointmentBtn = appointmentCard.getByTitle("Eliminar turno");
+        await expect(deleteAppointmentBtn).toBeVisible();
+        await deleteAppointmentBtn.click();
+      }
+    };
+
+    await triggerDeleteAppointment();
 
     // The confirmation dialog appears
     const appointmentConfirmModal = page.getByRole("dialog");
@@ -94,14 +111,14 @@ test.describe("Confirmation Dialogs", () => {
     await expect(appointmentCard).toBeVisible();
 
     // Verify Escape closes dialog
-    await deleteAppointmentBtn.click();
+    await triggerDeleteAppointment();
     await expect(appointmentConfirmModal).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(appointmentConfirmModal).not.toBeVisible();
     await expect(appointmentCard).toBeVisible();
 
     // Verify confirmation deletes appointment
-    await deleteAppointmentBtn.click();
+    await triggerDeleteAppointment();
     await expect(appointmentConfirmModal).toBeVisible();
     await appointmentConfirmModal.getByRole("button", { name: "Eliminar turno" }).click();
     await expect(appointmentConfirmModal).not.toBeVisible();

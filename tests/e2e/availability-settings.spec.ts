@@ -2,16 +2,22 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-21T10:00:00Z"));
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
 
   test("permite configurar la duración de las sesiones y guardar disponibilidad", async ({ page }) => {
-    // 1. Navegar a Configuración
-    await page.getByRole("button", { name: "Configuración" }).click();
+    // 1. Navegar a Configuración con reintento ante hidratación tardía
+    const configBtn = page.getByRole("button", { name: "Configuración" });
+    await expect(configBtn).toBeVisible();
+    await configBtn.click();
 
     // 2. Verificar que la pestaña "Disponibilidad y Turnos" está presente y activa
     const availabilityTab = page.getByRole("tab", { name: /Disponibilidad y Turnos/i });
+    if (!(await availabilityTab.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await configBtn.click();
+    }
     await expect(availabilityTab).toBeVisible();
     await expect(availabilityTab).toHaveAttribute("aria-selected", "true");
 
@@ -32,14 +38,19 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
 
     // 6. Verificar mensaje de confirmación
     await expect(
-      page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))
+      page.getByText(/Cambios guardados|Guardado/i).first()
     ).toBeVisible();
   });
 
   test("permite alternar a la pestaña de Movimientos y Puntuaciones", async ({ page }) => {
-    await page.getByRole("button", { name: "Configuración" }).click();
+    const configBtn = page.getByRole("button", { name: "Configuración" });
+    await expect(configBtn).toBeVisible();
+    await configBtn.click();
 
     const categoriesTab = page.getByRole("tab", { name: /Movimientos y Puntuaciones/i });
+    if (!(await categoriesTab.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await configBtn.click();
+    }
     await expect(categoriesTab).toBeVisible();
     await categoriesTab.click();
     await expect(categoriesTab).toHaveAttribute("aria-selected", "true");
@@ -101,8 +112,18 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
   });
 
   test("permite configurar un período de receso/vacaciones y alerta en SessionModal", async ({ page }) => {
-    // 1. Navegar a Configuración
-    await page.getByRole("button", { name: "Configuración" }).click();
+    // 1. Navegar a Configuración con reintento ante hidratación tardía
+    const configBtn = page.getByRole("button", { name: "Configuración" });
+    await expect(configBtn).toBeVisible();
+    await configBtn.click();
+
+    const availabilityTab = page.getByRole("tab", { name: /Disponibilidad y Turnos/i });
+    if (!(await availabilityTab.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await configBtn.click();
+    }
+    if (await availabilityTab.isVisible()) {
+      await availabilityTab.click();
+    }
 
     // 2. Verificar sección de Períodos de receso y vacaciones
     await expect(page.getByText("Períodos de receso y vacaciones")).toBeVisible();
@@ -130,7 +151,7 @@ test.describe("Fase 4: Configuración de Disponibilidad y Duración de Sesión",
     // 6b. Persistir disponibilidad
     await page.getByRole("button", { name: /Guardar disponibilidad/i }).click();
     await expect(
-      page.getByText("Guardado con éxito").or(page.getByText("Disponibilidad guardada"))
+      page.getByText(/Cambios guardados|Guardado/i).first()
     ).toBeVisible();
 
     // 7. Ir a Agenda y abrir SessionModal

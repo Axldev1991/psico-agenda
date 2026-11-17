@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Fase 1: Core Clínico y Ciclo de Turnos", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -14,7 +17,11 @@ test.describe("Fase 1: Core Clínico y Ciclo de Turnos", () => {
     const updatedPhone = "+54 11 9988 7766";
 
     // 1. Navegar al Fichero
-    await page.getByRole("button", { name: "Fichero" }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await ficheroBtn.click();
+    if ((await ficheroBtn.getAttribute("aria-current")) !== "page") {
+      await ficheroBtn.click();
+    }
 
     // 2. Abrir modal y registrar paciente
     await page.getByRole("button", { name: /Nuevo paciente/i }).click();
@@ -76,7 +83,7 @@ test.describe("Fase 1: Core Clínico y Ciclo de Turnos", () => {
     const dateInput = page.locator("#modal-date");
     const currentValue = await dateInput.inputValue();
     if (!currentValue) {
-      const today = new Date();
+      const today = new Date(FIXED_DATE);
       const dd = String(today.getDate()).padStart(2, "0");
       const mm = String(today.getMonth() + 1).padStart(2, "0");
       const yyyy = today.getFullYear();

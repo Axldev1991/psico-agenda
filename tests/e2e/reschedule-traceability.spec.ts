@@ -2,8 +2,11 @@ import { test, expect } from "@playwright/test";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 
+const FIXED_DATE = new Date("2026-10-21T10:00:00Z");
+
 test.describe("Reschedule Traceability and Badges", () => {
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(FIXED_DATE);
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -11,8 +14,14 @@ test.describe("Reschedule Traceability and Badges", () => {
   test("debe permitir reagendar un turno eventualmente y verificar trazabilidad", async ({ page }) => {
     // 1. Create a patient
     const patientName = `Paciente Reschedule ${Date.now()}`;
-    await page.getByRole("button", { name: "Fichero" }).click();
-    await page.getByRole("button", { name: /Nuevo paciente/i }).click();
+    const ficheroBtn = page.getByRole("button", { name: "Fichero" });
+    await expect(ficheroBtn).toBeVisible();
+    await ficheroBtn.click();
+    const nuevoPacienteBtn = page.getByRole("button", { name: /Nuevo paciente/i });
+    if (!(await nuevoPacienteBtn.isVisible({ timeout: 2000 }).catch(() => false))) {
+      await ficheroBtn.click();
+    }
+    await nuevoPacienteBtn.click();
     await page.locator("#p-name").fill(patientName);
     await page.getByRole("button", { name: "Guardar paciente" }).click();
     await expect(page.getByRole("dialog")).not.toBeVisible();
@@ -26,7 +35,7 @@ test.describe("Reschedule Traceability and Badges", () => {
     await page.locator("#modal-patient").selectOption({ label: patientName });
     
     // Choose today at 10:00 AM
-    const today = new Date();
+    const today = new Date(FIXED_DATE);
     const dd = String(today.getDate()).padStart(2, "0");
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const yyyy = today.getFullYear();
@@ -53,7 +62,7 @@ test.describe("Reschedule Traceability and Badges", () => {
     await expect(rescheduleModal).toBeVisible();
 
     // 4. Fill target date (7 days ahead, next week) and select an available slot
-    const targetDate = addDays(new Date(), 7);
+    const targetDate = addDays(FIXED_DATE, 7);
     const ddt = String(targetDate.getDate()).padStart(2, "0");
     const mmt = String(targetDate.getMonth() + 1).padStart(2, "0");
     const yyyyt = targetDate.getFullYear();
