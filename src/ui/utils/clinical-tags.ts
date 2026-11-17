@@ -1,6 +1,5 @@
 /**
  * Paleta cerrada de 8 colores clínicos con contraste verificado (> 4.5:1)
- * especificada en docs/psico-agenda-guia-de-diseno-02.html
  */
 
 export interface ClinicalTagColor {
