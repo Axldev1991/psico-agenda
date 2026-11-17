@@ -41,13 +41,19 @@ test.describe("Reschedule Traceability and Badges", () => {
     // 3. Open Reschedule Modal from today's appointment card
     const appointmentCard = page.locator("article", { hasText: patientName }).first();
     await expect(appointmentCard).toBeVisible();
-    await appointmentCard.getByRole("button", { name: /reagendar/i }).click();
+    const moreBtn = appointmentCard.getByRole("button", { name: "Más acciones" });
+    if (await moreBtn.isVisible()) {
+      await moreBtn.click();
+      await page.getByRole("menuitem", { name: "Reagendar" }).click();
+    } else {
+      await appointmentCard.getByRole("button", { name: /reagendar/i }).click();
+    }
 
     const rescheduleModal = page.getByRole("dialog");
     await expect(rescheduleModal).toBeVisible();
 
-    // 4. Fill target date (2 days ahead, next week) and select an available slot
-    const targetDate = addDays(new Date(), 2);
+    // 4. Fill target date (7 days ahead, next week) and select an available slot
+    const targetDate = addDays(new Date(), 7);
     const ddt = String(targetDate.getDate()).padStart(2, "0");
     const mmt = String(targetDate.getMonth() + 1).padStart(2, "0");
     const yyyyt = targetDate.getFullYear();

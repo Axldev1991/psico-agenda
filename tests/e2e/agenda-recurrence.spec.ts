@@ -105,7 +105,13 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     // 3. Abrir modal de reagendamiento desde la tarjeta
     const appointmentCard = page.locator("article", { hasText: patientName });
     await expect(appointmentCard).toBeVisible();
-    await appointmentCard.getByRole("button", { name: "Reagendar" }).click();
+    const moreBtn = appointmentCard.getByRole("button", { name: "Más acciones" });
+    if (await moreBtn.isVisible()) {
+      await moreBtn.click();
+      await page.getByRole("menuitem", { name: "Reagendar" }).click();
+    } else {
+      await appointmentCard.getByRole("button", { name: "Reagendar" }).click();
+    }
 
     const rescheduleModal = page.getByRole("dialog");
     await expect(rescheduleModal).toBeVisible();
@@ -186,7 +192,13 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     // 4. Abrir reagendamiento en Alpha y seleccionar modo Intercambio
     const cardA = page.locator("article", { hasText: patientA });
     await expect(cardA).toBeVisible();
-    await cardA.getByRole("button", { name: "Reagendar" }).click();
+    const moreBtnA = cardA.getByRole("button", { name: "Más acciones" });
+    if (await moreBtnA.isVisible()) {
+      await moreBtnA.click();
+      await page.getByRole("menuitem", { name: "Reagendar" }).click();
+    } else {
+      await cardA.getByRole("button", { name: "Reagendar" }).click();
+    }
 
     const rescheduleModal = page.getByRole("dialog");
     await expect(rescheduleModal).toBeVisible();
@@ -300,7 +312,13 @@ test.describe("Fase 2: Robustez de Agenda, Recurrencias y Reagendamiento", () =>
     // 3. Abrir modal de reagendamiento en la tarjeta
     const initialCard = page.locator("article", { hasText: patientName });
     await expect(initialCard).toBeVisible();
-    await initialCard.getByRole("button", { name: "Reagendar" }).click();
+    const moreBtn = initialCard.getByRole("button", { name: "Más acciones" });
+    if (await moreBtn.isVisible()) {
+      await moreBtn.click();
+      await page.getByRole("menuitem", { name: "Reagendar" }).click();
+    } else {
+      await initialCard.getByRole("button", { name: "Reagendar" }).click();
+    }
 
     const rescheduleModal = page.getByRole("dialog");
     await expect(rescheduleModal).toBeVisible();
