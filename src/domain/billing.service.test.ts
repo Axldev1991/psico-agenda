@@ -114,6 +114,22 @@ describe("Billing Service", () => {
     expect(summary.unrealizedTotal).toBe(0);
   });
 
+  it("includes scheduled slots on holidays when marked as isHolidayWorked", () => {
+    const workedHolidaySlot: CalendarSlot = {
+      ...createSlot("scheduled", 180, "2023-10-12T10:00:00Z"),
+      holiday: { date: "2023-10-12", name: "Día del Respeto a la Diversidad Cultural" },
+      isHolidayWorked: true,
+    };
+
+    const regularSlot: CalendarSlot = createSlot("scheduled", 200, "2023-10-20T10:00:00Z");
+
+    const summary = computeMonthlyBilling([workedHolidaySlot, regularSlot], targetMonth);
+
+    expect(summary.sessionCount).toBe(2);
+    expect(summary.projectedTotal).toBe(380); // 180 + 200
+    expect(summary.unrealizedTotal).toBe(0);
+  });
+
   it("excludes scheduled slots suspended by therapist vacation or absence from projected revenue", () => {
     const suspendedVacationSlot: CalendarSlot = {
       ...createSlot("scheduled", 300, "2023-10-18T15:00:00Z"),

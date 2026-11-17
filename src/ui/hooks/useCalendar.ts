@@ -17,6 +17,7 @@ import { CalendarSlot, RescheduleSlotParams, SwapSlotsParams, RecurrenceCadence 
 import { AbsencePeriod } from '../../domain/availability.types';
 import { 
   computeAgendaSlots, 
+  computeDaySlots,
   buildRRuleString, 
   getFirstOccurrenceOfRule,
   rescheduleSlot as domainRescheduleSlot, 
@@ -239,12 +240,22 @@ export function useCalendar() {
       existingRule = await sessionRepo.getRecurrenceRuleByPatient(slot.patientUuid);
     }
 
+    // Proyectar todos los turnos ocupados (recurrentes y manuales) para la fecha de destino
+    const targetDayBookedSlots = computeDaySlots({
+      targetDate: newDateTime,
+      recurrenceRules,
+      dbSessions,
+      patients,
+      holidays,
+      absencePeriods,
+    });
+
     const result = domainRescheduleSlot({
       slot,
       newDateTime,
       scope,
       existingRule,
-      bookedSlots: agenda,
+      bookedSlots: targetDayBookedSlots,
     });
 
     if (!result.success) {
@@ -518,6 +529,64 @@ export function useCalendar() {
     await touchPatient(slot.patientUuid);
   };
 
+  const toggleHolidayWorked = async (slot: CalendarSlot) => {
+    const isWorked = !slot.isHolidayWorked;
+    if (slot.uuid) {
+      const existing = await sessionRepo.getByUuid(slot.uuid);
+      if (existing) {
+        existing.isHolidayWorked = isWorked;
+        existing.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existing);
+      }
+    } else {
+      const now = new Date().toISOString();
+      const newSession: Session = {
+        uuid: crypto.randomUUID(),
+        patientUuid: slot.patientUuid,
+        dateTime: slot.dateTime.toISOString(),
+        status: slot.status || 'scheduled',
+        priceAtSession: slot.price,
+        paymentStatus: slot.paymentStatus || 'pending',
+        paymentMethod: slot.paymentMethod,
+        modality: slot.modality || 'in_person',
+        isHolidayWorked: isWorked,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await sessionRepo.save(newSession);
+    }
+    await touchPatient(slot.patientUuid);
+  };
+
+  const cancelHolidaySession = async (slot: CalendarSlot) => {
+    const holidayName = slot.holiday?.name ? `: ${slot.holiday.name}` : "";
+    const noteText = `[FERIADO] No laborable${holidayName}`;
+    if (slot.uuid) {
+      const existing = await sessionRepo.getByUuid(slot.uuid);
+      if (existing) {
+        existing.status = 'cancelled';
+        existing.notes = existing.notes ? `${existing.notes}\n${noteText}` : noteText;
+        existing.updatedAt = new Date().toISOString();
+        await sessionRepo.save(existing);
+      }
+    } else {
+      const now = new Date().toISOString();
+      const newSession: Session = {
+        uuid: crypto.randomUUID(),
+        patientUuid: slot.patientUuid,
+        dateTime: slot.dateTime.toISOString(),
+        status: 'cancelled',
+        priceAtSession: slot.price,
+        paymentStatus: 'waived',
+        notes: noteText,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await sessionRepo.save(newSession);
+    }
+    await touchPatient(slot.patientUuid);
+  };
+
   return {
     currentDate,
     weekStart,
@@ -535,6 +604,8 @@ export function useCalendar() {
     updateSessionStatus,
     updateSessionPaymentStatus,
     updateSessionModality,
+    toggleHolidayWorked,
+    cancelHolidaySession,
     materializeSlot,
     removeRecurrenceRule,
     deleteAppointment,

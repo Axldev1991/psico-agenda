@@ -33,6 +33,8 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
     swapSlots,
     patients,
     absencePeriods,
+    toggleHolidayWorked,
+    cancelHolidaySession,
   } = useCalendar();
 
   const { openSessionModal } = useUIState();
@@ -85,6 +87,8 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         patients={patients}
         onNavigateToPatientDetail={handleOpenPatientDetail}
         onOpenRescheduleModal={handleOpenReschedule}
+        onToggleHolidayWorked={toggleHolidayWorked}
+        onCancelHolidaySession={cancelHolidaySession}
         absencePeriods={absencePeriods}
       />
 
@@ -93,6 +97,11 @@ export function CalendarView({ onNavigateToPatientDetail }: CalendarViewProps) {
         onClose={handleCloseReschedule}
         slot={selectedSlotForReschedule}
         bookedSlots={agenda}
+        recurrenceRules={recurrenceRules}
+        dbSessions={dbSessions}
+        patients={patients}
+        holidays={holidays}
+        absencePeriods={absencePeriods}
         onReschedule={rescheduleSlot}
         onSwap={swapSlots}
       />

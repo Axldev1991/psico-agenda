@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   CalendarSlot,
@@ -10,7 +10,11 @@ import {
   RescheduleSlotParams,
   SwapSlotsParams,
 } from "../../../domain/agenda.types";
-import { findAvailableSlots } from "../../../domain/agenda.service";
+import { findAvailableSlots, computeDaySlots } from "../../../domain/agenda.service";
+import { RecurrenceRule, Session } from "../../../domain/session.types";
+import { Patient } from "../../../domain/patient.types";
+import { Holiday } from "../../../domain/holidays";
+import { AbsencePeriod } from "../../../domain/availability.types";
 import { useAvailabilitySettings } from "../../hooks/useAvailabilitySettings";
 import { useUIState } from "../../context/UIContext";
 import { Icon } from "../common/Icon";
@@ -20,7 +24,12 @@ interface RescheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   slot: CalendarSlot | null;
-  bookedSlots: CalendarSlot[];
+  bookedSlots?: CalendarSlot[];
+  recurrenceRules?: RecurrenceRule[];
+  dbSessions?: Session[];
+  patients?: Patient[];
+  holidays?: Holiday[];
+  absencePeriods?: AbsencePeriod[];
   onReschedule: (params: RescheduleSlotParams) => Promise<void>;
   onSwap: (params: SwapSlotsParams) => Promise<void>;
 }
@@ -31,7 +40,12 @@ export function RescheduleModal({
   isOpen,
   onClose,
   slot,
-  bookedSlots,
+  bookedSlots = [],
+  recurrenceRules = [],
+  dbSessions = [],
+  patients = [],
+  holidays = [],
+  absencePeriods = [],
   onReschedule,
   onSwap,
 }: RescheduleModalProps) {
@@ -69,16 +83,43 @@ export function RescheduleModal({
     return new Date(`${targetDateStr}T00:00:00`);
   }, [targetDateStr]);
 
+  const targetDateBookedSlots = useMemo(() => {
+    if (!targetDateStr) return [];
+    if (recurrenceRules.length > 0 || dbSessions.length > 0) {
+      return computeDaySlots({
+        targetDate,
+        recurrenceRules,
+        dbSessions,
+        patients,
+        holidays,
+        absencePeriods,
+      });
+    }
+    const dayStr = format(targetDate, "yyyy-MM-dd");
+    return bookedSlots.filter((s) => format(s.dateTime, "yyyy-MM-dd") === dayStr);
+  }, [targetDateStr, targetDate, recurrenceRules, dbSessions, patients, holidays, absencePeriods, bookedSlots]);
+
   const availableSlots = useMemo(() => {
     if (!targetDateStr) return [];
     return findAvailableSlots({
       targetDate,
-      bookedSlots,
+      bookedSlots: targetDateBookedSlots,
       slotDurationMinutes: settings.defaultSessionDurationMinutes,
       intervalStepMinutes: settings.intervalStepMinutes,
       weeklyAvailability: settings.weekly,
     });
-  }, [targetDateStr, targetDate, bookedSlots, settings]);
+  }, [targetDateStr, targetDate, targetDateBookedSlots, settings]);
+
+  const isBiweekly = useMemo(() => {
+    if (!slot) return false;
+    const rule = recurrenceRules.find((r) => r.patientUuid === slot.patientUuid);
+    return rule ? rule.rruleString.includes("INTERVAL=2") : false;
+  }, [slot, recurrenceRules]);
+
+  const suggestedBiweeklyDate = useMemo(() => {
+    if (!slot || !isBiweekly) return null;
+    return addDays(slot.dateTime, 14);
+  }, [slot, isBiweekly]);
 
   const swapCandidates = useMemo(() => {
     if (!slot) return [];
@@ -128,6 +169,7 @@ export function RescheduleModal({
           slot,
           newDateTime: selectedAvailableSlot.dateTime,
           scope,
+          bookedSlots: targetDateBookedSlots,
         });
       } else {
         const targetSlot = swapCandidates.find(
@@ -138,6 +180,7 @@ export function RescheduleModal({
           slotA: slot,
           slotB: targetSlot,
           scope,
+          bookedSlots: targetDateBookedSlots,
         });
       }
 
@@ -332,6 +375,29 @@ export function RescheduleModal({
                       }}
                     />
                   </div>
+
+                  {isBiweekly && suggestedBiweeklyDate && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm text-ink space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-300">
+                        <Icon name="info" size={16} />
+                        <span>Frecuencia quincenal detectada</span>
+                      </div>
+                      <p className="text-xs text-ink-sub">
+                        Para mantener la alternancia y evitar solapamientos con el paciente de la otra semana, podés saltar directo a la siguiente fecha habitual ({format(suggestedBiweeklyDate, "dd/MM/yyyy")}).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetDateStr(format(suggestedBiweeklyDate, "yyyy-MM-dd"));
+                          setSelectedAvailableSlot(null);
+                        }}
+                        className="mt-1 text-xs font-semibold px-2.5 py-1 bg-surface border border-line rounded-lg text-primary hover:border-primary transition-colors cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Icon name="calendar" size={13} />
+                        Saltar a la siguiente quincena ({format(suggestedBiweeklyDate, "dd/MM")})
+                      </button>
+                    </div>
+                  )}
 
                   <div>
                     <label className="text-sm font-semibold text-ink block mb-1.5">

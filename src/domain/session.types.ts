@@ -16,6 +16,7 @@ export interface Session {
   rescheduledFrom?: string; // ISO string indicando desde qué fecha/hora provino
   description?: string;     // Descripción rápida para el índice
   colorTag?: string;        // Marca de color visual (ej: "indigo", "rose", "emerald")
+  isHolidayWorked?: boolean;// Indica si la sesión en feriado se confirmó para ser trabajada/atendida
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;       // ISO timestamp for soft deletion (tombstone for LWW sync)

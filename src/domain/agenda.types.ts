@@ -19,6 +19,7 @@ export interface CalendarSlot {
   rescheduledFrom?: string;
   isRecurrent: boolean;
   holiday?: Holiday;
+  isHolidayWorked?: boolean;
   isSuspended?: boolean;
   absence?: AbsencePeriod;
 }

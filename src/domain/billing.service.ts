@@ -30,8 +30,8 @@ export function computeMonthlyBilling(slots: CalendarSlot[], targetMonth: Date):
 
   for (const slot of slots) {
     if (isSameMonth(slot.dateTime, targetMonth)) {
-      // Exclude slots that are suspended by vacation/absence or coincide with holidays
-      if (slot.isSuspended || (slot.status === 'scheduled' && (slot.holiday || slot.absence))) {
+      // Exclude slots that are suspended by vacation/absence or coincide with unworked holidays
+      if (slot.isSuspended || (slot.status === 'scheduled' && ((slot.holiday && !slot.isHolidayWorked) || slot.absence))) {
         continue;
       }
 

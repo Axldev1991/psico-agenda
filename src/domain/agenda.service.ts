@@ -10,9 +10,11 @@ import {
   SwapResult,
   RecurrenceCadence
 } from "./agenda.types";
-import { getHoliday } from "./holidays";
+import { getHoliday, Holiday } from "./holidays";
 import { isSlotWithinAvailability, isDateInAbsence } from "./availability.service";
-import { RecurrenceRule } from "./session.types";
+import { AbsencePeriod } from "./availability.types";
+import { Patient } from "./patient.types";
+import { RecurrenceRule, Session } from "./session.types";
 
 function extractRescheduledToDate(rescheduledTo?: string, description?: string, notes?: string): string | undefined {
   if (rescheduledTo) return rescheduledTo;
@@ -125,6 +127,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
             rescheduledFrom: dbOverride.rescheduledFrom,
             isRecurrent: true,
             holiday: getHoliday(slotDateTime, holidays),
+            isHolidayWorked: dbOverride.isHolidayWorked,
             isSuspended: !!activeAbsence,
             absence: activeAbsence,
           });
@@ -189,6 +192,7 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
           rescheduledFrom: session.rescheduledFrom,
           isRecurrent: false,
           holiday: getHoliday(sessionDate, holidays),
+          isHolidayWorked: session.isHolidayWorked,
           isSuspended: !!activeAbsence,
           absence: activeAbsence,
         });
@@ -198,6 +202,33 @@ export function computeAgendaSlots(params: ComputeAgendaSlotsParams): CalendarSl
 
   // 3. Chronological Sort
   return agenda.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+}
+
+/**
+ * Proyecta los turnos ocupados (recurrentes y manuales) para un día específico en cualquier fecha.
+ * Permite detectar colisiones con precisión en fechas futuras fuera de la semana visible.
+ */
+export function computeDaySlots(params: {
+  targetDate: Date;
+  recurrenceRules: RecurrenceRule[];
+  dbSessions: Session[];
+  patients: Patient[];
+  holidays?: Holiday[];
+  absencePeriods?: AbsencePeriod[];
+}): CalendarSlot[] {
+  const { targetDate, recurrenceRules, dbSessions, patients, holidays = [], absencePeriods = [] } = params;
+  const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0, 0);
+  const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+
+  return computeAgendaSlots({
+    intervalStart: startOfDay,
+    intervalEnd: endOfDay,
+    recurrenceRules,
+    dbSessions,
+    patients,
+    holidays,
+    absencePeriods,
+  });
 }
 
 /**

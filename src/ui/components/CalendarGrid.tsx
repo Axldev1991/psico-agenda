@@ -35,6 +35,8 @@ interface CalendarGridProps {
   patients?: Patient[];
   onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string, slot?: CalendarSlot) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
+  onToggleHolidayWorked?: (slot: CalendarSlot) => Promise<void>;
+  onCancelHolidaySession?: (slot: CalendarSlot) => Promise<void>;
   absencePeriods?: AbsencePeriod[];
 }
 
@@ -58,6 +60,8 @@ export function CalendarGrid({
   patients = [],
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
+  onToggleHolidayWorked,
+  onCancelHolidaySession,
   absencePeriods = [],
 }: CalendarGridProps) {
   const currentHoliday = getHoliday(currentDate, holidays);
@@ -144,6 +148,8 @@ export function CalendarGrid({
                   onDeleteAppointment={onDeleteAppointment}
                   onNavigateToPatientDetail={onNavigateToPatientDetail}
                   onOpenRescheduleModal={onOpenRescheduleModal}
+                  onToggleHolidayWorked={onToggleHolidayWorked}
+                  onCancelHolidaySession={onCancelHolidaySession}
                 />
               ))}
             </div>

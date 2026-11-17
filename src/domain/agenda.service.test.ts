@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { 
   computeAgendaSlots, 
+  computeDaySlots,
   buildRRuleString, 
   findAvailableSlots, 
   findConflictingSlot,
@@ -984,6 +985,119 @@ describe("Agenda Domain Service (computeAgendaSlots)", () => {
     it("formatRecurrenceStartDate returns null if no startDate", () => {
       expect(formatRecurrenceStartDate(null)).toBeNull();
       expect(formatRecurrenceStartDate({} as RecurrenceRule)).toBeNull();
+    });
+  });
+
+  describe("computeDaySlots and Holiday Work Handling", () => {
+    const patientA: Patient = {
+      uuid: "patient-a",
+      fullName: "Paciente A",
+      email: "a@test.com",
+      phone: "111",
+      address: "",
+      healthInsurance: "",
+      affiliateNumber: "",
+      sessionPrice: 20000,
+      type: "adult",
+      status: "active",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    const patientB: Patient = {
+      uuid: "patient-b",
+      fullName: "Paciente B",
+      email: "b@test.com",
+      phone: "222",
+      address: "",
+      healthInsurance: "",
+      affiliateNumber: "",
+      sessionPrice: 20000,
+      type: "adult",
+      status: "active",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    // Patient A attends on Wednesday Week 1 (2026-10-14) biweekly
+    const ruleA: RecurrenceRule = {
+      patientUuid: "patient-a",
+      startDate: "2026-10-14",
+      startTime: "16:00",
+      durationMinutes: 50,
+      rruleString: "DTSTART:20261014T160000Z\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=WE",
+    };
+
+    // Patient B attends on Wednesday Week 2 (2026-10-21) biweekly
+    const ruleB: RecurrenceRule = {
+      patientUuid: "patient-b",
+      startDate: "2026-10-21",
+      startTime: "16:00",
+      durationMinutes: 50,
+      rruleString: "DTSTART:20261021T160000Z\nRRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=WE",
+    };
+
+    it("accurately projects biweekly slots across different weeks", () => {
+      // Week 1 Wednesday: Patient A should be booked, Patient B should not
+      const slotsWeek1 = computeDaySlots({
+        targetDate: new Date("2026-10-14T12:00:00"),
+        recurrenceRules: [ruleA, ruleB],
+        dbSessions: [],
+        patients: [patientA, patientB],
+      });
+      expect(slotsWeek1.length).toBe(1);
+      expect(slotsWeek1[0].patientUuid).toBe("patient-a");
+
+      // Week 2 Wednesday: Patient B should be booked, Patient A should not
+      const slotsWeek2 = computeDaySlots({
+        targetDate: new Date("2026-10-21T12:00:00"),
+        recurrenceRules: [ruleA, ruleB],
+        dbSessions: [],
+        patients: [patientA, patientB],
+      });
+      expect(slotsWeek2.length).toBe(1);
+      expect(slotsWeek2[0].patientUuid).toBe("patient-b");
+
+      // Week 3 Wednesday: Patient A should be booked again
+      const slotsWeek3 = computeDaySlots({
+        targetDate: new Date("2026-10-28T12:00:00"),
+        recurrenceRules: [ruleA, ruleB],
+        dbSessions: [],
+        patients: [patientA, patientB],
+      });
+      expect(slotsWeek3.length).toBe(1);
+      expect(slotsWeek3[0].patientUuid).toBe("patient-a");
+    });
+
+    it("preserves isHolidayWorked from db session override", () => {
+      const holiday: Holiday = {
+        date: "2026-10-14",
+        name: "Feriado Nacional",
+      };
+
+      const dbOverrideSession: Session = {
+        uuid: "sess-worked-holiday",
+        patientUuid: "patient-a",
+        dateTime: "2026-10-14T16:00:00.000Z",
+        status: "scheduled",
+        priceAtSession: 20000,
+        paymentStatus: "pending",
+        isHolidayWorked: true,
+        createdAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-01T00:00:00.000Z",
+      };
+
+      const slots = computeDaySlots({
+        targetDate: new Date("2026-10-14T12:00:00"),
+        recurrenceRules: [ruleA],
+        dbSessions: [dbOverrideSession],
+        patients: [patientA],
+        holidays: [holiday],
+      });
+
+      expect(slots.length).toBe(1);
+      expect(slots[0].isHolidayWorked).toBe(true);
+      expect(slots[0].holiday?.name).toBe("Feriado Nacional");
     });
   });
 });

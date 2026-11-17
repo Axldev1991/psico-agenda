@@ -18,6 +18,8 @@ interface AppointmentCardProps {
   onDeleteAppointment?: (slot: CalendarSlot) => Promise<void>;
   onNavigateToPatientDetail: (patientUuid: string, sessionUuid?: string, slot?: CalendarSlot) => void;
   onOpenRescheduleModal?: (slot: CalendarSlot) => void;
+  onToggleHolidayWorked?: (slot: CalendarSlot) => Promise<void>;
+  onCancelHolidaySession?: (slot: CalendarSlot) => Promise<void>;
 }
 
 export function AppointmentCard({
@@ -29,6 +31,8 @@ export function AppointmentCard({
   onDeleteAppointment,
   onNavigateToPatientDetail,
   onOpenRescheduleModal,
+  onToggleHolidayWorked,
+  onCancelHolidaySession,
 }: AppointmentCardProps) {
   const { confirm } = useUIState();
   const startTime = format(slot.dateTime, "HH:mm");
@@ -57,6 +61,24 @@ export function AppointmentCard({
     });
     if (ok) {
       await onDeleteAppointment(slot);
+    }
+  };
+
+  const handleToggleHolidayWorked = async () => {
+    if (!onToggleHolidayWorked) return;
+    await onToggleHolidayWorked(slot);
+  };
+
+  const handleTakeHoliday = async () => {
+    if (!onCancelHolidaySession) return;
+    const ok = await confirm({
+      title: "¿Tomar feriado?",
+      description: `Se registrará que no se atiende en el feriado (${slot.holiday?.name || 'Feriado'}). El turno no se computará en facturación y la recurrencia se mantendrá intacta para la próxima fecha programada.`,
+      confirmText: "Tomar feriado",
+      variant: "primary",
+    });
+    if (ok) {
+      await onCancelHolidaySession(slot);
     }
   };
 
@@ -189,9 +211,54 @@ export function AppointmentCard({
               </span>
             )}
             {slot.holiday && !slot.absence && (
-              <span className="text-warn text-xs font-medium whitespace-nowrap bg-warn-tint px-2 py-0.5 rounded border border-warn/30">
-                Feriado: {slot.holiday.name}
-              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {slot.isHolidayWorked ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-300 text-xs font-semibold whitespace-nowrap bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
+                    <span>💼 Feriado trabajado ({slot.holiday.name})</span>
+                    {onToggleHolidayWorked && (
+                      <button
+                        type="button"
+                        onClick={handleToggleHolidayWorked}
+                        title="Desmarcar feriado trabajado"
+                        className="ml-1 text-xs underline text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                      >
+                        (Desmarcar)
+                      </button>
+                    )}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-warn text-xs font-medium whitespace-nowrap bg-warn-tint px-2 py-0.5 rounded border border-warn/30">
+                      Feriado: {slot.holiday.name}
+                    </span>
+                    {!isCancelled && !isRescheduled && (
+                      <div className="inline-flex items-center gap-1">
+                        {onToggleHolidayWorked && (
+                          <button
+                            type="button"
+                            onClick={handleToggleHolidayWorked}
+                            title="Atender este turno aunque sea feriado"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-2xs"
+                          >
+                            <Icon name="check" size={13} />
+                            <span>Atiendo</span>
+                          </button>
+                        )}
+                        {onCancelHolidaySession && (
+                          <button
+                            type="button"
+                            onClick={handleTakeHoliday}
+                            title="Tomar feriado y no atender esta sesión"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-medium bg-surface hover:bg-bg-base border border-line text-ink-sub hover:text-ink transition-colors cursor-pointer shadow-2xs"
+                          >
+                            <span>Tomar feriado</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
