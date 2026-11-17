@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format, addMinutes } from "date-fns";
 import { CalendarSlot } from "../../../domain/agenda.types";
 import { Session, PaymentStatus, PaymentMethod, SessionModality } from "../../../domain/session.types";
@@ -35,6 +35,29 @@ export function AppointmentCard({
   onCancelHolidaySession,
 }: AppointmentCardProps) {
   const { confirm } = useUIState();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
   const startTime = format(slot.dateTime, "HH:mm");
   const endTime = format(addMinutes(slot.dateTime, 50), "HH:mm");
 
@@ -66,19 +89,26 @@ export function AppointmentCard({
 
   const handleToggleHolidayWorked = async () => {
     if (!onToggleHolidayWorked) return;
-    await onToggleHolidayWorked(slot);
-  };
-
-  const handleTakeHoliday = async () => {
-    if (!onCancelHolidaySession) return;
-    const ok = await confirm({
-      title: "¿Tomar feriado?",
-      description: `Se registrará que no se atiende en el feriado (${slot.holiday?.name || 'Feriado'}). El turno no se computará en facturación y la recurrencia se mantendrá intacta para la próxima fecha programada.`,
-      confirmText: "Tomar feriado",
-      variant: "primary",
-    });
-    if (ok) {
-      await onCancelHolidaySession(slot);
+    if (!slot.isHolidayWorked) {
+      const ok = await confirm({
+        title: "¿Atender en feriado?",
+        description: `Se confirmará la atención de ${slot.patientName} en este feriado. La sesión se computará normalmente en la facturación del mes.`,
+        confirmText: "Atender feriado",
+        variant: "primary",
+      });
+      if (ok) {
+        await onToggleHolidayWorked(slot);
+      }
+    } else {
+      const ok = await confirm({
+        title: "¿Desmarcar atención en feriado?",
+        description: `Se registrará que no se atiende a ${slot.patientName} en el feriado. No se computará en la facturación.`,
+        confirmText: "No atender",
+        variant: "warning",
+      });
+      if (ok) {
+        await onToggleHolidayWorked(slot);
+      }
     }
   };
 
@@ -183,12 +213,12 @@ export function AppointmentCard({
                   size={12}
                   className={slot.modality === "online" ? "text-indigo-600" : "text-ink-sub"}
                 />
-                <span>{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+                <span>{slot.modality === "online" ? "Virtual" : "Presencial"} · {slot.durationMinutes || 50} min</span>
               </button>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-line bg-surface text-ink-sub whitespace-nowrap shadow-2xs">
                 <Icon name={slot.modality === "online" ? "video" : "pin"} size={12} />
-                <span>{slot.modality === "online" ? "Virtual" : "Presencial"}</span>
+                <span>{slot.modality === "online" ? "Virtual" : "Presencial"} · {slot.durationMinutes || 50} min</span>
               </span>
             )}
 
@@ -214,53 +244,34 @@ export function AppointmentCard({
                 🏖️ {slot.absence.reason}
               </span>
             )}
-
-            {/* Feriado trabajado */}
-            {slot.holiday && !slot.absence && slot.isHolidayWorked && (
-              <span className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 text-xs font-semibold whitespace-nowrap bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 shadow-2xs">
-                <span>💼 Feriado trabajado</span>
-                {onToggleHolidayWorked && (
-                  <button
-                    type="button"
-                    onClick={handleToggleHolidayWorked}
-                    title="Desmarcar feriado trabajado"
-                    className="text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer ml-0.5"
-                  >
-                    (desmarcar)
-                  </button>
-                )}
-              </span>
-            )}
           </div>
         </div>
       </div>
 
       {/* Right side: Action buttons */}
-      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end flex-wrap">
-        {slot.holiday && !slot.absence && !slot.isHolidayWorked && !isCancelled && !isRescheduled && (
-          <div className="inline-flex items-center gap-1.5">
-            {onToggleHolidayWorked && (
-              <button
-                type="button"
-                onClick={handleToggleHolidayWorked}
-                title="Atender este turno aunque sea feriado"
-                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer text-sm font-semibold flex items-center gap-1.5 shadow-2xs"
-              >
-                <Icon name="check" size={13} />
-                <span>Atiendo</span>
-              </button>
-            )}
-            {onCancelHolidaySession && (
-              <button
-                type="button"
-                onClick={handleTakeHoliday}
-                title="Tomar feriado y no atender esta sesión"
-                className="px-2.5 py-1.5 text-ink-sub hover:text-ink hover:bg-bg-base border border-line rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
-              >
-                <span>Tomar feriado</span>
-              </button>
-            )}
-          </div>
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end">
+        {slot.holiday && !slot.absence && !isCancelled && !isRescheduled && onToggleHolidayWorked && (
+          !slot.isHolidayWorked ? (
+            <button
+              type="button"
+              onClick={handleToggleHolidayWorked}
+              title="Atender este turno en feriado"
+              className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-surface rounded-lg transition-colors cursor-pointer text-sm font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              <Icon name="check" size={14} />
+              <span>Atender</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleToggleHolidayWorked}
+              title="Desmarcar atención en feriado"
+              className="px-3 py-1.5 border border-err/40 hover:border-err bg-err-tint/40 hover:bg-err-tint text-err rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
+            >
+              <Icon name="x" size={14} />
+              <span className="line-through">No atender</span>
+            </button>
+          )
         )}
 
         <button
@@ -273,41 +284,78 @@ export function AppointmentCard({
           <span>Ficha</span>
         </button>
 
-        {!isCancelled && !isRescheduled && onOpenRescheduleModal && (
+        {/* 3 dots menu button */}
+        <div className="relative" ref={menuRef}>
           <button
             type="button"
-            onClick={() => onOpenRescheduleModal(slot)}
-            className="px-2.5 py-1.5 text-ink-sub hover:text-primary hover:bg-primary-tint border border-line hover:border-primary/40 rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
-            title="Reagendar o cambiar turno"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            aria-label="Más acciones"
+            aria-expanded={isMenuOpen}
+            className={`p-1.5 text-ink-sub hover:text-ink hover:bg-bg-base border rounded-lg transition-colors cursor-pointer ${
+              isMenuOpen ? "bg-bg-base border-line-control text-ink" : "border-line"
+            }`}
+            title="Más acciones"
           >
-            <Icon name="calendar" size={14} />
-            <span>Reagendar</span>
+            <Icon name="more" size={16} />
           </button>
-        )}
 
-        {slot.isRecurrent && onRemoveRecurrenceRule && (
-          <button
-            type="button"
-            onClick={handleRemoveRecurrence}
-            title="Quitar turno recurrente"
-            aria-label="Quitar turno recurrente"
-            className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
-          >
-            <Icon name="x" size={14} />
-          </button>
-        )}
+          {isMenuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-1.5 w-48 bg-surface border border-line rounded-xl shadow-lg py-1 z-30 animate-in fade-in zoom-in-95 duration-100"
+            >
+              {!isCancelled && !isRescheduled && onOpenRescheduleModal && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onOpenRescheduleModal(slot);
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-sm text-ink hover:bg-bg-base flex items-center gap-2.5 cursor-pointer transition-colors"
+                >
+                  <Icon name="calendar" size={15} className="text-ink-sub" />
+                  <span>Reagendar</span>
+                </button>
+              )}
 
-        {!slot.isRecurrent && onDeleteAppointment && (
-          <button
-            type="button"
-            onClick={handleDeleteAppointment}
-            title="Eliminar turno"
-            aria-label="Eliminar turno"
-            className="p-1.5 text-ink-sub hover:text-err hover:bg-err-tint border border-transparent hover:border-err/30 rounded-lg transition-colors cursor-pointer"
-          >
-            <Icon name="trash" size={14} />
-          </button>
-        )}
+              {(!isCancelled && !isRescheduled && onOpenRescheduleModal) &&
+                ((slot.isRecurrent && onRemoveRecurrenceRule) || (!slot.isRecurrent && onDeleteAppointment)) && (
+                <div className="my-1 border-t border-line" />
+              )}
+
+              {slot.isRecurrent && onRemoveRecurrenceRule && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleRemoveRecurrence();
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-sm text-err hover:bg-err-tint flex items-center gap-2.5 cursor-pointer transition-colors"
+                >
+                  <Icon name="x" size={15} />
+                  <span>Quitar turno fijo</span>
+                </button>
+              )}
+
+              {!slot.isRecurrent && onDeleteAppointment && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleDeleteAppointment();
+                  }}
+                  className="w-full text-left px-3.5 py-2 text-sm text-err hover:bg-err-tint flex items-center gap-2.5 cursor-pointer transition-colors"
+                >
+                  <Icon name="trash" size={15} />
+                  <span>Eliminar turno</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );
