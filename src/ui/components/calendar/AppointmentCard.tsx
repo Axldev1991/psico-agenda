@@ -108,6 +108,10 @@ export function AppointmentCard({
           ? "opacity-75 bg-bg-base/40 border-line"
           : isSuspended
           ? "bg-amber-500/5 border-amber-200/80"
+          : slot.holiday && !slot.absence
+          ? slot.isHolidayWorked
+            ? "bg-emerald-500/[0.04] border-emerald-500/30"
+            : "bg-amber-500/[0.05] border-amber-300/60"
           : "bg-surface border-line"
       }`}
     >
@@ -204,68 +208,61 @@ export function AppointmentCard({
               />
             )}
 
-            {/* Recesos / Feriados */}
+            {/* Recesos */}
             {slot.absence && (
               <span className="text-amber-800 text-xs font-medium whitespace-nowrap bg-amber-500/10 px-2 py-0.5 rounded border border-amber-300/40">
                 🏖️ {slot.absence.reason}
               </span>
             )}
-            {slot.holiday && !slot.absence && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {slot.isHolidayWorked ? (
-                  <span className="inline-flex items-center gap-1 text-emerald-800 dark:text-emerald-300 text-xs font-semibold whitespace-nowrap bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
-                    <span>💼 Feriado trabajado ({slot.holiday.name})</span>
-                    {onToggleHolidayWorked && (
-                      <button
-                        type="button"
-                        onClick={handleToggleHolidayWorked}
-                        title="Desmarcar feriado trabajado"
-                        className="ml-1 text-xs underline text-emerald-700 hover:text-emerald-900 cursor-pointer"
-                      >
-                        (Desmarcar)
-                      </button>
-                    )}
-                  </span>
-                ) : (
-                  <>
-                    <span className="text-warn text-xs font-medium whitespace-nowrap bg-warn-tint px-2 py-0.5 rounded border border-warn/30">
-                      Feriado: {slot.holiday.name}
-                    </span>
-                    {!isCancelled && !isRescheduled && (
-                      <div className="inline-flex items-center gap-1">
-                        {onToggleHolidayWorked && (
-                          <button
-                            type="button"
-                            onClick={handleToggleHolidayWorked}
-                            title="Atender este turno aunque sea feriado"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-2xs"
-                          >
-                            <Icon name="check" size={13} />
-                            <span>Atiendo</span>
-                          </button>
-                        )}
-                        {onCancelHolidaySession && (
-                          <button
-                            type="button"
-                            onClick={handleTakeHoliday}
-                            title="Tomar feriado y no atender esta sesión"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-medium bg-surface hover:bg-bg-base border border-line text-ink-sub hover:text-ink transition-colors cursor-pointer shadow-2xs"
-                          >
-                            <span>Tomar feriado</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </>
+
+            {/* Feriado trabajado */}
+            {slot.holiday && !slot.absence && slot.isHolidayWorked && (
+              <span className="inline-flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 text-xs font-semibold whitespace-nowrap bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 shadow-2xs">
+                <span>💼 Feriado trabajado</span>
+                {onToggleHolidayWorked && (
+                  <button
+                    type="button"
+                    onClick={handleToggleHolidayWorked}
+                    title="Desmarcar feriado trabajado"
+                    className="text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer ml-0.5"
+                  >
+                    (desmarcar)
+                  </button>
                 )}
-              </div>
+              </span>
             )}
           </div>
         </div>
       </div>
 
       {/* Right side: Action buttons */}
-      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-line/60 w-full sm:w-auto justify-end flex-wrap">
+        {slot.holiday && !slot.absence && !slot.isHolidayWorked && !isCancelled && !isRescheduled && (
+          <div className="inline-flex items-center gap-1.5">
+            {onToggleHolidayWorked && (
+              <button
+                type="button"
+                onClick={handleToggleHolidayWorked}
+                title="Atender este turno aunque sea feriado"
+                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer text-sm font-semibold flex items-center gap-1.5 shadow-2xs"
+              >
+                <Icon name="check" size={13} />
+                <span>Atiendo</span>
+              </button>
+            )}
+            {onCancelHolidaySession && (
+              <button
+                type="button"
+                onClick={handleTakeHoliday}
+                title="Tomar feriado y no atender esta sesión"
+                className="px-2.5 py-1.5 text-ink-sub hover:text-ink hover:bg-bg-base border border-line rounded-lg transition-colors cursor-pointer text-sm font-medium flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>Tomar feriado</span>
+              </button>
+            )}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => onNavigateToPatientDetail(slot.patientUuid, slot.uuid, slot)}
